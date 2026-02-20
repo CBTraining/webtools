@@ -154,6 +154,9 @@
                     <div id="nav-lottie" class="nav-item w-full flex items-center gap-4 px-3 py-3 rounded-lg text-left group" draggable="true" data-tab="lottie">
                         <i class="fas fa-film w-5 text-center text-lg"></i> <span class="text-[15px]">Lottie to GIF</span>
                     </div>
+                    <div id="nav-videogif" class="nav-item w-full flex items-center gap-4 px-3 py-3 rounded-lg text-left group" draggable="true" data-tab="videogif">
+                        <i class="fas fa-video w-5 text-center text-lg"></i> <span class="text-[15px]">Video to GIF</span>
+                    </div>
                 </div>
 
                 <div class="text-xs font-bold text-[var(--text_secondary)] uppercase tracking-wider mb-3 px-2">DEV TOOLS</div>
@@ -239,163 +242,283 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
 
-                <!-- COMPRESSOR -->
-                <section id="tool-compressor" class="tool-section hidden">
-                    <div class="mb-8"><h2 class="text-3xl font-bold mb-2">Image Compressor</h2><p class="text-[var(--text_secondary)]">Optimize JPG/PNG size significantly.</p></div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div class="tool-card p-6">
-                            <h3 class="font-bold mb-4">Original</h3>
-                            <div id="comp-preview-orig" class="image-preview-box mb-6 bg-dots text-[var(--text_secondary)] text-sm">Select an image</div>
-                            <label class="flex items-center justify-center w-full px-4 py-4 bg-gray-50 border-2 border-dashed border-gray-300 hover:border-accent rounded-xl cursor-pointer transition-all font-medium">
-                                <i class="fas fa-image mr-2"></i> Select Image
-                                <input type="file" id="comp-upload" accept="image/jpeg,image/png" class="hidden"/>
-                            </label>
-                        </div>
-                        <div class="tool-card p-6">
-                            <h3 class="font-bold mb-4">Result</h3>
-                            <div id="comp-preview-res" class="image-preview-box mb-6 bg-dots text-[var(--text_secondary)] text-sm">Preview</div>
-                            <div id="comp-controls" class="opacity-50 pointer-events-none transition-opacity space-y-4">
-                                <div class="flex justify-between items-center"><label class="font-bold text-sm">Quality</label><span id="comp-quality-val" class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded">75%</span></div>
-                                <input type="range" id="comp-slider" min="1" max="100" value="75" class="w-full">
-                                <div id="comp-stats" class="text-center text-sm p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">Waiting...</div>
-                                <button id="btn-comp-dl" class="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md">Download Compressed</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- LOTTIE TO GIF -->
-                <section id="tool-lottie" class="tool-section hidden">
-                    <div class="mb-8"><h2 class="text-3xl font-bold mb-2">Lottie to GIF Converter</h2><p class="text-[var(--text_secondary)]">Convert JSON animations to animated GIFs.</p></div>
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        <div class="lg:col-span-5 space-y-6">
+                    <!-- COMPRESSOR -->
+                    <section id="tool-compressor" class="tool-section hidden">
+                        <div class="mb-8"><h2 class="text-3xl font-bold mb-2">Image Compressor</h2><p class="text-[var(--text_secondary)]">Optimize JPG/PNG size significantly.</p></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div class="tool-card p-6">
-                                <div class="flex justify-between items-center mb-3">
-                                    <label class="text-sm font-bold uppercase tracking-wide">Input File</label>
-                                    <div class="text-xs text-[var(--text_secondary)]">Supports .json</div>
-                                </div>
-                                <label class="flex items-center justify-center w-full px-4 py-8 bg-white border-2 border-dashed border-gray-300 hover:border-accent hover:text-accent text-gray-500 rounded-xl cursor-pointer transition-all font-medium mb-6">
-                                    <div class="text-center">
-                                        <i class="fas fa-file-code text-3xl mb-2"></i><br>Upload Lottie JSON
-                                    </div>
-                                    <input type="file" id="lottie-upload" accept=".json" class="hidden"/>
+                                <h3 class="font-bold mb-4">Original</h3>
+                                <div id="comp-preview-orig" class="image-preview-box mb-6 bg-dots text-[var(--text_secondary)] text-sm">Select an image</div>
+                                <label class="flex items-center justify-center w-full px-4 py-4 bg-[var(--bg_input)] border-2 border-dashed border-[var(--border_default)] hover:border-accent rounded-xl cursor-pointer transition-all font-medium">
+                                    <i class="fas fa-image mr-2"></i> Select Image
+                                    <input type="file" id="comp-upload" accept="image/jpeg,image/png" class="hidden"/>
                                 </label>
-                                
-                                <div id="lottie-controls" class="space-y-4 opacity-50 pointer-events-none transition-opacity">
-                                    <div>
-                                        <div class="flex justify-between mb-1"><label class="text-xs font-bold uppercase">Width (px)</label><span class="text-xs font-mono" id="lottie-dims">800x600</span></div>
-                                        <input type="number" id="lottie-width" value="800" class="w-full p-2 text-sm font-bold">
+                            </div>
+                            <div class="tool-card p-6">
+                                <h3 class="font-bold mb-4">Result</h3>
+                                <div id="comp-preview-res" class="image-preview-box mb-6 bg-dots text-[var(--text_secondary)] text-sm">Preview</div>
+                                <div id="comp-controls" class="opacity-50 pointer-events-none transition-opacity space-y-4">
+                                    <div class="flex justify-between items-center"><label class="font-bold text-sm">Quality</label><span id="comp-quality-val" class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded">75%</span></div>
+                                    <input type="range" id="comp-slider" min="1" max="100" value="75" class="w-full">
+                                    <div id="comp-stats" class="text-center text-sm p-3 bg-[var(--bg_input)] rounded-lg">Waiting...</div>
+                                    <button id="btn-comp-dl" class="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md">Download Compressed</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- LOTTIE TO GIF -->
+                    <section id="tool-lottie" class="tool-section hidden">
+                        <div class="mb-8"><h2 class="text-3xl font-bold mb-2">Lottie to GIF Converter</h2><p class="text-[var(--text_secondary)]">Convert JSON animations to animated GIFs.</p></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div class="lg:col-span-5 space-y-6">
+                                <div class="tool-card p-6">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <label class="text-sm font-bold uppercase tracking-wide">Input File</label>
+                                        <div class="text-xs text-[var(--text_secondary)]">Supports .json</div>
                                     </div>
-                                    <div>
-                                        <div class="flex justify-between mb-1"><label class="text-xs font-bold uppercase">Background</label></div>
-                                        <div class="flex gap-2">
-                                            <input type="color" id="lottie-bg-color" value="#ffffff" class="h-10 w-10 p-0 rounded cursor-pointer border-0">
-                                            <button id="lottie-bg-transparent" class="flex-1 text-xs border border-default rounded hover:bg-gray-100 dark:hover:bg-slate-700">Transparent</button>
+                                    <label class="flex items-center justify-center w-full px-4 py-8 bg-[var(--bg_input)] border-2 border-dashed border-[var(--border_default)] hover:border-accent hover:text-accent text-[var(--text_secondary)] rounded-xl cursor-pointer transition-all font-medium mb-6">
+                                        <div class="text-center">
+                                            <i class="fas fa-file-code text-3xl mb-2"></i><br>Upload Lottie JSON
                                         </div>
-                                    </div>
-                                    <div>
-                                        <div class="flex justify-between mb-1">
-                                            <label class="text-xs font-bold uppercase">Frame Rate</label>
-                                            <div class="flex gap-2">
-                                                <span id="lottie-size-est" class="text-[10px] text-gray-400 font-mono mt-0.5">Est: ~1MB</span>
-                                                <span id="lottie-fps-val" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded">30 FPS</span>
-                                            </div>
-                                        </div>
-                                        <input type="range" id="lottie-fps" min="10" max="60" value="30" class="w-full">
-                                    </div>
+                                        <input type="file" id="lottie-upload" accept=".json" class="hidden"/>
+                                    </label>
                                     
-                                    <div class="flex items-center justify-between pt-2">
-                                        <label class="flex items-center gap-2 cursor-pointer select-none">
-                                            <div class="relative">
-                                                <input type="checkbox" id="lottie-loop" checked class="sr-only peer">
-                                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
+                                    <div id="lottie-controls" class="space-y-4 opacity-50 pointer-events-none transition-opacity">
+                                        <div>
+                                            <div class="flex justify-between mb-1"><label class="text-xs font-bold uppercase">Width (px)</label><span class="text-xs font-mono" id="lottie-dims">800x600</span></div>
+                                            <input type="number" id="lottie-width" value="800" class="w-full p-2 text-sm font-bold">
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between mb-1"><label class="text-xs font-bold uppercase">Background</label></div>
+                                            <div class="flex gap-2">
+                                                <input type="color" id="lottie-bg-color" value="#ffffff" class="h-10 w-10 p-0 rounded cursor-pointer border-0">
+                                                <button id="lottie-bg-transparent" class="flex-1 text-xs border border-[var(--border_default)] rounded hover:bg-[var(--hover_item)]">Transparent</button>
                                             </div>
-                                            <span class="text-xs font-bold uppercase">Loop Animation</span>
-                                        </label>
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between mb-1">
+                                                <label class="text-xs font-bold uppercase">Frame Rate</label>
+                                                <div class="flex gap-2">
+                                                    <span id="lottie-size-est" class="text-[10px] text-gray-400 font-mono mt-0.5">Est: ~1MB</span>
+                                                    <span id="lottie-fps-val" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded">30 FPS</span>
+                                                </div>
+                                            </div>
+                                            <input type="range" id="lottie-fps" min="10" max="60" value="30" class="w-full">
+                                        </div>
+                                        
+                                        <div class="flex items-center justify-between pt-2">
+                                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                                <div class="relative">
+                                                    <input type="checkbox" id="lottie-loop" checked class="sr-only peer">
+                                                    <div class="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
+                                                </div>
+                                                <span class="text-xs font-bold uppercase">Loop Animation</span>
+                                            </label>
+                                        </div>
+
+                                        <button id="btn-lottie-gen" class="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md transition-colors"><i class="fas fa-magic mr-2"></i> Convert to GIF</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-7">
+                                <div class="tool-card p-6 min-h-[500px] flex flex-col">
+                                    <h3 class="font-bold mb-4">Preview <span class="text-xs font-normal text-[var(--text_secondary)] ml-2">(Simulates selected FPS)</span></h3>
+                                    <div id="lottie-preview-container" class="flex-1 bg-dots rounded-lg border border-[var(--border_default)] flex items-center justify-center overflow-hidden relative">
+                                        <div id="lottie-placeholder" class="text-[var(--text_secondary)] text-center"><i class="fas fa-film text-4xl mb-3 opacity-30"></i><p>Upload a file to preview</p></div>
+                                        <!-- Lottie renders here -->
+                                    </div>
+                                    <div id="lottie-progress" class="hidden mt-4">
+                                        <div class="flex justify-between text-xs font-bold mb-1"><span>Rendering GIF...</span><span id="lottie-pct">0%</span></div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-slate-700"><div id="lottie-bar" class="bg-accent h-2.5 rounded-full" style="width: 0%"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- VIDEO TO GIF -->
+                    <section id="tool-videogif" class="tool-section hidden">
+                        <div class="mb-8"><h2 class="text-3xl font-bold mb-2">Video to GIF Maker</h2><p class="text-[var(--text_secondary)]">100% Client-side processing. Trim and crop video directly to GIF.</p></div>
+                        <div class="grid grid-cols-1 gap-8">
+                            <div class="tool-card p-6">
+                                <!-- Upload Area -->
+                                <div id="vg-uploadArea" class="border-2 border-dashed border-[var(--border_default)] rounded-xl p-8 text-center hover:bg-[var(--hover_item)] bg-[var(--bg_input)] transition-colors cursor-pointer relative">
+                                    <input type="file" id="vg-videoInput" accept="video/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                    <i class="fas fa-cloud-upload-alt text-5xl text-[var(--text_secondary)] mb-3 opacity-50"></i>
+                                    <p class="text-lg font-medium text-[var(--text_primary)]">Click or drag a video file here</p>
+                                    <p class="text-sm text-[var(--text_secondary)] mt-1">MP4, WebM, MOV supported</p>
+                                </div>
+
+                                <!-- Editor Area -->
+                                <div id="vg-editorArea" class="hidden mt-6 space-y-8">
+                                    <div class="grid md:grid-cols-2 gap-8">
+                                        <!-- Preview & Cropping -->
+                                        <div class="space-y-4">
+                                            <h2 class="text-lg font-bold flex items-center gap-2"><i class="fas fa-desktop text-accent"></i> Preview & Crop</h2>
+                                            <div class="relative inline-block rounded-lg overflow-hidden bg-black shadow-inner w-full flex items-center justify-center min-h-[200px]">
+                                                <video id="vg-videoPreview" class="max-w-full max-h-[400px]" controls></video>
+                                                <!-- Crop Overlay Box -->
+                                                <div id="vg-cropBox" class="absolute border-2 border-red-500 bg-red-500/10 pointer-events-none transition-all" style="top: 0%; bottom: 0%; left: 0%; right: 0%;"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Settings Controls -->
+                                        <div class="space-y-6">
+                                            <h2 class="text-lg font-bold flex items-center gap-2"><i class="fas fa-sliders-h text-accent"></i> Settings</h2>
+                                            
+                                            <!-- Length / Trim -->
+                                            <div class="space-y-3 bg-[var(--bg_input)] p-4 rounded-lg border border-[var(--border_default)]">
+                                                <label class="block text-sm font-bold text-[var(--text_primary)]">Trim Video (Seconds)</label>
+                                                <div class="flex gap-4">
+                                                    <div class="flex-1">
+                                                        <span class="text-xs font-bold text-[var(--text_secondary)] uppercase tracking-wide">Start: <span id="vg-startVal">0.0</span>s</span>
+                                                        <input type="range" id="vg-startTime" min="0" step="0.1" value="0" class="w-full mt-2">
+                                                    </div>
+                                                    <div class="flex-1">
+                                                        <span class="text-xs font-bold text-[var(--text_secondary)] uppercase tracking-wide">End: <span id="vg-endVal">0.0</span>s</span>
+                                                        <input type="range" id="vg-endTime" min="0" step="0.1" value="0" class="w-full mt-2">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Crop -->
+                                            <div class="space-y-3 bg-[var(--bg_input)] p-4 rounded-lg border border-[var(--border_default)]">
+                                                <label class="block text-sm font-bold text-[var(--text_primary)]">Crop (%)</label>
+                                                <div class="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <span class="text-xs text-[var(--text_secondary)]">Left: <span id="vg-cropLVal">0</span>%</span>
+                                                        <input type="range" id="vg-cropLeft" min="0" max="49" value="0" class="w-full">
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-xs text-[var(--text_secondary)]">Right: <span id="vg-cropRVal">0</span>%</span>
+                                                        <input type="range" id="vg-cropRight" min="0" max="49" value="0" class="w-full">
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-xs text-[var(--text_secondary)]">Top: <span id="vg-cropTVal">0</span>%</span>
+                                                        <input type="range" id="vg-cropTop" min="0" max="49" value="0" class="w-full">
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-xs text-[var(--text_secondary)]">Bottom: <span id="vg-cropBVal">0</span>%</span>
+                                                        <input type="range" id="vg-cropBottom" min="0" max="49" value="0" class="w-full">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Quality & Performance -->
+                                            <div class="space-y-3 bg-[var(--bg_input)] p-4 rounded-lg border border-[var(--border_default)]">
+                                                <label class="block text-sm font-bold text-[var(--text_primary)]">Output Specs</label>
+                                                <div class="space-y-3">
+                                                    <div>
+                                                        <div class="flex justify-between"><span class="text-xs text-[var(--text_secondary)] uppercase font-bold">Framerate</span><span class="text-xs font-bold" id="vg-fpsVal">10</span></div>
+                                                        <input type="range" id="vg-fps" min="5" max="30" value="10" class="w-full mt-1">
+                                                    </div>
+                                                    <div>
+                                                        <div class="flex justify-between"><span class="text-xs text-[var(--text_secondary)] uppercase font-bold">Scale</span><span class="text-xs font-bold"><span id="vg-scaleVal">50%</span> <span id="vg-resVal" class="text-accent font-normal ml-1"></span></span></div>
+                                                        <input type="range" id="vg-scale" min="10" max="100" value="50" class="w-full mt-1">
+                                                    </div>
+                                                    <div>
+                                                        <div class="flex justify-between"><span class="text-xs text-[var(--text_secondary)] uppercase font-bold">Compression (Lower=Slower)</span><span class="text-xs font-bold" id="vg-qualityVal">10</span></div>
+                                                        <input type="range" id="vg-quality" min="1" max="30" value="10" class="w-full mt-1">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <button id="btn-lottie-gen" class="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md transition-colors"><i class="fas fa-magic mr-2"></i> Convert to GIF</button>
+                                    <!-- Actions -->
+                                    <div class="pt-6 border-t border-[var(--border_default)] text-center">
+                                        <button id="vg-generateBtn" class="bg-accent hover:bg-accent-hover text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center gap-2 w-full max-w-sm mx-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                                            <i class="fas fa-magic"></i> Convert to GIF
+                                        </button>
+                                        
+                                        <!-- Progress -->
+                                        <div id="vg-progressContainer" class="hidden mt-6 max-w-md mx-auto">
+                                            <div class="w-full bg-[var(--bg_input)] border border-[var(--border_default)] rounded-full h-2.5 mb-2 overflow-hidden">
+                                                <div id="vg-progressBar" class="bg-accent h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                            </div>
+                                            <p id="vg-progressText" class="text-xs font-bold text-[var(--text_secondary)] uppercase">Processing frames...</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Result Area -->
+                                    <div id="vg-resultArea" class="hidden pt-6 border-t border-[var(--border_default)] flex flex-col items-center gap-4">
+                                        <h2 class="text-xl font-bold text-accent flex items-center gap-2"><i class="fas fa-check-circle"></i> Success!</h2>
+                                        <div class="bg-dots p-4 border border-[var(--border_default)] rounded-xl w-full flex justify-center">
+                                            <img id="vg-resultGif" class="rounded-lg shadow-lg max-w-full max-h-[400px]" />
+                                        </div>
+                                        <a id="vg-downloadBtn" download="converted.gif" class="bg-accent hover:bg-accent-hover text-white font-bold py-3 px-8 rounded-xl shadow transition-colors flex items-center gap-2">
+                                            <i class="fas fa-download"></i> Download GIF
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="lg:col-span-7">
-                            <div class="tool-card p-6 min-h-[500px] flex flex-col">
-                                <h3 class="font-bold mb-4">Preview <span class="text-xs font-normal text-gray-400 ml-2">(Simulates selected FPS)</span></h3>
-                                <div id="lottie-preview-container" class="flex-1 bg-dots rounded-lg border border-default flex items-center justify-center overflow-hidden relative">
-                                    <div id="lottie-placeholder" class="text-[var(--text_secondary)] text-center"><i class="fas fa-film text-4xl mb-3 opacity-30"></i><p>Upload a file to preview</p></div>
-                                    <!-- Lottie renders here -->
+                    </section>
+
+                    <!-- SCALER -->
+                    <section id="tool-scaler" class="tool-section hidden">
+                        <div class="mb-8"><h2 class="text-3xl font-bold mb-2">SVG Icon Scaler</h2><p class="text-[var(--text_secondary)]">Batch generate pixel-perfect PNGs from SVG code.</p></div>
+                        <div class="tool-card p-6 mb-8">
+                            <label class="block text-sm font-bold mb-3 uppercase tracking-wide">Input SVG Code</label>
+                            <textarea id="scaler-input" rows="6" class="w-full p-4 font-mono text-xs bg-input rounded-xl resize-y" placeholder="<svg ...>"></textarea>
+                            <div class="flex flex-wrap gap-4 mt-6 items-end">
+                                <label class="px-5 py-3 border border-default hover:bg-gray-50 dark:hover:bg-slate-800 font-bold rounded-lg cursor-pointer flex items-center h-[46px]">
+                                    <i class="fas fa-file-code mr-2"></i> Load File <input type="file" id="scaler-file" accept=".svg" class="hidden">
+                                </label>
+                                <div class="flex-1 min-w-[120px]">
+                                    <label class="block text-xs font-bold uppercase mb-1">Target Width (px)</label>
+                                    <input type="number" id="scaler-width" value="800" class="w-full p-2.5 h-[46px] font-mono text-sm">
                                 </div>
-                                <div id="lottie-progress" class="hidden mt-4">
-                                    <div class="flex justify-between text-xs font-bold mb-1"><span>Rendering GIF...</span><span id="lottie-pct">0%</span></div>
-                                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700"><div id="lottie-bar" class="bg-accent h-2.5 rounded-full" style="width: 0%"></div></div>
+                                <button id="btn-scaler-gen" class="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg h-[46px]">Generate PNG</button>
+                            </div>
+                        </div>
+                        <div id="scaler-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    </section>
+
+                    <!-- JSON SAVER -->
+                    <section id="tool-json" class="tool-section hidden">
+                        <div class="mb-8"><h2 class="text-3xl font-bold mb-2">JSON File Saver</h2><p class="text-[var(--text_secondary)]">Paste text and download as a JSON file.</p></div>
+                        <div class="tool-card p-6 h-[600px] flex flex-col">
+                            <div class="flex justify-between items-end mb-4">
+                                <label class="block text-sm font-bold uppercase tracking-wide">JSON Content</label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold">Filename:</span>
+                                    <input type="text" id="json-filename" value="data" class="py-1 px-2 text-xs font-mono w-32 text-right">
+                                    <span class="text-xs font-mono">.json</span>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- SCALER -->
-                <section id="tool-scaler" class="tool-section hidden">
-                    <div class="mb-8"><h2 class="text-3xl font-bold mb-2">SVG Icon Scaler</h2><p class="text-[var(--text_secondary)]">Batch generate pixel-perfect PNGs from SVG code.</p></div>
-                    <div class="tool-card p-6 mb-8">
-                        <label class="block text-sm font-bold mb-3 uppercase tracking-wide">Input SVG Code</label>
-                        <textarea id="scaler-input" rows="6" class="w-full p-4 font-mono text-xs bg-input rounded-xl resize-y" placeholder="<svg ...>"></textarea>
-                        <div class="flex flex-wrap gap-4 mt-6 items-end">
-                            <label class="px-5 py-3 border border-default hover:bg-gray-50 dark:hover:bg-slate-800 font-bold rounded-lg cursor-pointer flex items-center h-[46px]">
-                                <i class="fas fa-file-code mr-2"></i> Load File <input type="file" id="scaler-file" accept=".svg" class="hidden">
-                            </label>
-                            <div class="flex-1 min-w-[120px]">
-                                <label class="block text-xs font-bold uppercase mb-1">Target Width (px)</label>
-                                <input type="number" id="scaler-width" value="800" class="w-full p-2.5 h-[46px] font-mono text-sm">
-                            </div>
-                            <button id="btn-scaler-gen" class="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg h-[46px]">Generate PNG</button>
-                        </div>
-                    </div>
-                    <div id="scaler-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-                </section>
-
-                <!-- JSON SAVER -->
-                <section id="tool-json" class="tool-section hidden">
-                    <div class="mb-8"><h2 class="text-3xl font-bold mb-2">JSON File Saver</h2><p class="text-[var(--text_secondary)]">Paste text and download as a JSON file.</p></div>
-                    <div class="tool-card p-6 h-[600px] flex flex-col">
-                        <div class="flex justify-between items-end mb-4">
-                            <label class="block text-sm font-bold uppercase tracking-wide">JSON Content</label>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold">Filename:</span>
-                                <input type="text" id="json-filename" value="data" class="py-1 px-2 text-xs font-mono w-32 text-right">
-                                <span class="text-xs font-mono">.json</span>
+                            <textarea id="json-input" class="flex-1 p-4 font-mono text-xs resize-none bg-input focus:ring-2 focus:ring-accent border border-default rounded-xl mb-6" placeholder='{"key": "value"}'></textarea>
+                            <div class="flex justify-end">
+                                <button id="btn-json-save" class="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md"><i class="fas fa-save mr-2"></i> Save as JSON</button>
                             </div>
                         </div>
-                        <textarea id="json-input" class="flex-1 p-4 font-mono text-xs resize-none bg-input focus:ring-2 focus:ring-accent border border-default rounded-xl mb-6" placeholder='{"key": "value"}'></textarea>
-                        <div class="flex justify-end">
-                            <button id="btn-json-save" class="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md"><i class="fas fa-save mr-2"></i> Save as JSON</button>
-                        </div>
-                    </div>
-                </section>
+                    </section>
 
-                <!-- FORMATTER -->
-                <section id="tool-formatter" class="tool-section hidden">
-                    <div class="mb-8"><h2 class="text-3xl font-bold mb-2">HTML Formatter</h2></div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[600px]">
-                        <div class="tool-card flex flex-col h-full overflow-hidden">
-                            <div class="p-3 border-b border-default bg-gray-50 dark:bg-slate-800 font-bold text-xs uppercase">Input</div>
-                            <textarea id="fmt-input" class="flex-1 p-4 font-mono text-xs resize-none bg-input focus:ring-0 border-none" placeholder="Paste messy HTML..."></textarea>
-                        </div>
-                        <div class="tool-card flex flex-col h-full overflow-hidden">
-                            <div class="p-3 border-b border-default bg-gray-50 dark:bg-slate-800 flex justify-between items-center">
-                                <span class="font-bold text-xs uppercase">Output</span>
-                                <button id="btn-fmt-copy" class="text-accent font-bold text-xs hover:underline"><i class="fas fa-copy"></i> Copy</button>
+                    <!-- FORMATTER -->
+                    <section id="tool-formatter" class="tool-section hidden">
+                        <div class="mb-8"><h2 class="text-3xl font-bold mb-2">HTML Formatter</h2></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[600px]">
+                            <div class="tool-card flex flex-col h-full overflow-hidden">
+                                <div class="p-3 border-b border-default bg-[var(--bg_input)] font-bold text-xs uppercase">Input</div>
+                                <textarea id="fmt-input" class="flex-1 p-4 font-mono text-xs resize-none bg-input focus:ring-0 border-none" placeholder="Paste messy HTML..."></textarea>
                             </div>
-                            <textarea id="fmt-output" readonly class="flex-1 p-4 font-mono text-xs resize-none bg-input focus:ring-0 border-none"></textarea>
+                            <div class="tool-card flex flex-col h-full overflow-hidden">
+                                <div class="p-3 border-b border-default bg-[var(--bg_input)] flex justify-between items-center">
+                                    <span class="font-bold text-xs uppercase">Output</span>
+                                    <button id="btn-fmt-copy" class="text-accent font-bold text-xs hover:underline"><i class="fas fa-copy"></i> Copy</button>
+                                </div>
+                                <textarea id="fmt-output" readonly class="flex-1 p-4 font-mono text-xs resize-none bg-input focus:ring-0 border-none"></textarea>
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <!-- COMPACT VIEW OVERLAY -->
     <div id="compact-ui" class="hidden absolute inset-0 z-50 bg-black flex items-center justify-center p-4">
@@ -421,7 +544,7 @@
             <p class="text-sm text-[var(--text_secondary)] mb-6">Enter a filename for your clipboard image.</p>
             <input type="text" id="filename-input" class="w-full p-4 border border-default bg-input rounded-xl mb-6 focus:ring-2 focus:ring-accent focus:border-accent text-[var(--text_primary)] font-medium" placeholder="clipboard-image">
             <div class="flex justify-end gap-3">
-                <button id="btn-modal-cancel" class="px-5 py-2.5 text-[var(--text_secondary)] hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl font-bold transition-colors">Cancel</button>
+                <button id="btn-modal-cancel" class="px-5 py-2.5 text-[var(--text_secondary)] hover:bg-[var(--hover_item)] rounded-xl font-bold transition-colors">Cancel</button>
                 <button id="btn-modal-confirm" class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold shadow-lg">Download</button>
             </div>
         </div>
@@ -472,6 +595,7 @@
                 resizer: { svg: null, aspect: 1, name: 'image' },
                 compressor: { file: null, url: null },
                 lottie: { json: null, animation: null, name: 'animation', duration: 0 },
+                videoGif: { file: null },
                 clipBlob: null,
                 deferredPrompt: null // For PWA install
             },
@@ -482,12 +606,13 @@
                 this.setupNav();
                 this.setupResizer();
                 this.setupCompressor();
+                this.setupLottie();
+                this.setupVideoGif(); // Initialize the newly added tool
                 this.setupScaler();
                 this.setupFormatter();
                 this.setupJsonSaver();
-                this.setupLottie();
                 this.setupClipboard();
-                this.setupPWA(); // Add PWA setup
+                this.setupPWA();
             },
             
             setupTheme() {
@@ -499,7 +624,6 @@
             },
 
             setupNav() {
-                const container = $('nav-container');
                 const switchTab = (id) => {
                     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
                     document.querySelectorAll('.tool-section').forEach(el => el.classList.add('hidden'));
@@ -530,11 +654,8 @@
                 const installBtn = $('install-button');
                 if (installBtn) {
                     window.addEventListener('beforeinstallprompt', (e) => {
-                        // Prevent Chrome 67 and earlier from automatically showing the prompt
                         e.preventDefault();
-                        // Stash the event so it can be triggered later.
                         this.state.deferredPrompt = e;
-                        // Update UI to notify the user they can add to home screen
                         installBtn.classList.remove('hidden');
                     });
 
@@ -542,7 +663,6 @@
                         if (this.state.deferredPrompt) {
                             this.state.deferredPrompt.prompt();
                             const { outcome } = await this.state.deferredPrompt.userChoice;
-                            console.log(`User response to the install prompt: ${outcome}`);
                             this.state.deferredPrompt = null;
                             installBtn.classList.add('hidden');
                         }
@@ -698,66 +818,6 @@
                 els.sl.addEventListener('input', process);
             },
 
-            setupScaler() {
-                const els = { in: $('scaler-input'), width: $('scaler-width'), btn: $('btn-scaler-gen'), file: $('scaler-file'), res: $('scaler-results') };
-                els.file.addEventListener('change', e => {
-                    const f = e.target.files[0];
-                    if(f) { const r = new FileReader(); r.onload = ev => els.in.value = ev.target.result; r.readAsText(f); }
-                });
-                els.btn.addEventListener('click', async () => {
-                    const svg = els.in.value.trim();
-                    if(!svg) return showToast('Paste SVG code first', true);
-                    const targetW = parseInt(els.width.value) || 800;
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(svg, 'image/svg+xml');
-                    let iw = 32, ih = 32;
-                    if(doc.documentElement.hasAttribute('viewBox')) {
-                        const vb = doc.documentElement.getAttribute('viewBox').split(/[\s,]+/).map(Number);
-                        if(vb.length===4) { iw = vb[2]; ih = vb[3]; }
-                    }
-                    const th = Math.round(targetW / (iw/ih));
-                    const cvs = document.createElement('canvas');
-                    cvs.width = targetW; cvs.height = th;
-                    const img = new Image();
-                    const blob = new Blob([svg], {type: 'image/svg+xml;charset=utf-8'});
-                    const blobUrl = URL.createObjectURL(blob);
-                    img.src = blobUrl;
-                    await new Promise(r => img.onload = r);
-                    cvs.getContext('2d').drawImage(img, 0, 0, targetW, th);
-                    URL.revokeObjectURL(blobUrl);
-                    cvs.toBlob(b => {
-                        const url = URL.createObjectURL(b);
-                        const card = document.createElement('div');
-                        card.className = "tool-card p-4 flex flex-col items-center bg-gray-50 dark:bg-slate-800";
-                        card.innerHTML = `<div class="h-32 w-full flex items-center justify-center bg-dots rounded border border-default mb-3 p-2"><img src="${url}" class="max-h-full"></div><div class="text-xs font-bold mb-3">${targetW} x ${th} px</div><button class="copy-btn-scaler text-xs bg-white dark:bg-slate-700 border border-default rounded-lg text-xs font-bold shadow-sm hover:text-accent w-full py-2">Copy Image</button>`;
-                        card.querySelector('.copy-btn-scaler').addEventListener('click', async () => {
-                             try {
-                                await navigator.clipboard.write([new ClipboardItem({'image/png': b})]);
-                                showToast("Copied to clipboard!");
-                             } catch(e) { showToast("Copy failed.", true); }
-                        });
-                        els.res.prepend(card);
-                    });
-                });
-            },
-
-            setupJsonSaver() {
-                $('btn-json-save').addEventListener('click', () => {
-                    const content = $('json-input').value;
-                    const filename = $('json-filename').value || 'data';
-                    if(!content.trim()) return showToast('Input is empty', true);
-                    
-                    try {
-                        const blob = new Blob([content], { type: 'application/json' });
-                        const a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
-                        a.download = `${filename}.json`;
-                        a.click();
-                        showToast('JSON Saved!');
-                    } catch(e) { showToast('Error saving file', true); }
-                });
-            },
-
             setupLottie() {
                 const els = {
                     up: $('lottie-upload'), ctrls: $('lottie-controls'), prev: $('lottie-preview-container'),
@@ -906,6 +966,210 @@
                 });
             },
 
+            setupVideoGif() {
+                const els = {
+                    input: $('vg-videoInput'), uploadArea: $('vg-uploadArea'), editorArea: $('vg-editorArea'),
+                    preview: $('vg-videoPreview'), cropBox: $('vg-cropBox'),
+                    start: $('vg-startTime'), end: $('vg-endTime'), startVal: $('vg-startVal'), endVal: $('vg-endVal'),
+                    cropT: $('vg-cropTop'), cropB: $('vg-cropBottom'), cropL: $('vg-cropLeft'), cropR: $('vg-cropRight'),
+                    cropTVal: $('vg-cropTVal'), cropBVal: $('vg-cropBVal'), cropLVal: $('vg-cropLVal'), cropRVal: $('vg-cropRVal'),
+                    fps: $('vg-fps'), fpsVal: $('vg-fpsVal'), scale: $('vg-scale'), scaleVal: $('vg-scaleVal'), resVal: $('vg-resVal'),
+                    quality: $('vg-quality'), qualityVal: $('vg-qualityVal'),
+                    genBtn: $('vg-generateBtn'), progCont: $('vg-progressContainer'), progBar: $('vg-progressBar'), progText: $('vg-progressText'),
+                    resArea: $('vg-resultArea'), resGif: $('vg-resultGif'), dlBtn: $('vg-downloadBtn')
+                };
+
+                // Hack to load GIF.js worker securely from CDN without CORS issues
+                const workerBlob = new Blob([`importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');`], { type: 'application/javascript' });
+                const workerUrl = URL.createObjectURL(workerBlob);
+
+                const syncValue = (el, valElId, suffix = '') => {
+                    el.addEventListener('input', () => {
+                        $(valElId).innerText = parseFloat(el.value).toFixed(suffix === 's' ? 1 : 0) + suffix;
+                        updateCropOverlay();
+                    });
+                };
+
+                syncValue(els.start, 'vg-startVal', 's'); syncValue(els.end, 'vg-endVal', 's');
+                syncValue(els.fps, 'vg-fpsVal'); syncValue(els.scale, 'vg-scaleVal', '%'); syncValue(els.quality, 'vg-qualityVal');
+                syncValue(els.cropL, 'vg-cropLVal'); syncValue(els.cropR, 'vg-cropRVal');
+                syncValue(els.cropT, 'vg-cropTVal'); syncValue(els.cropB, 'vg-cropBVal');
+
+                const updateDisplay = () => {
+                    els.start.dispatchEvent(new Event('input')); els.end.dispatchEvent(new Event('input'));
+                    els.fps.dispatchEvent(new Event('input')); els.scale.dispatchEvent(new Event('input'));
+                    els.quality.dispatchEvent(new Event('input'));
+                };
+
+                const updateResolutionDisplay = () => {
+                    if (!els.preview.videoWidth) return;
+                    const cTop = parseInt(els.cropT.value) / 100, cBottom = parseInt(els.cropB.value) / 100;
+                    const cLeft = parseInt(els.cropL.value) / 100, cRight = parseInt(els.cropR.value) / 100;
+                    const scaleVal = parseInt(els.scale.value) / 100;
+
+                    const sW = els.preview.videoWidth * (1 - cLeft - cRight);
+                    const sH = els.preview.videoHeight * (1 - cTop - cBottom);
+                    const dW = Math.max(1, Math.round(sW * scaleVal));
+                    const dH = Math.max(1, Math.round(sH * scaleVal));
+
+                    if (els.resVal) els.resVal.innerText = `(${dW}x${dH}px)`;
+                };
+
+                const updateCropOverlay = () => {
+                    els.cropBox.style.top = `${els.cropT.value}%`; els.cropBox.style.bottom = `${els.cropB.value}%`;
+                    els.cropBox.style.left = `${els.cropL.value}%`; els.cropBox.style.right = `${els.cropR.value}%`;
+                    updateResolutionDisplay();
+                };
+
+                els.scale.addEventListener('input', updateResolutionDisplay);
+
+                els.start.addEventListener('change', () => {
+                    if (parseFloat(els.start.value) >= parseFloat(els.end.value)) els.end.value = parseFloat(els.start.value) + 0.1;
+                    els.preview.currentTime = els.start.value;
+                });
+                els.end.addEventListener('change', () => {
+                    if (parseFloat(els.end.value) <= parseFloat(els.start.value)) els.start.value = parseFloat(els.end.value) - 0.1;
+                });
+
+                els.input.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    this.state.videoGif.file = file;
+                    const url = URL.createObjectURL(file);
+                    els.preview.src = url;
+                    
+                    els.preview.onloadedmetadata = () => {
+                        els.editorArea.classList.remove('hidden');
+                        els.uploadArea.classList.add('hidden');
+                        
+                        els.start.max = els.preview.duration; els.end.max = els.preview.duration;
+                        els.end.value = Math.min(els.preview.duration, 5); // Default 5s
+                        
+                        updateDisplay(); updateResolutionDisplay();
+                    };
+                });
+
+                els.genBtn.addEventListener('click', async () => {
+                    els.genBtn.disabled = true; els.genBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                    els.progCont.classList.remove('hidden'); els.resArea.classList.add('hidden');
+                    
+                    const startT = parseFloat(els.start.value), endT = parseFloat(els.end.value);
+                    const fpsVal = parseInt(els.fps.value), scaleVal = parseInt(els.scale.value) / 100, qualityVal = parseInt(els.quality.value);
+                    const cTop = parseInt(els.cropT.value) / 100, cBottom = parseInt(els.cropB.value) / 100, cLeft = parseInt(els.cropL.value) / 100, cRight = parseInt(els.cropR.value) / 100;
+
+                    const origW = els.preview.videoWidth, origH = els.preview.videoHeight;
+                    const sX = origW * cLeft, sY = origH * cTop, sW = origW * (1 - cLeft - cRight), sH = origH * (1 - cTop - cBottom);
+                    const dW = sW * scaleVal, dH = sH * scaleVal;
+
+                    const canvas = document.createElement('canvas'); canvas.width = dW; canvas.height = dH;
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                    const gif = new GIF({ workers: 2, quality: qualityVal, width: dW, height: dH, workerScript: workerUrl });
+
+                    gif.on('progress', (p) => {
+                        els.progBar.style.width = `${Math.round(p * 100)}%`;
+                        els.progText.innerText = `Encoding GIF: ${Math.round(p * 100)}%`;
+                    });
+
+                    gif.on('finished', (blob) => {
+                        const url = URL.createObjectURL(blob);
+                        els.resGif.src = url;
+                        const originalName = this.state.videoGif.file.name.substring(0, this.state.videoGif.file.name.lastIndexOf('.')) || this.state.videoGif.file.name;
+                        els.dlBtn.download = `${originalName}_gif.gif`;
+                        els.dlBtn.href = url;
+                        
+                        els.resArea.classList.remove('hidden'); els.genBtn.disabled = false;
+                        els.genBtn.innerHTML = '<i class="fas fa-magic"></i> Convert to GIF';
+                        els.progText.innerText = "Done!";
+                        showToast("GIF Created!");
+                    });
+
+                    const frameDelay = 1 / fpsVal;
+                    const totalFrames = Math.floor((endT - startT) / frameDelay);
+                    let currentFrame = 0;
+
+                    els.preview.pause(); els.preview.muted = true;
+
+                    const seekVideo = (time) => new Promise(resolve => {
+                        els.preview.onseeked = resolve; els.preview.currentTime = time;
+                    });
+
+                    for (let t = startT; t <= endT; t += frameDelay) {
+                        els.progText.innerText = `Capturing frame ${currentFrame + 1} of ${totalFrames + 1}...`;
+                        els.progBar.style.width = `${((currentFrame / totalFrames) * 100) / 2}%`; // 50% for capture
+                        
+                        await seekVideo(t);
+                        ctx.clearRect(0, 0, dW, dH);
+                        ctx.drawImage(els.preview, sX, sY, sW, sH, 0, 0, dW, dH);
+                        gif.addFrame(ctx, { copy: true, delay: frameDelay * 1000 });
+                        currentFrame++;
+                    }
+
+                    els.progText.innerText = "Encoding... this might take a minute.";
+                    gif.render();
+                });
+            },
+
+            setupScaler() {
+                const els = { in: $('scaler-input'), width: $('scaler-width'), btn: $('btn-scaler-gen'), file: $('scaler-file'), res: $('scaler-results') };
+                els.file.addEventListener('change', e => {
+                    const f = e.target.files[0];
+                    if(f) { const r = new FileReader(); r.onload = ev => els.in.value = ev.target.result; r.readAsText(f); }
+                });
+                els.btn.addEventListener('click', async () => {
+                    const svg = els.in.value.trim();
+                    if(!svg) return showToast('Paste SVG code first', true);
+                    const targetW = parseInt(els.width.value) || 800;
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(svg, 'image/svg+xml');
+                    let iw = 32, ih = 32;
+                    if(doc.documentElement.hasAttribute('viewBox')) {
+                        const vb = doc.documentElement.getAttribute('viewBox').split(/[\s,]+/).map(Number);
+                        if(vb.length===4) { iw = vb[2]; ih = vb[3]; }
+                    }
+                    const th = Math.round(targetW / (iw/ih));
+                    const cvs = document.createElement('canvas');
+                    cvs.width = targetW; cvs.height = th;
+                    const img = new Image();
+                    const blob = new Blob([svg], {type: 'image/svg+xml;charset=utf-8'});
+                    const blobUrl = URL.createObjectURL(blob);
+                    img.src = blobUrl;
+                    await new Promise(r => img.onload = r);
+                    cvs.getContext('2d').drawImage(img, 0, 0, targetW, th);
+                    URL.revokeObjectURL(blobUrl);
+                    cvs.toBlob(b => {
+                        const url = URL.createObjectURL(b);
+                        const card = document.createElement('div');
+                        card.className = "tool-card p-4 flex flex-col items-center bg-gray-50 dark:bg-slate-800";
+                        card.innerHTML = `<div class="h-32 w-full flex items-center justify-center bg-dots rounded border border-[var(--border_default)] mb-3 p-2"><img src="${url}" class="max-h-full"></div><div class="text-xs font-bold mb-3">${targetW} x ${th} px</div><button class="copy-btn-scaler text-xs bg-[var(--bg_card)] border border-[var(--border_default)] rounded-lg text-xs font-bold shadow-sm hover:text-accent w-full py-2">Copy Image</button>`;
+                        card.querySelector('.copy-btn-scaler').addEventListener('click', async () => {
+                             try {
+                                await navigator.clipboard.write([new ClipboardItem({'image/png': b})]);
+                                showToast("Copied to clipboard!");
+                             } catch(e) { showToast("Copy failed.", true); }
+                        });
+                        els.res.prepend(card);
+                    });
+                });
+            },
+
+            setupJsonSaver() {
+                $('btn-json-save').addEventListener('click', () => {
+                    const content = $('json-input').value;
+                    const filename = $('json-filename').value || 'data';
+                    if(!content.trim()) return showToast('Input is empty', true);
+                    
+                    try {
+                        const blob = new Blob([content], { type: 'application/json' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `${filename}.json`;
+                        a.click();
+                        showToast('JSON Saved!');
+                    } catch(e) { showToast('Error saving file', true); }
+                });
+            },
+
             setupFormatter() {
                 const fmt = (html) => {
                     let formatted = '', pad = 0;
@@ -933,13 +1197,7 @@
                 const confirmBtn = $('btn-modal-confirm');
                 const cancelBtn = $('btn-modal-cancel');
 
-                // Consolidated logic for both button click and shortcuts
                 const handleClipboardAction = async (isInstant = false) => {
-                    // Check for native paste event context (not reliable directly here)
-                    // If triggered via button, try read()
-                    // If triggered via Ctrl+V, we need to rely on the paste listener below
-                    // This function is for manual button triggers or Alt+V attempts (if supported)
-                    
                     try {
                         const items = await navigator.clipboard.read();
                         let found = false;
@@ -952,7 +1210,6 @@
                         }
                         
                         if(found) {
-                            // Re-encode via canvas to ensure valid PNG
                             const img = new Image();
                             img.src = URL.createObjectURL(this.state.clipBlob);
                             await new Promise(r => img.onload = r);
@@ -961,17 +1218,14 @@
                             cvs.getContext('2d').drawImage(img, 0, 0);
                             
                             cvs.toBlob(b => {
-                                this.state.clipBlob = b; // Update state with clean blob
-                                
+                                this.state.clipBlob = b;
                                 if (isInstant) {
-                                    // Skip modal, download immediately with timestamp
                                     const a = document.createElement('a');
                                     a.href = URL.createObjectURL(b);
                                     a.download = `clipboard-${Date.now()}.png`;
                                     a.click();
                                     showToast("Instant Download Started!");
                                 } else {
-                                    // Show naming modal
                                     modal.classList.remove('hidden');
                                     input.focus();
                                 }
@@ -981,12 +1235,10 @@
                         }
                     } catch(e) { 
                         console.error(e);
-                        // Fallback message
                         showToast("Clipboard access denied. Please click the page and press Ctrl+V.", true); 
                     }
                 };
                 
-                // Helper to process blob from paste event
                 const processPasteBlob = async (blob, isInstant = false) => {
                      const img = new Image();
                      img.src = URL.createObjectURL(blob);
@@ -1011,10 +1263,8 @@
                 };
 
                 if (btn) btn.addEventListener('click', () => handleClipboardAction(false));
-
                 if (cancelBtn) cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
 
-                // Define the download function
                 const performDownload = () => {
                     const name = input.value || 'clipboard';
                     const a = document.createElement('a');
@@ -1025,10 +1275,8 @@
                     showToast("Downloaded!");
                 };
 
-                // Bind to button click
                 if (confirmBtn) confirmBtn.addEventListener('click', performDownload);
                 
-                // Allow Enter key to submit within input
                 if (input) {
                     input.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter') {
@@ -1038,46 +1286,32 @@
                     });
                 }
 
-                // Global Shortcuts
                 document.addEventListener('keydown', (e) => {
-                    // Ignore if typing in an input
                     const active = document.activeElement;
                     const isInput = active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
                     if (isInput) return;
 
                     const key = e.key.toLowerCase();
-                    
-                    // Alt+V = Instant Download (Skip Naming) - Try read() first
                     if (e.altKey && key === 'v') {
                         e.preventDefault();
                         handleClipboardAction(true);
                         return;
                     }
-                    
-                    // Ctrl+V handled by paste event below
                 });
                 
-                // Native Paste Listener (Bypasses read() permission issues for Ctrl+V)
                 document.addEventListener('paste', async (e) => {
-                    // If we are in an input, let default paste happen
                     const active = document.activeElement;
                     if (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) return;
-                    
-                    // Don't prevent default here as we want to inspect items, but usually we do to handle custom logic
-                    // Actually, to get items we need to inspect event
                     
                     if (e.clipboardData && e.clipboardData.items) {
                         for (let i = 0; i < e.clipboardData.items.length; i++) {
                             if (e.clipboardData.items[i].type.indexOf('image') !== -1) {
-                                e.preventDefault(); // Only prevent default if we found an image to handle
+                                e.preventDefault(); 
                                 const blob = e.clipboardData.items[i].getAsFile();
-                                // Check if Alt key was held during paste? (Not reliable across browsers/OS)
-                                // We'll assume standard paste behavior (modal) for Ctrl+V
                                 await processPasteBlob(blob, false);
                                 return;
                             }
                         }
-                        // If no image, we don't prevent default, allowing text paste if applicable (though we aren't in input)
                     }
                 });
             }
