@@ -10,11 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Animation & GIF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     
-    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     
     <script>
@@ -60,35 +58,29 @@
             --hover_item: #131314;
         }
 
-        /* Added 'preload' class prevention for transitions */
         .preload * { transition: none !important; }
 
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg_page); color: var(--text_primary); transition: background-color 0.3s, color 0.3s; overflow: hidden; }
         .sidebar { background-color: var(--bg_sidebar); border-right: 1px solid var(--border_default); transition: background-color 0.3s, border-color 0.3s; }
         
-        /* Navigation */
         .nav-item { color: var(--text_secondary); transition: all 0.2s; font-weight: 500; cursor: pointer; user-select: none; }
         .nav-item:hover:not(.active) { background-color: var(--hover_item); color: #34A853; }
         .nav-item.active { color: #34A853; background-color: var(--hover_item); font-weight: 600; border-right: 3px solid #34A853; }
         .nav-item.dragging { opacity: 0.4; border: 2px dashed #34A853; background: var(--bg_input); }
 
-        /* Tools & Cards */
         .tool-card { background-color: var(--bg_card); border: 1px solid var(--border_default); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
         html.dark .custom-scroll::-webkit-scrollbar-thumb { background-color: #475569; }
 
-        /* Inputs */
         input[type="text"], input[type="number"], textarea, select { background-color: var(--bg_input); border: 1px solid var(--border_default); color: var(--text_primary); border-radius: 0.5rem; transition: border 0.2s; }
         input:focus, textarea:focus, select:focus { outline: none; border-color: #34A853; ring: 2px solid #34A853; }
 
-        /* Range Slider */
         input[type=range]::-webkit-slider-runnable-track { background: #e5e7eb; border-radius: 4px; height: 6px; }
         html.dark input[type=range]::-webkit-slider-runnable-track { background: #2f3031; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #34A853; margin-top: -6px; cursor: pointer; box-shadow: 0 0 0 2px var(--bg_card); }
 
-        /* Preview Areas */
         .bg-dots {
             background-color: var(--bg_input);
             background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
@@ -99,7 +91,6 @@
         #svg-display, .image-preview-box { min-height: 240px; border: 2px dashed var(--border_default); display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 0.5rem; position: relative; }
         #svg-display > svg, .image-preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
 
-        /* --- COMPACT MODE LOGIC --- */
         #compact-ui { display: none; }
         
         @media (max-height: 400px) {
@@ -108,7 +99,6 @@
         }
     </style>
 
-    <!-- PRE-RENDER THEME CHECK -->
     <script>
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
@@ -119,7 +109,6 @@
 </head>
 <body class="h-screen w-full preload relative bg-page text-[var(--text_primary)]">
 
-    <!-- REGULAR APP LAYOUT -->
     <div id="app-layout" class="flex h-full w-full">
         <aside class="sidebar w-72 flex-shrink-0 flex flex-col hidden md:flex z-20 h-full">
             <div class="px-6 pt-8 pb-6 flex items-center gap-3">
@@ -133,7 +122,7 @@
             </div>
 
             <div class="px-6 mb-8">
-                <button id="clipboard-download-button" class="w-full bg-accent hover:bg-accent-hover text-white py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 font-bold text-sm group active:scale-95">
+                <button type="button" id="clipboard-download-button" class="w-full bg-accent hover:bg-accent-hover text-white py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 font-bold text-sm group active:scale-95">
                     <i class="fas fa-clipboard text-lg"></i> <span>Clipboard to PNG</span>
                 </button>
                 <div class="mt-3 text-[10px] text-center text-[var(--text_secondary)] font-medium opacity-80 leading-relaxed tracking-wide">
@@ -174,13 +163,12 @@
             </nav>
 
             <div class="p-6 mt-auto space-y-2">
-                <!-- INSTALL BUTTON (Hidden by default, shown by JS) -->
-                <button id="install-button" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left font-medium text-[var(--text_secondary)] hover:bg-[var(--hover_item)] hover:text-accent transition-colors hidden">
+                <button type="button" id="install-button" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left font-medium text-[var(--text_secondary)] hover:bg-[var(--hover_item)] hover:text-accent transition-colors hidden">
                     <i class="fas fa-download w-5 text-center"></i>
                     <span class="text-[14px]">Install App</span>
                 </button>
                 
-                <button id="theme-toggle" class="w-full flex items-center justify-between px-4 py-2.5 border border-default rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-[var(--text_secondary)]">
+                <button type="button" id="theme-toggle" class="w-full flex items-center justify-between px-4 py-2.5 border border-default rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-[var(--text_secondary)]">
                     <div class="flex items-center gap-2">
                         <i class="fas fa-moon" id="theme-icon"></i> <span class="text-sm font-medium">Dark Mode</span>
                     </div>
@@ -195,7 +183,6 @@
             <div class="flex-1 overflow-y-auto p-4 md:p-12 custom-scroll">
                 <div class="max-w-6xl mx-auto">
                     
-                    <!-- RESIZER -->
                     <section id="tool-resizer" class="tool-section hidden">
                         <div class="mb-8"><h2 class="text-3xl font-bold mb-2">SVG Resizer & Converter</h2><p class="text-[var(--text_secondary)]">Precise dimension adjustment and PNG conversion.</p></div>
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -236,15 +223,14 @@
                                         <input type="number" id="r-input" value="0" class="w-20 p-1.5 text-center text-sm font-bold">
                                     </div>
                                     <div class="grid grid-cols-2 gap-4">
-                                        <button id="btn-resizer-copy" class="py-3 rounded-xl font-bold text-sm border border-default hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><i class="far fa-copy mr-2"></i> Copy Image</button>
-                                        <button id="btn-resizer-dl" class="py-3 rounded-xl font-bold text-sm bg-accent text-white hover:bg-accent-hover transition-colors shadow-md"><i class="fas fa-download mr-2"></i> Download PNG</button>
+                                        <button type="button" id="btn-resizer-copy" class="py-3 rounded-xl font-bold text-sm border border-default hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><i class="far fa-copy mr-2"></i> Copy Image</button>
+                                        <button type="button" id="btn-resizer-dl" class="py-3 rounded-xl font-bold text-sm bg-accent text-white hover:bg-accent-hover transition-colors shadow-md"><i class="fas fa-download mr-2"></i> Download PNG</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    <!-- COMPRESSOR -->
                     <section id="tool-compressor" class="tool-section hidden">
                         <div class="mb-8"><h2 class="text-3xl font-bold mb-2">Image Compressor</h2><p class="text-[var(--text_secondary)]">Optimize JPG/PNG size significantly.</p></div>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -263,13 +249,12 @@
                                     <div class="flex justify-between items-center"><label class="font-bold text-sm">Quality</label><span id="comp-quality-val" class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded">75%</span></div>
                                     <input type="range" id="comp-slider" min="1" max="100" value="75" class="w-full">
                                     <div id="comp-stats" class="text-center text-sm p-3 bg-[var(--bg_input)] rounded-lg">Waiting...</div>
-                                    <button id="btn-comp-dl" class="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md">Download Compressed</button>
+                                    <button type="button" id="btn-comp-dl" class="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md">Download Compressed</button>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    <!-- LOTTIE TO GIF -->
                     <section id="tool-lottie" class="tool-section hidden">
                         <div class="mb-8"><h2 class="text-3xl font-bold mb-2">Lottie to GIF Converter</h2><p class="text-[var(--text_secondary)]">Convert JSON animations to animated GIFs.</p></div>
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -295,7 +280,7 @@
                                             <div class="flex justify-between mb-1"><label class="text-xs font-bold uppercase">Background</label></div>
                                             <div class="flex gap-2">
                                                 <input type="color" id="lottie-bg-color" value="#ffffff" class="h-10 w-10 p-0 rounded cursor-pointer border-0">
-                                                <button id="lottie-bg-transparent" class="flex-1 text-xs border border-[var(--border_default)] rounded hover:bg-[var(--hover_item)]">Transparent</button>
+                                                <button type="button" id="lottie-bg-transparent" class="flex-1 text-xs border border-[var(--border_default)] rounded hover:bg-[var(--hover_item)]">Transparent</button>
                                             </div>
                                         </div>
                                         <div>
@@ -319,7 +304,7 @@
                                             </label>
                                         </div>
 
-                                        <button id="btn-lottie-gen" class="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md transition-colors"><i class="fas fa-magic mr-2"></i> Convert to GIF</button>
+                                        <button type="button" id="btn-lottie-gen" class="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md transition-colors"><i class="fas fa-magic mr-2"></i> Convert to GIF</button>
                                     </div>
                                 </div>
                             </div>
@@ -328,7 +313,6 @@
                                     <h3 class="font-bold mb-4">Preview <span class="text-xs font-normal text-[var(--text_secondary)] ml-2">(Simulates selected FPS)</span></h3>
                                     <div id="lottie-preview-container" class="flex-1 bg-dots rounded-lg border border-[var(--border_default)] flex items-center justify-center overflow-hidden relative">
                                         <div id="lottie-placeholder" class="text-[var(--text_secondary)] text-center"><i class="fas fa-film text-4xl mb-3 opacity-30"></i><p>Upload a file to preview</p></div>
-                                        <!-- Lottie renders here -->
                                     </div>
                                     <div id="lottie-progress" class="hidden mt-4">
                                         <div class="flex justify-between text-xs font-bold mb-1"><span>Rendering GIF...</span><span id="lottie-pct">0%</span></div>
@@ -339,37 +323,45 @@
                         </div>
                     </section>
 
-                    <!-- VIDEO TO GIF -->
                     <section id="tool-videogif" class="tool-section hidden">
                         <div class="mb-8"><h2 class="text-3xl font-bold mb-2">Video to GIF Maker</h2><p class="text-[var(--text_secondary)]">100% Client-side processing. Trim and crop video directly to GIF.</p></div>
                         <div class="grid grid-cols-1 gap-8">
                             <div class="tool-card p-6">
-                                <!-- Upload Area -->
-                                <div id="vg-uploadArea" class="border-2 border-dashed border-[var(--border_default)] rounded-xl p-8 text-center hover:bg-[var(--hover_item)] bg-[var(--bg_input)] transition-colors cursor-pointer relative">
-                                    <input type="file" id="vg-videoInput" accept="video/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                    <i class="fas fa-cloud-upload-alt text-5xl text-[var(--text_secondary)] mb-3 opacity-50"></i>
-                                    <p class="text-lg font-medium text-[var(--text_primary)]">Click or drag a video file here</p>
-                                    <p class="text-sm text-[var(--text_secondary)] mt-1">MP4, WebM, MOV supported</p>
+                                <div id="vg-uploadArea" class="border-2 border-dashed border-[var(--border_default)] rounded-xl p-8 text-center bg-[var(--bg_input)] transition-colors relative">
+                                    
+                                    <div class="hover:bg-[var(--hover_item)] p-6 rounded-xl cursor-pointer relative mb-6 transition-colors">
+                                        <input type="file" id="vg-videoInput" accept="video/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                        <i class="fas fa-cloud-upload-alt text-5xl text-[var(--text_secondary)] mb-3 opacity-50"></i>
+                                        <p class="text-lg font-medium text-[var(--text_primary)]">Click or drag a video file here</p>
+                                        <p class="text-sm text-[var(--text_secondary)] mt-1">MP4, WebM, MOV supported</p>
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-4 mb-6">
+                                        <div class="flex-1 border-t border-[var(--border_default)]"></div>
+                                        <span class="text-xs font-bold text-[var(--text_secondary)] uppercase">OR</span>
+                                        <div class="flex-1 border-t border-[var(--border_default)]"></div>
+                                    </div>
+
+                                    <div class="flex gap-2 max-w-md mx-auto relative z-20">
+                                        <input type="url" id="vg-videoUrl" placeholder="Paste video URL (e.g., https://.../video.mp4)" class="flex-1 p-3 border border-default bg-input rounded-xl text-sm focus:ring-2 focus:ring-accent focus:border-accent text-[var(--text_primary)] placeholder-gray-600 dark:placeholder-gray-600">
+                                        <button type="button" id="vg-loadUrlBtn" class="px-6 py-3 bg-[var(--bg_card)] border border-[var(--border_default)] hover:text-accent rounded-xl font-bold transition-colors">Load</button>
+                                    </div>
+                                    <p class="text-[10px] text-[var(--text_secondary)] mt-3">Note: Remote URLs without CORS will be routed through a proxy.</p>
                                 </div>
 
-                                <!-- Editor Area -->
                                 <div id="vg-editorArea" class="hidden mt-6 space-y-8">
                                     <div class="grid md:grid-cols-2 gap-8">
-                                        <!-- Preview & Cropping -->
                                         <div class="space-y-4">
                                             <h2 class="text-lg font-bold flex items-center gap-2"><i class="fas fa-desktop text-accent"></i> Preview & Crop</h2>
                                             <div class="relative inline-block rounded-lg overflow-hidden bg-black shadow-inner w-full flex items-center justify-center min-h-[200px]">
                                                 <video id="vg-videoPreview" class="max-w-full max-h-[400px]" controls></video>
-                                                <!-- Crop Overlay Box -->
                                                 <div id="vg-cropBox" class="absolute border-2 border-red-500 bg-red-500/10 pointer-events-none transition-all" style="top: 0%; bottom: 0%; left: 0%; right: 0%;"></div>
                                             </div>
                                         </div>
 
-                                        <!-- Settings Controls -->
                                         <div class="space-y-6">
                                             <h2 class="text-lg font-bold flex items-center gap-2"><i class="fas fa-sliders-h text-accent"></i> Settings</h2>
                                             
-                                            <!-- Length / Trim -->
                                             <div class="space-y-3 bg-[var(--bg_input)] p-4 rounded-lg border border-[var(--border_default)]">
                                                 <label class="block text-sm font-bold text-[var(--text_primary)]">Trim Video (Seconds)</label>
                                                 <div class="flex gap-4">
@@ -384,7 +376,6 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Crop -->
                                             <div class="space-y-3 bg-[var(--bg_input)] p-4 rounded-lg border border-[var(--border_default)]">
                                                 <label class="block text-sm font-bold text-[var(--text_primary)]">Crop (%)</label>
                                                 <div class="grid grid-cols-2 gap-4">
@@ -407,7 +398,6 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Quality & Performance -->
                                             <div class="space-y-3 bg-[var(--bg_input)] p-4 rounded-lg border border-[var(--border_default)]">
                                                 <label class="block text-sm font-bold text-[var(--text_primary)]">Output Specs</label>
                                                 <div class="space-y-3">
@@ -428,13 +418,11 @@
                                         </div>
                                     </div>
 
-                                    <!-- Actions -->
                                     <div class="pt-6 border-t border-[var(--border_default)] text-center">
-                                        <button id="vg-generateBtn" class="bg-accent hover:bg-accent-hover text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center gap-2 w-full max-w-sm mx-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                                        <button type="button" id="vg-generateBtn" class="bg-accent hover:bg-accent-hover text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center gap-2 w-full max-w-sm mx-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                                             <i class="fas fa-magic"></i> Convert to GIF
                                         </button>
                                         
-                                        <!-- Progress -->
                                         <div id="vg-progressContainer" class="hidden mt-6 max-w-md mx-auto">
                                             <div class="w-full bg-[var(--bg_input)] border border-[var(--border_default)] rounded-full h-2.5 mb-2 overflow-hidden">
                                                 <div id="vg-progressBar" class="bg-accent h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
@@ -443,13 +431,12 @@
                                         </div>
                                     </div>
 
-                                    <!-- Result Area -->
                                     <div id="vg-resultArea" class="hidden pt-6 border-t border-[var(--border_default)] flex flex-col items-center gap-4">
                                         <h2 class="text-xl font-bold text-accent flex items-center gap-2"><i class="fas fa-check-circle"></i> Success!</h2>
                                         <div class="bg-dots p-4 border border-[var(--border_default)] rounded-xl w-full flex justify-center">
                                             <img id="vg-resultGif" class="rounded-lg shadow-lg max-w-full max-h-[400px]" />
                                         </div>
-                                        <a id="vg-downloadBtn" download="converted.gif" class="bg-accent hover:bg-accent-hover text-white font-bold py-3 px-8 rounded-xl shadow transition-colors flex items-center gap-2">
+                                        <a id="vg-downloadBtn" download="converted.gif" class="bg-accent hover:bg-accent-hover text-white font-bold py-3 px-8 rounded-xl shadow transition-colors flex items-center gap-2 cursor-pointer">
                                             <i class="fas fa-download"></i> Download GIF
                                         </a>
                                     </div>
@@ -458,7 +445,6 @@
                         </div>
                     </section>
 
-                    <!-- SCALER -->
                     <section id="tool-scaler" class="tool-section hidden">
                         <div class="mb-8"><h2 class="text-3xl font-bold mb-2">SVG Icon Scaler</h2><p class="text-[var(--text_secondary)]">Batch generate pixel-perfect PNGs from SVG code.</p></div>
                         <div class="tool-card p-6 mb-8">
@@ -472,13 +458,12 @@
                                     <label class="block text-xs font-bold uppercase mb-1">Target Width (px)</label>
                                     <input type="number" id="scaler-width" value="800" class="w-full p-2.5 h-[46px] font-mono text-sm">
                                 </div>
-                                <button id="btn-scaler-gen" class="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg h-[46px]">Generate PNG</button>
+                                <button type="button" id="btn-scaler-gen" class="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg h-[46px]">Generate PNG</button>
                             </div>
                         </div>
                         <div id="scaler-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
                     </section>
 
-                    <!-- JSON SAVER -->
                     <section id="tool-json" class="tool-section hidden">
                         <div class="mb-8"><h2 class="text-3xl font-bold mb-2">JSON File Saver</h2><p class="text-[var(--text_secondary)]">Paste text and download as a JSON file.</p></div>
                         <div class="tool-card p-6 h-[600px] flex flex-col">
@@ -492,12 +477,11 @@
                             </div>
                             <textarea id="json-input" class="flex-1 p-4 font-mono text-xs resize-none bg-input focus:ring-2 focus:ring-accent border border-default rounded-xl mb-6" placeholder='{"key": "value"}'></textarea>
                             <div class="flex justify-end">
-                                <button id="btn-json-save" class="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md"><i class="fas fa-save mr-2"></i> Save as JSON</button>
+                                <button type="button" id="btn-json-save" class="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl shadow-md"><i class="fas fa-save mr-2"></i> Save as JSON</button>
                             </div>
                         </div>
                     </section>
 
-                    <!-- FORMATTER -->
                     <section id="tool-formatter" class="tool-section hidden">
                         <div class="mb-8"><h2 class="text-3xl font-bold mb-2">HTML Formatter</h2></div>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[600px]">
@@ -508,7 +492,7 @@
                             <div class="tool-card flex flex-col h-full overflow-hidden">
                                 <div class="p-3 border-b border-default bg-[var(--bg_input)] flex justify-between items-center">
                                     <span class="font-bold text-xs uppercase">Output</span>
-                                    <button id="btn-fmt-copy" class="text-accent font-bold text-xs hover:underline"><i class="fas fa-copy"></i> Copy</button>
+                                    <button type="button" id="btn-fmt-copy" class="text-accent font-bold text-xs hover:underline"><i class="fas fa-copy"></i> Copy</button>
                                 </div>
                                 <textarea id="fmt-output" readonly class="flex-1 p-4 font-mono text-xs resize-none bg-input focus:ring-0 border-none"></textarea>
                             </div>
@@ -520,7 +504,6 @@
         </main>
     </div>
 
-    <!-- COMPACT VIEW OVERLAY -->
     <div id="compact-ui" class="hidden absolute inset-0 z-50 bg-black flex items-center justify-center p-4">
         <div class="border-4 border-dashed border-[#34A853] rounded-3xl w-full h-full flex flex-col items-center justify-center text-center space-y-4">
              <h1 class="font-bold text-[#34A853]" style="font-size: 8vh;">Clipboard to PNG</h1>
@@ -537,21 +520,19 @@
         <i class="fas fa-check-circle text-accent text-lg"></i> <span id="toast-msg" class="font-medium">Notification</span>
     </div>
 
-    <!-- File Name Modal -->
     <div id="filename-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
         <div class="tool-card p-8 rounded-2xl w-full max-w-md shadow-2xl transform transition-all scale-100">
             <h3 class="text-2xl font-bold mb-2 text-[var(--text_primary)]">Save Image</h3>
             <p class="text-sm text-[var(--text_secondary)] mb-6">Enter a filename for your clipboard image.</p>
             <input type="text" id="filename-input" class="w-full p-4 border border-default bg-input rounded-xl mb-6 focus:ring-2 focus:ring-accent focus:border-accent text-[var(--text_primary)] font-medium" placeholder="clipboard-image">
             <div class="flex justify-end gap-3">
-                <button id="btn-modal-cancel" class="px-5 py-2.5 text-[var(--text_secondary)] hover:bg-[var(--hover_item)] rounded-xl font-bold transition-colors">Cancel</button>
-                <button id="btn-modal-confirm" class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold shadow-lg">Download</button>
+                <button type="button" id="btn-modal-cancel" class="px-5 py-2.5 text-[var(--text_secondary)] hover:bg-[var(--hover_item)] rounded-xl font-bold transition-colors">Cancel</button>
+                <button type="button" id="btn-modal-confirm" class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold shadow-lg">Download</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- UTILITIES ---
         const $ = (id) => document.getElementById(id);
         const debounce = (func, wait) => {
             let timeout;
@@ -588,7 +569,6 @@
             i.addEventListener('input', () => { r.value = i.value; callback(); });
         };
 
-        // --- APP LOGIC ---
         const App = {
             state: {
                 activeTab: 'resizer',
@@ -597,7 +577,7 @@
                 lottie: { json: null, animation: null, name: 'animation', duration: 0 },
                 videoGif: { file: null },
                 clipBlob: null,
-                deferredPrompt: null // For PWA install
+                deferredPrompt: null
             },
 
             init() {
@@ -607,7 +587,7 @@
                 this.setupResizer();
                 this.setupCompressor();
                 this.setupLottie();
-                this.setupVideoGif(); // Initialize the newly added tool
+                this.setupVideoGif();
                 this.setupScaler();
                 this.setupFormatter();
                 this.setupJsonSaver();
@@ -641,16 +621,12 @@
             },
             
             setupPWA() {
-                // Register Service Worker
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.register('sw.js').then(reg => {
-                        console.log('Service Worker Registered');
                     }).catch(err => {
-                        console.log('Service Worker Failed', err);
                     });
                 }
 
-                // Install Button Logic
                 const installBtn = $('install-button');
                 if (installBtn) {
                     window.addEventListener('beforeinstallprompt', (e) => {
@@ -849,21 +825,28 @@
                 };
 
                 const startPreviewLoop = () => {
-                    if(previewInterval) clearInterval(previewInterval);
+                    if(previewInterval) cancelAnimationFrame(previewInterval);
                     if(!this.state.lottie.animation) return;
 
                     const fps = parseInt(els.fps.value);
                     const anim = this.state.lottie.animation;
                     const totalFrames = anim.totalFrames;
                     let currentFrame = 0;
+                    let lastTime = performance.now();
                     anim.stop();
-                    previewInterval = setInterval(() => {
-                        currentFrame += 1;
-                        const time = currentFrame / fps;
-                        if(time >= anim.getDuration(false)) currentFrame = 0;
-                        const lottieFrame = (currentFrame / (anim.getDuration(false) * fps)) * totalFrames;
-                        anim.goToAndStop(lottieFrame, true); 
-                    }, 1000/fps);
+                    
+                    const loop = (time) => {
+                        const delta = time - lastTime;
+                        if(delta >= 1000/fps) {
+                            currentFrame += 1;
+                            if(currentFrame / fps >= anim.getDuration(false)) currentFrame = 0;
+                            const lottieFrame = (currentFrame / (anim.getDuration(false) * fps)) * totalFrames;
+                            anim.goToAndStop(lottieFrame, true);
+                            lastTime = time - (delta % (1000/fps));
+                        }
+                        previewInterval = requestAnimationFrame(loop);
+                    };
+                    previewInterval = requestAnimationFrame(loop);
                 };
 
                 els.bgCol.addEventListener('input', e => { bgColor = e.target.value; updatePreviewBg(); });
@@ -960,7 +943,7 @@
                         });
                         gif.render();
                     } catch(e) {
-                        console.error(e); showToast('Generation Failed', true);
+                        showToast('Generation Failed', true);
                         els.btn.disabled = false; els.btn.innerHTML = '<i class="fas fa-magic mr-2"></i> Convert to GIF';
                     }
                 });
@@ -968,7 +951,8 @@
 
             setupVideoGif() {
                 const els = {
-                    input: $('vg-videoInput'), uploadArea: $('vg-uploadArea'), editorArea: $('vg-editorArea'),
+                    input: $('vg-videoInput'), urlInput: $('vg-videoUrl'), urlBtn: $('vg-loadUrlBtn'), 
+                    uploadArea: $('vg-uploadArea'), editorArea: $('vg-editorArea'),
                     preview: $('vg-videoPreview'), cropBox: $('vg-cropBox'),
                     start: $('vg-startTime'), end: $('vg-endTime'), startVal: $('vg-startVal'), endVal: $('vg-endVal'),
                     cropT: $('vg-cropTop'), cropB: $('vg-cropBottom'), cropL: $('vg-cropLeft'), cropR: $('vg-cropRight'),
@@ -979,7 +963,6 @@
                     resArea: $('vg-resultArea'), resGif: $('vg-resultGif'), dlBtn: $('vg-downloadBtn')
                 };
 
-                // Hack to load GIF.js worker securely from CDN without CORS issues
                 const workerBlob = new Blob([`importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');`], { type: 'application/javascript' });
                 const workerUrl = URL.createObjectURL(workerBlob);
 
@@ -1031,22 +1014,68 @@
                     if (parseFloat(els.end.value) <= parseFloat(els.start.value)) els.start.value = parseFloat(els.end.value) - 0.1;
                 });
 
+                const handleVideoLoaded = () => {
+                    els.editorArea.classList.remove('hidden');
+                    els.uploadArea.classList.add('hidden');
+                    
+                    els.start.max = els.preview.duration; els.end.max = els.preview.duration;
+                    els.end.value = Math.min(els.preview.duration, 5); 
+                    
+                    updateDisplay(); updateResolutionDisplay();
+                };
+
+                els.preview.onloadedmetadata = handleVideoLoaded;
+
                 els.input.addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
-                    this.state.videoGif.file = file;
-                    const url = URL.createObjectURL(file);
-                    els.preview.src = url;
+                    this.state.videoGif.fileName = file.name;
+                    els.preview.removeAttribute('crossorigin');
+                    els.preview.src = URL.createObjectURL(file);
+                });
+
+                els.urlBtn.addEventListener('click', () => {
+                    const url = els.urlInput.value.trim();
+                    if (!url) return showToast('Please enter a video URL', true);
                     
-                    els.preview.onloadedmetadata = () => {
-                        els.editorArea.classList.remove('hidden');
-                        els.uploadArea.classList.add('hidden');
+                    try {
+                        const path = new URL(url).pathname;
+                        this.state.videoGif.fileName = path.split('/').pop() || 'remote_video.mp4';
+                    } catch(e) { this.state.videoGif.fileName = 'remote_video.mp4'; }
+
+                    els.urlBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    els.urlBtn.disabled = true;
+
+                    els.preview.crossOrigin = "anonymous";
+                    
+                    const loadVideo = (src, isFallback = false) => {
+                        const onError = () => {
+                            els.preview.removeEventListener('error', onError);
+                            els.preview.removeEventListener('loadeddata', onLoadedData);
+                            
+                            if (!isFallback) {
+                                showToast('CORS blocked. Trying proxy...', false);
+                                loadVideo('https://corsproxy.io/?' + encodeURIComponent(url), true);
+                            } else {
+                                els.urlBtn.innerHTML = 'Load';
+                                els.urlBtn.disabled = false;
+                                showToast('Failed to load video even with proxy.', true);
+                            }
+                        };
                         
-                        els.start.max = els.preview.duration; els.end.max = els.preview.duration;
-                        els.end.value = Math.min(els.preview.duration, 5); // Default 5s
-                        
-                        updateDisplay(); updateResolutionDisplay();
+                        const onLoadedData = () => {
+                            els.urlBtn.innerHTML = 'Load';
+                            els.urlBtn.disabled = false;
+                            els.preview.removeEventListener('loadeddata', onLoadedData);
+                            els.preview.removeEventListener('error', onError);
+                        };
+
+                        els.preview.addEventListener('error', onError);
+                        els.preview.addEventListener('loadeddata', onLoadedData);
+                        els.preview.src = src;
                     };
+
+                    loadVideo(url);
                 });
 
                 els.genBtn.addEventListener('click', async () => {
@@ -1074,7 +1103,7 @@
                     gif.on('finished', (blob) => {
                         const url = URL.createObjectURL(blob);
                         els.resGif.src = url;
-                        const originalName = this.state.videoGif.file.name.substring(0, this.state.videoGif.file.name.lastIndexOf('.')) || this.state.videoGif.file.name;
+                        const originalName = this.state.videoGif.fileName.substring(0, this.state.videoGif.fileName.lastIndexOf('.')) || this.state.videoGif.fileName;
                         els.dlBtn.download = `${originalName}_gif.gif`;
                         els.dlBtn.href = url;
                         
@@ -1096,7 +1125,7 @@
 
                     for (let t = startT; t <= endT; t += frameDelay) {
                         els.progText.innerText = `Capturing frame ${currentFrame + 1} of ${totalFrames + 1}...`;
-                        els.progBar.style.width = `${((currentFrame / totalFrames) * 100) / 2}%`; // 50% for capture
+                        els.progBar.style.width = `${((currentFrame / totalFrames) * 100) / 2}%`;
                         
                         await seekVideo(t);
                         ctx.clearRect(0, 0, dW, dH);
@@ -1141,7 +1170,7 @@
                         const url = URL.createObjectURL(b);
                         const card = document.createElement('div');
                         card.className = "tool-card p-4 flex flex-col items-center bg-gray-50 dark:bg-slate-800";
-                        card.innerHTML = `<div class="h-32 w-full flex items-center justify-center bg-dots rounded border border-[var(--border_default)] mb-3 p-2"><img src="${url}" class="max-h-full"></div><div class="text-xs font-bold mb-3">${targetW} x ${th} px</div><button class="copy-btn-scaler text-xs bg-[var(--bg_card)] border border-[var(--border_default)] rounded-lg text-xs font-bold shadow-sm hover:text-accent w-full py-2">Copy Image</button>`;
+                        card.innerHTML = `<div class="h-32 w-full flex items-center justify-center bg-dots rounded border border-[var(--border_default)] mb-3 p-2"><img src="${url}" class="max-h-full"></div><div class="text-xs font-bold mb-3">${targetW} x ${th} px</div><button type="button" class="copy-btn-scaler text-xs bg-[var(--bg_card)] border border-[var(--border_default)] rounded-lg text-xs font-bold shadow-sm hover:text-accent w-full py-2">Copy Image</button>`;
                         card.querySelector('.copy-btn-scaler').addEventListener('click', async () => {
                              try {
                                 await navigator.clipboard.write([new ClipboardItem({'image/png': b})]);
@@ -1234,7 +1263,6 @@
                             showToast("No PNG in clipboard", true);
                         }
                     } catch(e) { 
-                        console.error(e);
                         showToast("Clipboard access denied. Please click the page and press Ctrl+V.", true); 
                     }
                 };
@@ -1317,7 +1345,6 @@
             }
         };
 
-        // Initialize App
         document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
