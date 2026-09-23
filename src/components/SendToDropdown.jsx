@@ -41,11 +41,13 @@ export default function SendToDropdown({
   const handleAction = async (target) => {
     setIsOpen(false);
 
+    const resolvedImageUrl = typeof imageUrl === 'function' ? imageUrl() : imageUrl;
+
     // Resolve an image file if needed
     let activeImageFile = file;
-    if (!activeImageFile && imageUrl) {
+    if (!activeImageFile && resolvedImageUrl) {
       try {
-        const resp = await fetch(imageUrl);
+        const resp = await fetch(resolvedImageUrl);
         const blob = await resp.blob();
         activeImageFile = new File([blob], `exported-image-${Date.now()}.png`, { type: 'image/png' });
       } catch (e) {
@@ -54,7 +56,7 @@ export default function SendToDropdown({
     }
 
     if (target === 'image-editor') {
-      navigate('/image-tools', { state: { imageFile: activeImageFile, imageUrl: imageUrl || (activeImageFile ? URL.createObjectURL(activeImageFile) : '') } });
+      navigate('/image-tools', { state: { imageFile: activeImageFile, imageUrl: resolvedImageUrl || (activeImageFile ? URL.createObjectURL(activeImageFile) : '') } });
     } else if (target === 'bg-remover') {
       if (activeImageFile) {
         addSlot('bg-remove', { id: crypto.randomUUID(), imageFile: activeImageFile, previewUrl: URL.createObjectURL(activeImageFile) });

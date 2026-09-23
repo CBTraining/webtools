@@ -1,19 +1,7 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Bars3Icon } from '@heroicons/react/24/solid';
 import Sidebar from './components/Sidebar';
-import ImageTools from './pages/ImageTools';
-import BackgroundRemover from './pages/BackgroundRemover';
-import VideoCompressor from './pages/VideoCompressor';
-import VideoToGif from './pages/VideoToGif';
-import LottieToGif from './pages/LottieToGif';
-import SvgConverter from './pages/SvgConverter';
-import JsonSaver from './pages/JsonSaver';
-import ColorPicker from './pages/ColorPicker';
-import QrGenerator from './pages/QrGenerator';
-import ImageUpscaler from './pages/ImageUpscaler';
-import TimezoneConverter from './pages/TimezoneConverter';
-import HtmlPreview from './pages/HtmlPreview';
 import BackgroundDots from './components/BackgroundDots';
 import RightPanel from './components/RightPanel/RightPanel';
 import { ProcessingProvider } from './contexts/ProcessingContext';
@@ -22,237 +10,30 @@ import ClockModeOverlay from './components/ClockModeOverlay';
 import DiagnosticsOverlay from './components/DiagnosticsOverlay';
 import ErrorBoundary from './components/ErrorBoundary';
 import DragDropOverlay from './components/DragDropOverlay';
-import { isVideoFile, compressImageUnder20MB } from './utils/fileTypes';
+import RouteLoading from './components/RouteLoading';
+import { isVideoFile, isImageFile, compressImageUnder20MB } from './utils/fileTypes';
+import { isGifBlob, processHtmlPaste } from './utils/clipboardExtract';
 
-import ContentExtractor from './pages/ContentExtractor';
-import ShapeGenerator from './pages/ShapeGenerator';
-import ComponentGenerator from './pages/ComponentGenerator';
-import VideoFrameExtractor from './pages/VideoFrameExtractor';
-import CollageMaker from './pages/CollageMaker';
-import AssetExtractor from './pages/AssetExtractor';
-
-import { NavLink } from 'react-router-dom';
-import {
-  PhotoIcon,
-  SparklesIcon,
-  DocumentArrowDownIcon,
-  PaintBrushIcon,
-  RectangleGroupIcon,
-  CommandLineIcon,
-  FilmIcon,
-  GifIcon,
-  ScissorsIcon,
-  GlobeAltIcon,
-  QrCodeIcon,
-  CodeBracketSquareIcon,
-  ClockIcon,
-  WindowIcon,
-  CubeIcon,
-  Square3Stack3DIcon,
-  ArrowsPointingInIcon
-} from '@heroicons/react/24/outline';
-
-const FEATURE_CATEGORIES = [
-  {
-    title: 'Image & Graphic Tools',
-    items: [
-      {
-        to: '/image-tools',
-        icon: PhotoIcon,
-        title: 'Image Editor',
-        desc: 'Gaussian and Radial Zoom blur, lighting, contrast, saturation, hue tint, rotation, and corner rounding.'
-      },
-      {
-        to: '/content-extractor',
-        icon: DocumentArrowDownIcon,
-        title: 'Content Extractor',
-        desc: 'Extract all embedded GIFs, images, videos, and audio from PPTX, PDF, DOCX, XLSX, and ZIP archives.'
-      },
-      {
-        to: '/bg-remover',
-        icon: SparklesIcon,
-        title: 'Background Remover',
-        desc: 'On-device AI cutout with sub-pixel edge refinement, anti-halo de-fringe, and studio backdrops.'
-      },
-      {
-        to: '/image-upscaler',
-        icon: SparklesIcon,
-        title: 'AI Image Upscaler',
-        desc: 'Enhance and upscale photos by 2x or 4x locally using neural super-resolution networks.'
-      },
-      {
-        to: '/collage-maker',
-        icon: Square3Stack3DIcon,
-        title: 'Photo Collage Maker',
-        desc: 'Combine multiple images into customizable grid and masonry photo layouts.'
-      },
-      {
-        to: '/svg-converter',
-        icon: CommandLineIcon,
-        title: 'SVG Converter',
-        desc: 'Scale vectors to any resolution without loss, apply color overrides, and export PNGs.'
-      },
-      {
-        to: '/color-picker',
-        icon: PaintBrushIcon,
-        title: 'Color Picker',
-        desc: 'Extract color palettes and sample hex, rgb, hsl, and cmyk values.'
-      },
-      {
-        to: '/shape-generator',
-        icon: RectangleGroupIcon,
-        title: 'Shape Generator',
-        desc: 'Generate custom CSS and SVG geometric shapes, organic blobs, and decorative waves.'
-      }
-    ]
-  },
-  {
-    title: 'Video & Animation',
-    items: [
-      {
-        to: '/video-compressor',
-        icon: FilmIcon,
-        title: 'Video Compressor',
-        desc: 'Client-side FFmpeg compression to shrink video file size while maintaining visual clarity.'
-      },
-      {
-        to: '/video-to-gif',
-        icon: GifIcon,
-        title: 'Video to GIF',
-        desc: 'Convert video clips into smooth, optimized animated GIFs with custom FPS and sizing.'
-      },
-      {
-        to: '/video-frame-extractor',
-        icon: FilmIcon,
-        title: 'Video Frame Extractor',
-        desc: 'Capture full-resolution still frames from uploaded video files or direct video URLs.'
-      },
-      {
-        to: '/lottie-to-gif',
-        icon: ScissorsIcon,
-        title: 'Lottie to GIF',
-        desc: 'Render Lottie JSON animation files into lightweight, looping animated GIFs.'
-      }
-    ]
-  },
-  {
-    title: 'Web & Developer Utilities',
-    items: [
-      {
-        to: '/asset-extractor',
-        icon: GlobeAltIcon,
-        title: 'Website Asset Extractor',
-        desc: 'Scrape and extract SVGs, images, logos, and media from any live web page URL.'
-      },
-      {
-        to: '/qr-generator',
-        icon: QrCodeIcon,
-        title: 'QR Code Generator',
-        desc: 'Create custom branded QR codes with center logos, custom dot styles, and color gradients.'
-      },
-      {
-        to: '/json-saver',
-        icon: CodeBracketSquareIcon,
-        title: 'JSON Formatter & Saver',
-        desc: 'Format, validate, and inspect JSON documents with syntax highlighting.'
-      },
-      {
-        to: '/timezone-converter',
-        icon: ClockIcon,
-        title: 'Timezone Converter',
-        desc: 'Compare and convert multiple time zones across global locations in real time.'
-      },
-      {
-        to: '/html-preview',
-        icon: WindowIcon,
-        title: 'HTML Live Preview',
-        desc: 'Sandboxed code playground for HTML, CSS, and JS with instant split-pane preview.'
-      },
-      {
-        to: '/component-generator',
-        icon: CodeBracketSquareIcon,
-        title: 'Component Generator',
-        desc: 'Interactive UI builder generating clean React and Tailwind component code.'
-      }
-    ]
-  }
-];
-
-const Home = () => (
-  <div className="animate-fade-in" style={{ paddingBottom: '2rem' }}>
-    {/* Draggable region for Window Controls Overlay */}
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0,
-      height: 'env(titlebar-area-height, 30px)',
-      WebkitAppRegion: 'drag',
-      zIndex: 999
-    }} />
-    
-    <div className="page-header" style={{ marginBottom: '0.5rem', borderBottom: 'none', paddingBottom: '0', paddingTop: 'env(titlebar-area-height, 0px)' }}>
-      <h1>Welcome to WebTools</h1>
-    </div>
-    <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border-color)' }}>
-      A suite of fast, offline-capable, private client-side utilities. No servers, no tracking, 100% in-browser.
-    </div>
-
-    {/* Feature Sections */}
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-      {FEATURE_CATEGORIES.map((cat, idx) => (
-        <div key={idx}>
-          <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {cat.title}
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
-            {cat.items.map((feat) => {
-              const Icon = feat.icon;
-              return (
-                <NavLink
-                  key={feat.to}
-                  to={feat.to}
-                  className="glass-panel hover-glow"
-                  style={{
-                    padding: '1.25rem',
-                    textDecoration: 'none',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    gap: '0.75rem',
-                    borderRadius: 'var(--border-radius-sm)',
-                    transition: 'transform 0.2s ease, border-color 0.2s ease',
-                    cursor: 'pointer',
-                    border: '1px solid var(--border-color)'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '8px',
-                      background: 'var(--bg-tertiary)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <Icon style={{ width: 22, height: 22, color: 'var(--accent-color)' }} />
-                    </div>
-                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
-                      {feat.title}
-                    </h3>
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
-                    {feat.desc}
-                  </p>
-                </NavLink>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+// Lazy-loaded routes for code splitting and instant initial page load
+const Home = lazy(() => import('./pages/Home'));
+const ImageTools = lazy(() => import('./pages/ImageTools'));
+const BackgroundRemover = lazy(() => import('./pages/BackgroundRemover'));
+const VideoCompressor = lazy(() => import('./pages/VideoCompressor'));
+const VideoToGif = lazy(() => import('./pages/VideoToGif'));
+const LottieToGif = lazy(() => import('./pages/LottieToGif'));
+const SvgConverter = lazy(() => import('./pages/SvgConverter'));
+const JsonSaver = lazy(() => import('./pages/JsonSaver'));
+const ColorPicker = lazy(() => import('./pages/ColorPicker'));
+const QrGenerator = lazy(() => import('./pages/QrGenerator'));
+const ImageUpscaler = lazy(() => import('./pages/ImageUpscaler'));
+const ContentExtractor = lazy(() => import('./pages/ContentExtractor'));
+const TimezoneConverter = lazy(() => import('./pages/TimezoneConverter'));
+const HtmlPreview = lazy(() => import('./pages/HtmlPreview'));
+const ShapeGenerator = lazy(() => import('./pages/ShapeGenerator'));
+const ComponentGenerator = lazy(() => import('./pages/ComponentGenerator'));
+const VideoFrameExtractor = lazy(() => import('./pages/VideoFrameExtractor'));
+const CollageMaker = lazy(() => import('./pages/CollageMaker'));
+const AssetExtractor = lazy(() => import('./pages/AssetExtractor'));
 
 function MainContentWrapper({ children }) {
   const location = useLocation();
@@ -359,326 +140,275 @@ function App() {
     return () => window.removeEventListener('dblclick', handleDoubleClick);
   }, []);
 
-  // Check magic bytes for GIF (GIF87a or GIF89a)
-  const isGifBlob = async (blob) => {
-    if (!blob) return false;
-    if (blob.type === 'image/gif') return true;
-    if (blob.size >= 6) {
-      try {
-        const buffer = await blob.slice(0, 6).arrayBuffer();
-        const header = new TextDecoder().decode(buffer);
-        if (header.startsWith('GIF8')) return true;
-      } catch (e) {}
-    }
-    return false;
+  const convertBlobToPng = (blob) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob((pngBlob) => {
+            if (pngBlob) resolve(pngBlob);
+            else resolve(blob);
+          }, 'image/png');
+        } catch (e) {
+          resolve(blob);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(blob);
+      };
+      img.src = url;
+    });
   };
 
   const processImageBlob = useCallback(async (blob, defaultName = 'clipboard_image') => {
-    const isGif = await isGifBlob(blob);
-    if (isGif) {
-      const gifBlob = blob.type === 'image/gif' ? blob : new Blob([blob], { type: 'image/gif' });
-      setPendingBlob(gifBlob);
-      setBlobType('gif');
-      const url = URL.createObjectURL(gifBlob);
-      setPreviewUrl(url);
-      const cleanName = defaultName.replace(/\.(png|gif|jpe?g|webp)$/i, '');
-      setFilename(`${cleanName}.gif`);
-      setShowModal(true);
-      return;
+    if (!blob) return;
+
+    let isGif = false;
+    try {
+      isGif = await isGifBlob(blob);
+    } catch (e) {
+      console.warn("GIF check failed:", e);
     }
 
-    // Otherwise convert static image to clean PNG
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      
-      canvas.toBlob((pngBlob) => {
-        if (!pngBlob) return;
-        setPendingBlob(pngBlob);
-        setBlobType('png');
-        const url = URL.createObjectURL(pngBlob);
-        setPreviewUrl(url);
-        const cleanName = defaultName.replace(/\.(png|gif|jpe?g|webp)$/i, '');
-        setFilename(`${cleanName}.png`);
-        setShowModal(true);
-      }, 'image/png');
-      URL.revokeObjectURL(img.src);
-    };
-    img.src = URL.createObjectURL(blob);
+    const cleanName = defaultName ? defaultName.replace(/\.(png|gif|jpe?g|webp|bmp|svg)$/i, '') : 'clipboard_image';
+    const targetType = isGif ? 'gif' : 'png';
+    const preview = URL.createObjectURL(blob);
+
+    setPendingBlob(blob);
+    setBlobType(targetType);
+    setPreviewUrl(preview);
+    setFilename(`${cleanName}.${targetType}`);
+    setShowModal(true);
   }, []);
 
   // Global Clipboard Listener
   useEffect(() => {
     const handlePaste = async (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      // Don't intercept paste when typing in inputs/textareas/contenteditable
+      if (
+        e.target.tagName === 'INPUT' || 
+        e.target.tagName === 'TEXTAREA' || 
+        e.target.isContentEditable ||
+        e.target.closest('input') ||
+        e.target.closest('textarea') ||
+        e.target.closest('[contenteditable="true"]')
+      ) {
+        return;
+      }
 
-      const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
-      let handled = false;
-      let availableTypes = [];
+      const clipboardData = e.clipboardData || e.originalEvent?.clipboardData;
+      if (!clipboardData) return;
 
-      if (items) {
-        for (let item of items) {
-          availableTypes.push(item.type);
-        }
-
-        // Prioritize text/html from Google Slides / Docs / Web to preserve raw GIF animation & high-res assets
-        const htmlItem = Array.from(items).find(i => i.type === 'text/html');
-        if (htmlItem) {
-          e.preventDefault();
-          htmlItem.getAsString(async (html) => {
-            const res = await processHtmlPaste(html);
-            if (!res.success) {
-              // Fallback to native image item if html extraction failed
-              const imgItem = Array.from(items).find(i => i.type.startsWith('image/'));
-              if (imgItem) {
-                const blob = imgItem.getAsFile();
-                if (blob) processImageBlob(blob);
-              } else {
-                setGlobalToast(`Ext: ${res.error} Len: ${html.length}`);
-                window.dispatchEvent(new Event('paste-error'));
-              }
-            }
-          });
-          return;
-        }
-
-        // Check image items directly
-        for (let item of items) {
-          if (item.type.indexOf('image') === 0) {
-            const blob = item.getAsFile();
-            if (blob) {
-              e.preventDefault();
-              processImageBlob(blob);
-              handled = true;
-              break;
-            }
+      // 1. Direct files check (handles files copied from Windows Explorer / Desktop or dropped)
+      if (clipboardData.files && clipboardData.files.length > 0) {
+        for (let i = 0; i < clipboardData.files.length; i++) {
+          const file = clipboardData.files[i];
+          if (isImageFile(file) || file.type.startsWith('image/')) {
+            e.preventDefault();
+            processImageBlob(file, file.name);
+            return;
           }
         }
       }
 
-      if (!handled) {
-        setGlobalToast("Ctrl+V Diagnostic: Types seen: " + availableTypes.join(', '));
-        window.dispatchEvent(new Event('paste-error'));
+      // 2. Synchronously extract direct image item & html/text items
+      const items = clipboardData.items;
+      let directImageFile = null;
+      let htmlItem = null;
+      let textItem = null;
+
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.startsWith('image/')) {
+            // Must extract synchronously before any async tick clears clipboardData!
+            directImageFile = item.getAsFile();
+          } else if (item.type === 'text/html') {
+            htmlItem = item;
+          } else if (item.type === 'text/plain') {
+            textItem = item;
+          }
+        }
       }
+
+      // 3. If direct image is present
+      if (directImageFile) {
+        e.preventDefault();
+
+        // If Google Slides HTML is also present, try to extract original GIF/asset from Google CDN
+        if (htmlItem) {
+          htmlItem.getAsString(async (html) => {
+            if (html && (html.includes('googleusercontent.com') || html.includes('docs.google.com'))) {
+              const res = await processHtmlPaste(html, processImageBlob);
+              if (res?.success) return;
+            }
+            // For standard web images or if Google extraction failed, use our direct synchronous image blob
+            processImageBlob(directImageFile);
+          });
+          return;
+        }
+
+        // Screenshots, Snipping tool, or native images without HTML
+        processImageBlob(directImageFile);
+        return;
+      }
+
+      // 4. No direct image blob, but HTML item exists (e.g. copied from web without binary image)
+      if (htmlItem) {
+        e.preventDefault();
+        htmlItem.getAsString(async (html) => {
+          const res = await processHtmlPaste(html, processImageBlob);
+          if (!res?.success) {
+            setGlobalToast("No image could be extracted from copied content.");
+            window.dispatchEvent(new Event('paste-error'));
+          }
+        });
+        return;
+      }
+
+      // 5. Plain text fallback: data URI or direct image URL
+      if (textItem) {
+        textItem.getAsString(async (text) => {
+          if (text) {
+            const trimmed = text.trim();
+            if (trimmed.startsWith('data:image/')) {
+              e.preventDefault();
+              try {
+                const resp = await fetch(trimmed);
+                const b = await resp.blob();
+                processImageBlob(b, 'pasted_data_uri');
+                return;
+              } catch (err) {
+                console.warn("Failed to parse data URI:", err);
+              }
+            } else if (/^https?:\/\/.*\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(trimmed)) {
+              e.preventDefault();
+              const res = await processHtmlPaste(`<img src="${trimmed}" />`, processImageBlob);
+              if (res?.success) return;
+            }
+          }
+          window.dispatchEvent(new Event('paste-error'));
+        });
+        return;
+      }
+
+      window.dispatchEvent(new Event('paste-error'));
     };
-    
+
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
   }, [processImageBlob]);
 
   const handleManualPaste = async () => {
     try {
-      const clipboardItems = await navigator.clipboard.read();
-      let allTypes = [];
-      for (const clipboardItem of clipboardItems) {
-        allTypes.push(...clipboardItem.types);
+      // 1. Try modern navigator.clipboard.read()
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const clipboardItems = await navigator.clipboard.read();
 
-        // If text/html is present (e.g. Google Slides), prioritize extracting source URL / raw GIF
-        if (clipboardItem.types.includes('text/html')) {
-          const blob = await clipboardItem.getType('text/html');
-          const html = await blob.text();
-          const res = await processHtmlPaste(html);
-          if (res.success) return;
-        }
+        for (const clipboardItem of clipboardItems) {
+          const imageType = clipboardItem.types.find(t => t.startsWith('image/'));
+          const hasHtml = clipboardItem.types.includes('text/html');
 
-        // Check image/gif first if explicitly present
-        if (clipboardItem.types.includes('image/gif')) {
-          const blob = await clipboardItem.getType('image/gif');
-          if (blob) {
-            processImageBlob(blob, 'clipboard_animation');
-            return;
-          }
-        }
-
-        const imageTypes = clipboardItem.types.filter(type => type.startsWith('image/'));
-        for (const type of imageTypes) {
-          const blob = await clipboardItem.getType(type);
-          if (blob) {
-            processImageBlob(blob);
-            return;
-          }
-        }
-      }
-      
-      setGlobalToast(`Button Diagnostic: Types seen: ${allTypes.join(', ')}`);
-      window.dispatchEvent(new Event('paste-error'));
-    } catch (err) {
-      console.warn("Clipboard API failed:", err);
-      setGlobalToast("Clipboard blocked by browser. Please use Ctrl+V instead.");
-      window.dispatchEvent(new Event('paste-error'));
-    }
-  };
-
-  const processHtmlPaste = async (html) => {
-    try {
-      let src = null;
-      
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-
-      // 1. Try standard img tag
-      const imgs = doc.querySelectorAll('img');
-      for (let i=0; i<imgs.length; i++) {
-        if (imgs[i].src && imgs[i].src.startsWith('http')) { src = imgs[i].src; break; }
-        if (imgs[i].src && imgs[i].src.startsWith('data:image')) { src = imgs[i].src; break; }
-      }
-
-      // 2. Try SVG image tag
-      if (!src) {
-        const svgImgs = doc.querySelectorAll('image');
-        for (let i=0; i<svgImgs.length; i++) {
-          const href = svgImgs[i].getAttribute('href') || svgImgs[i].getAttribute('xlink:href');
-          if (href) { src = href; break; }
-        }
-      }
-
-      // 3. Clean Regex fallback for strictly valid base64 characters
-      if (!src) {
-        const dataUriRegex = /(data:image\/[^;"'\s]+;base64,[a-zA-Z0-9+/=]+)/i;
-        const match = html.match(dataUriRegex);
-        if (match) src = match[1];
-      }
-
-      // 4. Look for raw google content URLs
-      if (!src) {
-        const urlRegex = /(https:\/\/[a-zA-Z0-9-]+\.googleusercontent\.com\/[^"'\s]+)/i;
-        const match = html.match(urlRegex);
-        if (match) src = match[1];
-      }
-
-      if (!src) {
-        return { success: false, error: "No image source found in HTML." };
-      }
-
-      // Handle Data URIs directly
-      if (src.startsWith('data:image/')) {
-        try {
-          const response = await fetch(src);
-          if (!response.ok) throw new Error("Fetch response not ok");
-          const blob = await response.blob();
-          processImageBlob(blob, src.startsWith('data:image/gif') ? 'pasted_animation' : 'clipboard_image');
-          return { success: true };
-        } catch (err) {
-          // Fallback manual base64 parsing if fetch fails
-          try {
-            const arr = src.split(',');
-            const mime = arr[0].match(/:(.*?);/)[1];
-            let b64Data = arr[1].replace(/[\s\r\n]+/g, '').replace(/&quot;/g, '').replace(/&amp;/g, '&');
-            if (b64Data.endsWith('"') || b64Data.endsWith("'")) b64Data = b64Data.slice(0, -1);
-            
-            const bstr = atob(b64Data);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while(n--) { u8arr[n] = bstr.charCodeAt(n); }
-            const blob = new Blob([u8arr], {type: mime});
-            processImageBlob(blob, mime === 'image/gif' ? 'pasted_animation' : 'clipboard_image');
-            return { success: true };
-          } catch(manualErr) {
-            return { success: false, error: `atob failed: ${manualErr.message}. Src len: ${src.length}` };
-          }
-        }
-      }
-
-      // Handle URLs (like lh3.googleusercontent.com from Google Slides)
-      // Normalize Google User Content URLs to =s0 so Google returns the raw original uploaded asset (the animated GIF)
-      let targetUrl = src;
-      if (/googleusercontent\.com/i.test(src)) {
-        if (/=[swh]\d+/i.test(src)) {
-          targetUrl = src.replace(/=[swh]\d+.*$/i, '=s0');
-        } else if (!src.includes('=')) {
-          targetUrl = `${src}=s0`;
-        }
-      }
-
-      // Fetch the raw blob directly so animated GIFs preserve full frame sequences!
-      const fetchDirectBlob = async (url) => {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Fetch status: ${resp.status}`);
-        const b = await resp.blob();
-        if (!b || b.size < 10) throw new Error("Empty blob");
-        return b;
-      };
-
-      const loadImageFallback = (url) => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width || 800;
-            canvas.height = img.height || 600;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            canvas.toBlob((blob) => {
-              if (blob) resolve(blob);
-              else reject(new Error("Canvas toBlob failed"));
-            }, 'image/png');
-          };
-          img.onerror = () => reject(new Error("Image failed to load crossOrigin"));
-          img.src = url;
-        });
-      };
-
-      // 1. Try Direct Raw Fetch on normalized URL (Preserves GIFs)
-      try {
-        const rawBlob = await fetchDirectBlob(targetUrl);
-        processImageBlob(rawBlob, 'google_slides_image');
-        return { success: true };
-      } catch (eDirect) {
-        // 2. Try Codetabs CORS Proxy Raw Fetch (Fastest CORS proxy for images)
-        try {
-          const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
-          const rawBlob = await fetchDirectBlob(proxyUrl);
-          processImageBlob(rawBlob, 'google_slides_image');
-          return { success: true };
-        } catch (eProxy0) {
-          // 3. Try AllOrigins CORS Proxy Raw Fetch
-          try {
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-            const rawBlob = await fetchDirectBlob(proxyUrl);
-            processImageBlob(rawBlob, 'google_slides_image');
-            return { success: true };
-          } catch (eProxy1) {
-            // 4. Try CorsProxy.io Raw Fetch
+          // Check if Google Slides HTML with animated GIF is available
+          if (hasHtml) {
             try {
-              const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-              const rawBlob = await fetchDirectBlob(proxyUrl2);
-              processImageBlob(rawBlob, 'google_slides_image');
-              return { success: true };
-            } catch (eProxy2) {
-              // 5. Final Fallback: Canvas DOM image load
-              try {
-                const fallbackBlob = await loadImageFallback(targetUrl);
-                processImageBlob(fallbackBlob, 'google_slides_image');
-                return { success: true };
-              } catch (eFinal) {
-                return { success: false, error: "Network fetch blocked by CORS on all proxies." };
+              const htmlBlob = await clipboardItem.getType('text/html');
+              const html = await htmlBlob.text();
+              if (html && (html.includes('googleusercontent.com') || html.includes('docs.google.com'))) {
+                const res = await processHtmlPaste(html, processImageBlob);
+                if (res?.success) return;
               }
+            } catch (e) {
+              console.warn("HTML read failed:", e);
+            }
+          }
+
+          // If direct image is available on clipboard, read and display immediately
+          if (imageType) {
+            const blob = await clipboardItem.getType(imageType);
+            if (blob) {
+              processImageBlob(blob);
+              return;
+            }
+          }
+
+          // If HTML is present without direct image
+          if (hasHtml) {
+            try {
+              const htmlBlob = await clipboardItem.getType('text/html');
+              const html = await htmlBlob.text();
+              const res = await processHtmlPaste(html, processImageBlob);
+              if (res?.success) return;
+            } catch (e) {
+              console.warn("HTML fallback failed:", e);
             }
           }
         }
       }
+
+      // 2. Try text/plain fallback (data URI or direct image URL)
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          const trimmed = text.trim();
+          if (trimmed.startsWith('data:image/')) {
+            const resp = await fetch(trimmed);
+            const b = await resp.blob();
+            processImageBlob(b, 'pasted_data_uri');
+            return;
+          }
+          if (/^https?:\/\/.*\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(trimmed)) {
+            const res = await processHtmlPaste(`<img src="${trimmed}" />`, processImageBlob);
+            if (res?.success) return;
+          }
+        }
+      }
+
+      setGlobalToast("No image found on clipboard. Copy an image or screenshot first!");
+      window.dispatchEvent(new Event('paste-error'));
     } catch (err) {
-      return { success: false, error: "Fatal extractor error: " + err.message };
+      console.warn("Clipboard API failed:", err);
+      setGlobalToast("Clipboard access blocked by browser. Please use Ctrl+V instead!");
+      window.dispatchEvent(new Event('paste-error'));
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (pendingBlob && filename) {
       window.dispatchEvent(new CustomEvent('burst', { detail: { type: 'vertical', x: 0 } }));
-      const url = URL.createObjectURL(pendingBlob);
+
+      const isGif = blobType === 'gif' || pendingBlob.type === 'image/gif' || filename.toLowerCase().endsWith('.gif');
+      const cleanName = filename.replace(/\.(png|gif|jpe?g|webp|bmp|svg)$/i, '');
+      const ext = isGif ? '.gif' : '.png';
+      const downloadFilename = `${cleanName}${ext}`;
+
+      let downloadBlob = pendingBlob;
+      if (!isGif && pendingBlob.type !== 'image/png') {
+        try {
+          downloadBlob = await convertBlobToPng(pendingBlob);
+        } catch (err) {
+          console.warn("Conversion to PNG fallback:", err);
+          downloadBlob = pendingBlob;
+        }
+      }
+
+      const url = URL.createObjectURL(downloadBlob);
       const a = document.createElement('a');
       a.href = url;
-      const isGif = blobType === 'gif' || pendingBlob.type === 'image/gif' || filename.toLowerCase().endsWith('.gif');
-      const ext = isGif ? '.gif' : '.png';
-      const cleanName = filename.replace(/\.(png|gif|jpe?g|webp)$/i, '');
-      a.download = `${cleanName}${ext}`;
+      a.download = downloadFilename;
+      document.body.appendChild(a);
       a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      setGlobalToast({ text: `Saved ${downloadFilename}!`, type: 'success' });
     }
     setShowModal(false);
     setPendingBlob(null);
@@ -751,29 +481,32 @@ function App() {
           />}
 
           <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onManualPaste={handleManualPaste} onClockClick={() => setIsClockMode(true)} showDiagnostics={showDiagnostics} onToggleDiagnostics={() => setShowDiagnostics(!showDiagnostics)} />
+          
           <MainContentWrapper>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/image-tools" element={<ImageTools />} />
-              <Route path="/bg-remover" element={<BackgroundRemover />} />
-              <Route path="/video-compressor" element={<VideoCompressor />} />
-              <Route path="/video-to-gif" element={<VideoToGif />} />
-              <Route path="/lottie-to-gif" element={<LottieToGif />} />
-              <Route path="/svg-converter" element={<SvgConverter />} />
-              <Route path="/json-saver" element={<JsonSaver />} />
-              <Route path="/color-picker" element={<ColorPicker />} />
-              <Route path="/qr-generator" element={<QrGenerator />} />
-              <Route path="/image-upscaler" element={<ImageUpscaler />} />
-              <Route path="/content-extractor" element={<ContentExtractor />} />
-              <Route path="/pdf-image-extractor" element={<ContentExtractor />} />
-              <Route path="/timezone-converter" element={<TimezoneConverter />} />
-              <Route path="/html-preview" element={<HtmlPreview />} />
-              <Route path="/shape-generator" element={<ShapeGenerator />} />
-              <Route path="/component-generator" element={<ComponentGenerator />} />
-              <Route path="/video-frame-extractor" element={<VideoFrameExtractor />} />
-              <Route path="/collage-maker" element={<CollageMaker />} />
-              <Route path="/asset-extractor" element={<AssetExtractor />} />
-            </Routes>
+            <Suspense fallback={<RouteLoading />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/image-tools" element={<ImageTools />} />
+                <Route path="/bg-remover" element={<BackgroundRemover />} />
+                <Route path="/video-compressor" element={<VideoCompressor />} />
+                <Route path="/video-to-gif" element={<VideoToGif />} />
+                <Route path="/lottie-to-gif" element={<LottieToGif />} />
+                <Route path="/svg-converter" element={<SvgConverter />} />
+                <Route path="/json-saver" element={<JsonSaver />} />
+                <Route path="/color-picker" element={<ColorPicker />} />
+                <Route path="/qr-generator" element={<QrGenerator />} />
+                <Route path="/image-upscaler" element={<ImageUpscaler />} />
+                <Route path="/content-extractor" element={<ContentExtractor />} />
+                <Route path="/pdf-image-extractor" element={<ContentExtractor />} />
+                <Route path="/timezone-converter" element={<TimezoneConverter />} />
+                <Route path="/html-preview" element={<HtmlPreview />} />
+                <Route path="/shape-generator" element={<ShapeGenerator />} />
+                <Route path="/component-generator" element={<ComponentGenerator />} />
+                <Route path="/video-frame-extractor" element={<VideoFrameExtractor />} />
+                <Route path="/collage-maker" element={<CollageMaker />} />
+                <Route path="/asset-extractor" element={<AssetExtractor />} />
+              </Routes>
+            </Suspense>
           </MainContentWrapper>
           
           <DragDropOverlay 
