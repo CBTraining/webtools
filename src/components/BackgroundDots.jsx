@@ -20,14 +20,14 @@ export default function BackgroundDots() {
     let mouseInViewport = true;
     let globalOpacity = 1;
 
-    const startLoop = () => {
+    function startLoop() {
       if (!isLoopRunning && !document.hidden) {
         isLoopRunning = true;
         animationFrameId = requestAnimationFrame(draw);
       }
-    };
+    }
 
-    const stopLoop = () => {
+    function stopLoop() {
       if (isLoopRunning) {
         isLoopRunning = false;
         if (animationFrameId) {
@@ -35,7 +35,7 @@ export default function BackgroundDots() {
           animationFrameId = null;
         }
       }
-    };
+    }
 
     const handleBurst = (e) => {
       bursts.push({
@@ -90,7 +90,7 @@ export default function BackgroundDots() {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    const init = () => {
+    function init() {
       width = window.innerWidth;
       height = window.innerHeight;
       canvas.width = width;
@@ -117,12 +117,9 @@ export default function BackgroundDots() {
         }
       }
       startLoop();
-    };
+    }
 
-    window.addEventListener('resize', init);
-    init();
-
-    const draw = () => {
+    function draw() {
       if (document.hidden) {
         isLoopRunning = false;
         return;
@@ -265,9 +262,10 @@ export default function BackgroundDots() {
       }
       
       animationFrameId = requestAnimationFrame(draw);
-    };
+    }
     
-    startLoop();
+    window.addEventListener('resize', init);
+    init();
 
     return () => {
       window.removeEventListener('mouseleave', handleMouseLeave);
