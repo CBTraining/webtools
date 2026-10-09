@@ -362,14 +362,16 @@
   .nav-items-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 14px 6px;
+    column-gap: 6px;
+    row-gap: 16px;
+    align-items: start;
     justify-items: center;
   }
 
-  @media (max-width: 360px) {
+  @media (max-width: 350px) {
     .nav-items-grid {
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px 4px;
+      gap: 14px 6px;
     }
   }
 
@@ -381,11 +383,11 @@
     justify-content: flex-start;
     text-align: center;
     gap: 6px;
-    padding: 4px 2px;
+    padding: 0;
     border-radius: 14px;
     text-decoration: none;
     width: 100%;
-    max-width: 80px;
+    max-width: 82px;
     background: transparent;
     border: none;
     overflow: visible;
@@ -409,6 +411,7 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+    flex-shrink: 0;
     transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease, box-shadow 0.2s ease;
   }
 
@@ -447,16 +450,18 @@
   /* App Title Below the Rounded Square */
   .nav-label {
     font-size: 0.72rem;
-    line-height: 1.15;
+    line-height: 1.25;
     font-weight: 500;
     color: var(--text-secondary);
     text-align: center;
-    max-width: 72px;
-    word-break: break-word;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    width: 100%;
+    max-width: 80px;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+    display: block;
+    overflow: visible;
+    min-height: 2.5em; /* Preserves uniform height baseline so icon rows align evenly */
     margin-top: 2px;
     transition: color 0.15s ease;
   }
