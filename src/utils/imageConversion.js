@@ -1,6 +1,8 @@
 /**
  * Utilities for image conversions, canvas rasterization, and file downloads.
  */
+import { downloadBlob } from './downloadUtils';
+export { downloadBlob };
 
 /**
  * Converts any image blob into a PNG blob via HTML5 canvas.
@@ -79,6 +81,4 @@ export function convertImageAndDownload(file, format = 'png', customFileName) {
     img.src = url;
   });
 }
-
-export { downloadBlob } from './downloadUtils';
 

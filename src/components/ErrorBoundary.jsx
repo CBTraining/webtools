@@ -13,24 +13,43 @@ export default class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
     console.error("ErrorBoundary caught an error:", error, errorInfo);
+
+    const errorMessage = (error?.message || error?.toString() || '').toLowerCase();
+    const isChunkOrPwaError = 
+      errorMessage.includes('dynamically imported module') ||
+      errorMessage.includes('loading chunk') ||
+      errorMessage.includes('importing a module script failed') ||
+      errorMessage.includes('failed to fetch') ||
+      errorMessage.includes('chunkloaderror');
+
+    if (isChunkOrPwaError) {
+      const now = Date.now();
+      const lastReload = parseInt(sessionStorage.getItem('last_auto_chunk_reload') || '0', 10);
+      // Auto-recover once within 30 seconds to fetch fresh deployment chunks
+      if (now - lastReload > 30000) {
+        sessionStorage.setItem('last_auto_chunk_reload', String(now));
+        this.handleReset();
+      }
+    }
   }
 
-  handleReset = () => {
+  handleReset = async () => {
     try {
-      localStorage.clear();
       sessionStorage.clear();
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-          for (let r of regs) r.unregister();
-        });
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister().catch(() => {})));
       }
       if (window.caches) {
-        caches.keys().then(keys => {
-          for (let k of keys) caches.delete(k);
-        });
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k).catch(() => {})));
       }
-    } catch (e) {}
-    window.location.href = window.location.origin + window.location.pathname + '?reset=' + Date.now();
+    } catch (e) {
+      console.warn("Reset cache error:", e);
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set('v', String(Date.now()));
+    window.location.href = url.toString();
   };
 
   render() {
