@@ -1,30 +1,31 @@
 import { useState, useEffect, useRef } from 'react';
 import { PlayIcon, PauseIcon, StopIcon, TrashIcon, ClockIcon } from '@heroicons/react/24/solid';
+import { playAlarmBeep } from '../../utils/audio';
+import { formatDuration } from '../../utils/formatters';
 
 const ALARMS_KEY = 'webtools-alarms';
 
-export default function Alarms() {
-  const [alarms, setAlarms] = useState([]);
-  const [newMin, setNewMin] = useState(5);
-  const audioCtxRef = useRef(null);
-  const isRingingRef = useRef(false);
+const getDefaultAlarms = () => [
+  { id: '30m', title: '30 Min', totalSeconds: 30 * 60, remainingSeconds: 30 * 60, isRunning: false, isRinging: false },
+  { id: '60m', title: '1 Hour', totalSeconds: 60 * 60, remainingSeconds: 60 * 60, isRunning: false, isRinging: false }
+];
 
-  // Initialization
-  useEffect(() => {
+export default function Alarms() {
+  const [alarms, setAlarms] = useState(() => {
     const saved = localStorage.getItem(ALARMS_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         // Reset running state on load so they don't unexpectedly continue from hours ago
-        const safe = parsed.map(a => ({ ...a, isRunning: false, isRinging: false }));
-        setAlarms(safe);
+        return parsed.map(a => ({ ...a, isRunning: false, isRinging: false }));
       } catch (e) {
-        setAlarms(getDefaultAlarms());
+        return getDefaultAlarms();
       }
-    } else {
-      setAlarms(getDefaultAlarms());
     }
-  }, []);
+    return getDefaultAlarms();
+  });
+  const [newMin, setNewMin] = useState(5);
+  const isRingingRef = useRef(false);
 
   // Save to local storage on change
   useEffect(() => {
@@ -43,7 +44,7 @@ export default function Alarms() {
             dirty = true;
             const next = alarm.remainingSeconds - 1;
             if (next === 0) {
-              playBeep();
+              playAlarmBeep();
               return { ...alarm, remainingSeconds: 0, isRunning: false, isRinging: true };
             }
             return { ...alarm, remainingSeconds: next };
@@ -56,7 +57,7 @@ export default function Alarms() {
 
     const ringLoop = setInterval(() => {
       if (isRingingRef.current) {
-        playBeep();
+        playAlarmBeep();
       }
     }, 2000);
 
@@ -70,48 +71,6 @@ export default function Alarms() {
     isRingingRef.current = alarms.some(a => a.isRinging);
   }, [alarms]);
 
-  const getDefaultAlarms = () => [
-    { id: '30m', title: '30 Min', totalSeconds: 30 * 60, remainingSeconds: 30 * 60, isRunning: false, isRinging: false },
-    { id: '60m', title: '1 Hour', totalSeconds: 60 * 60, remainingSeconds: 60 * 60, isRunning: false, isRinging: false }
-  ];
-
-  const initAudio = () => {
-    if (!audioCtxRef.current) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      audioCtxRef.current = new AudioContext();
-    }
-    if (audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
-    }
-  };
-
-  const playBeep = () => {
-    initAudio();
-    const ctx = audioCtxRef.current;
-    
-    // Play 3 beeps
-    for (let i = 0; i < 3; i++) {
-      const time = ctx.currentTime + (i * 0.5);
-      
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, time);
-      
-      // Gentle envelope
-      gain.gain.setValueAtTime(0, time);
-      gain.gain.linearRampToValueAtTime(0.5, time + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      
-      osc.start(time);
-      osc.stop(time + 0.4);
-    }
-  };
-
   const addAlarm = () => {
     if (!newMin || newMin <= 0) return;
     const sec = newMin * 60;
@@ -123,16 +82,15 @@ export default function Alarms() {
       isRunning: false,
       isRinging: false
     };
-    setAlarms([...alarms, newAlarm]);
+    setAlarms(prev => [...prev, newAlarm]);
   };
 
   const deleteAlarm = (id) => {
-    setAlarms(alarms.filter(a => a.id !== id));
+    setAlarms(prev => prev.filter(a => a.id !== id));
   };
 
   const toggleAlarm = (id) => {
-    initAudio(); // Required to unlock audio context on user interaction
-    setAlarms(alarms.map(a => {
+    setAlarms(prev => prev.map(a => {
       if (a.id === id) {
         if (a.remainingSeconds === 0) {
           return { ...a, remainingSeconds: a.totalSeconds, isRunning: true };
@@ -144,7 +102,7 @@ export default function Alarms() {
   };
 
   const stopAlarm = (id) => {
-    setAlarms(alarms.map(a => {
+    setAlarms(prev => prev.map(a => {
       if (a.id === id) {
         return { ...a, remainingSeconds: a.totalSeconds, isRunning: false, isRinging: false };
       }
@@ -153,7 +111,7 @@ export default function Alarms() {
   };
 
   const dismissAlarm = (id) => {
-    setAlarms(alarms.map(a => {
+    setAlarms(prev => prev.map(a => {
       if (a.id === id) {
         return { ...a, remainingSeconds: a.totalSeconds, isRinging: false };
       }
@@ -161,15 +119,6 @@ export default function Alarms() {
     }));
   };
 
-  const formatTime = (totalSecs) => {
-    const h = Math.floor(totalSecs / 3600);
-    const m = Math.floor((totalSecs % 3600) / 60);
-    const s = totalSecs % 60;
-    if (h > 0) {
-      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    }
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   // calculate progress 0-100
   const getProgress = (alarm) => {
@@ -188,7 +137,7 @@ export default function Alarms() {
         <input 
           type="number" 
           value={newMin} 
-          onChange={(e) => setNewMin(parseInt(e.target.value))} 
+          onChange={(e) => setNewMin(parseInt(e.target.value) || 0)} 
           style={{ width: '80px', padding: '0.4rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} 
         />
         <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>min</span>
@@ -220,7 +169,7 @@ export default function Alarms() {
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{alarm.title}</span>
                     <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
-                      {formatTime(alarm.remainingSeconds)}
+                      {formatDuration(alarm.remainingSeconds)}
                     </span>
                   </div>
                   

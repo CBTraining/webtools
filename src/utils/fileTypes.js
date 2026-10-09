@@ -1,3 +1,5 @@
+import { downloadBlob } from './downloadUtils';
+
 export function isVideoFile(file) {
   if (!file) return false;
   if (file.type && (file.type.startsWith('video/') || file.type.includes('quicktime'))) return true;
@@ -123,12 +125,7 @@ export async function compressImageUnder20MB(file) {
 
       if (pngBlob && pngBlob.size <= MAX_BYTES) {
         const downloadName = `compressed-${baseName}.png`;
-        const blobUrl = URL.createObjectURL(pngBlob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = downloadName;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        downloadBlob(pngBlob, downloadName);
 
         resolve({
           format: 'PNG',
@@ -168,12 +165,7 @@ export async function compressImageUnder20MB(file) {
 
       if (bestBlob) {
         const downloadName = `compressed-${baseName}.jpg`;
-        const blobUrl = URL.createObjectURL(bestBlob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = downloadName;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        downloadBlob(bestBlob, downloadName);
 
         resolve({
           format: 'JPEG',

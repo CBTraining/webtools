@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProcessing } from '../contexts/ProcessingContext';
 import { 
@@ -10,12 +10,13 @@ import {
   DocumentArrowDownIcon, 
   CodeBracketIcon, 
   Square3Stack3DIcon, 
-  CubeIcon,
   ArrowsPointingInIcon,
   AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 
-import { isVideoFile, isImageFile, extractDroppedFiles, compressImageUnder20MB } from '../utils/fileTypes';
+import { extractDroppedFiles } from '../utils/fileTypes';
+import { detectDragType } from './DragDropOverlay/dragTypeDetector';
+import { routeDroppedFiles } from './DragDropOverlay/dragDropRouter';
 
 export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, onCompressImage }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -25,61 +26,12 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
   const dragCounter = useRef(0);
   
   useEffect(() => {
-    
     const handleDragEnter = (e) => {
       e.preventDefault();
       dragCounter.current++;
       if (dragCounter.current === 1) {
         setIsDragging(true);
-        const items = e.dataTransfer.items;
-        const types = Array.from(e.dataTransfer.types || []);
-        
-        let detected = 'unknown';
-
-        if (items && items.length > 0) {
-          for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const type = (item.type || '').toLowerCase();
-            
-            if (type === 'application/pdf') {
-              detected = 'pdf';
-              break;
-            } else if (
-              type.includes('presentation') || 
-              type.includes('powerpoint') || 
-              type.includes('word') || 
-              type.includes('zip') || 
-              type.includes('officedocument') || 
-              type.includes('opendocument')
-            ) {
-              detected = 'doc';
-              break;
-            } else if (type === 'image/svg+xml') {
-              detected = 'svg';
-              break;
-            } else if (type === 'application/json' || type === 'text/json') {
-              detected = 'json';
-              break;
-            } else if (type.startsWith('video/') || type.includes('quicktime')) {
-              detected = 'video';
-              break;
-            } else if (type.startsWith('image/')) {
-              detected = 'image';
-              break;
-            }
-          }
-        }
-
-        // Fallback for HTML/URI drops (e.g. Google Chat, Slack, Web Images)
-        if (detected === 'unknown') {
-          if (types.includes('text/html') || types.includes('text/uri-list') || types.includes('image/png')) {
-            detected = 'image';
-          } else if (types.includes('Files')) {
-            // Check if any item might indicate type
-            detected = 'image';
-          }
-        }
-
+        const detected = detectDragType(e.dataTransfer);
         setDragType(detected);
       }
     };
@@ -94,7 +46,7 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
     };
 
     const handleDragOver = (e) => {
-      e.preventDefault(); // necessary to allow dropping
+      e.preventDefault();
     };
 
     const handleDrop = (e) => {
@@ -135,88 +87,13 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
     // Extract real File objects (handles Desktop files + Google Chat / Slack web image drag)
     const files = await extractDroppedFiles(e);
 
-    if (action === 'create-collage') {
-      const imgFiles = files.filter(f => isImageFile(f) || f.type.startsWith('image/'));
-      if (imgFiles.length > 0) {
-        navigate('/collage-maker', { state: { droppedFiles: imgFiles } });
-      } else {
-        navigate('/collage-maker');
-      }
-      return;
-    }
-    
-    const file = files[0];
-    if (!file) return;
-
-    if (dragType === 'json' || file.name.endsWith('.json')) {
-      if (action === 'json-editor') {
-        const text = await file.text();
-        navigate('/json-saver', { state: { jsonText: text } });
-        return;
-      } else if (action === 'lottie-convert') {
-        const text = await file.text();
-        try {
-          const json = JSON.parse(text);
-          const slotId = `lottie-to-gif-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-          addSlot('lottie-to-gif', {
-            id: slotId,
-            lottieData: json,
-            fileName: file.name
-          });
-          navigate('/lottie-to-gif');
-        } catch (err) {
-          alert("Invalid JSON file: " + err.message);
-        }
-        return;
-      }
-    }
-
-    if (dragType === 'svg' || file.name.endsWith('.svg')) {
-      if (action === 'svg-convert' || action === 'svg-3d') {
-        const text = await file.text();
-        navigate('/svg-converter', { state: { svgText: text } });
-        return;
-      }
-    }
-    
-    if ((dragType === 'doc' || dragType === 'pdf' || file.name.match(/\.(pdf|pptx|docx|xlsx|zip|key|odp|odt)$/i)) && (action === 'pdf-extract' || action === 'content-extract')) {
-      navigate('/content-extractor', { state: { file } });
-      return;
-    }
-
-    if (dragType === 'video' || isVideoFile(file)) {
-      if (action === 'convert-gif') {
-        addSlot('video-to-gif', { id: crypto.randomUUID(), videoFile: file, previewUrl: URL.createObjectURL(file) });
-        navigate('/video-to-gif');
-      } else if (action === 'compress-video') {
-        addSlot('video-compressor', { id: crypto.randomUUID(), videoFile: file, previewUrl: URL.createObjectURL(file) });
-        navigate('/video-compressor');
-      } else if (action === 'extract-frame') {
-        navigate('/video-frame-extractor', { state: { videoFile: file } });
-      }
-      return;
-    }
-
-    // Default: Image Actions
-    if (action === 'compress-image') {
-      if (onCompressImage) {
-        onCompressImage(file);
-      } else {
-        compressImageUnder20MB(file);
-      }
-    } else if (action === 'download-png') {
-      onDirectDownload(file, 'png');
-    } else if (action === 'rename-png') {
-      onDropImageToModal(file);
-    } else if (action === 'edit-image') {
-      navigate('/image-tools', { state: { imageFile: file, previewUrl: URL.createObjectURL(file) } });
-    } else if (action === 'remove-bg') {
-      addSlot('bg-remove', { id: crypto.randomUUID(), imageFile: file, previewUrl: URL.createObjectURL(file) });
-      navigate('/bg-remover');
-    } else if (action === 'upscale') {
-      addSlot('ai-upscaler', { id: crypto.randomUUID(), imageFile: file, previewUrl: URL.createObjectURL(file) });
-      navigate('/image-upscaler');
-    }
+    await routeDroppedFiles(files, action, dragType, {
+      navigate,
+      addSlot,
+      onCompressImage,
+      onDirectDownload,
+      onDropImageToModal
+    });
   };
 
   const overlayStyle = {
@@ -262,6 +139,16 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
   return (
     <div style={overlayStyle} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setIsDragging(false); }}>
       <div style={{ width: '100%', maxWidth: '950px', display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+        {dragType === 'gif' && (
+          <>
+            <Card title="Crop & Compress GIF" subtitle="Auto-compress under 50MB, crop dimensions, and trim duration" icon={<GifIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-gif" />
+            <Card title="Extract Frame" subtitle="Extract individual PNG frames from animated GIF" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="extract-frame" />
+            <Card title="Create Photo Collage" icon={<Square3Stack3DIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="create-collage" />
+            <Card title="Download as PNG" icon={<ArrowDownTrayIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="download-png" />
+            <Card title="Compress (<20MB)" icon={<ArrowsPointingInIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-image" />
+            <Card title="Image Editor" icon={<AdjustmentsHorizontalIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="edit-image" />
+          </>
+        )}
         {dragType === 'image' && (
           <>
             <Card title="Create Photo Collage" icon={<Square3Stack3DIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="create-collage" />
@@ -274,9 +161,9 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
         )}
         {dragType === 'video' && (
           <>
-            <Card title="Extract Frame" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="extract-frame" />
-            <Card title="Convert to GIF" icon={<GifIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="convert-gif" />
+            <Card title="Convert & Crop to GIF" subtitle="Target under 50MB, crop dimensions, and trim" icon={<GifIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="convert-gif" />
             <Card title="Compress Video" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-video" />
+            <Card title="Extract Frame" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="extract-frame" />
           </>
         )}
         {dragType === 'pdf' && (

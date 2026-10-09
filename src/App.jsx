@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { Bars3Icon } from '@heroicons/react/24/solid';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Bars3Icon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import Sidebar from './components/Sidebar';
 import BackgroundDots from './components/BackgroundDots';
 import RightPanel from './components/RightPanel/RightPanel';
@@ -11,8 +11,12 @@ import DiagnosticsOverlay from './components/DiagnosticsOverlay';
 import ErrorBoundary from './components/ErrorBoundary';
 import DragDropOverlay from './components/DragDropOverlay';
 import RouteLoading from './components/RouteLoading';
+import SaveImageModal from './components/SaveImageModal';
+import CommandPalette from './components/CommandPalette';
+import { getAllTools } from './config/navigation';
+import { useGlobalClipboard } from './hooks/useGlobalClipboard';
 import { isVideoFile, isImageFile, compressImageUnder20MB } from './utils/fileTypes';
-import { isGifBlob, processHtmlPaste } from './utils/clipboardExtract';
+import { convertBlobToPng, convertImageAndDownload, downloadBlob } from './utils/imageConversion';
 
 // Lazy-loaded routes for code splitting and instant initial page load
 const Home = lazy(() => import('./pages/Home'));
@@ -43,6 +47,25 @@ function MainContentWrapper({ children }) {
     if (wrapperRef.current) {
       wrapperRef.current.scrollTo(0, 0);
     }
+
+    // Dynamic document title & recent tools tracking
+    const tools = getAllTools();
+    const matchedTool = tools.find(t => t.to === location.pathname);
+
+    if (matchedTool) {
+      document.title = `${matchedTool.title} | WebTools`;
+      try {
+        const saved = JSON.parse(localStorage.getItem('webtools-recent') || '[]');
+        const next = [matchedTool.to, ...saved.filter(p => p !== matchedTool.to)].slice(0, 5);
+        localStorage.setItem('webtools-recent', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors in private browsing
+      }
+    } else if (location.pathname === '/') {
+      document.title = 'WebTools - Offline Client-Side Utilities';
+    } else {
+      document.title = 'WebTools';
+    }
   }, [location.pathname]);
 
   return (
@@ -59,17 +82,10 @@ function App() {
   const [blobType, setBlobType] = useState('png'); // 'png' or 'gif'
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isClockMode, setIsClockMode] = useState(() => localStorage.getItem('isClockMode') === 'true');
   const [globalToast, setGlobalToast] = useState(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const inputRef = useRef(null);
-
-  // Focus input when modal opens
-  useEffect(() => {
-    if (showModal && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [showModal]);
 
   // Persist clock mode
   useEffect(() => {
@@ -92,20 +108,18 @@ function App() {
     }
   }, [showModal, previewUrl]);
 
-  // Track mouse position for glowing card effect
+  // High-performance pointer tracking for glowing card effect (delegated to active card only)
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      const elements = document.querySelectorAll('.glass-panel, .nav-link, .sidebar, .glow-card');
-      for (const el of elements) {
-        const rect = el.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        el.style.setProperty('--mouse-x', `${x}px`);
-        el.style.setProperty('--mouse-y', `${y}px`);
+    const handlePointerMove = (e) => {
+      const card = e.target.closest('.glass-panel, .nav-link, .glow-card');
+      if (card) {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
       }
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    return () => window.removeEventListener('pointermove', handlePointerMove);
   }, []);
 
   // Double-click background to toggle fullscreen
@@ -140,246 +154,24 @@ function App() {
     return () => window.removeEventListener('dblclick', handleDoubleClick);
   }, []);
 
-  const convertBlobToPng = (blob) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      const url = URL.createObjectURL(blob);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth || img.width;
-          canvas.height = img.naturalHeight || img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          canvas.toBlob((pngBlob) => {
-            if (pngBlob) resolve(pngBlob);
-            else resolve(blob);
-          }, 'image/png');
-        } catch (e) {
-          resolve(blob);
-        }
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve(blob);
-      };
-      img.src = url;
-    });
-  };
-
-  const processImageBlob = useCallback(async (blob, defaultName = 'clipboard_image') => {
-    if (!blob) return;
-
-    let isGif = false;
-    try {
-      isGif = await isGifBlob(blob);
-    } catch (e) {
-      console.warn("GIF check failed:", e);
-    }
-
-    const cleanName = defaultName ? defaultName.replace(/\.(png|gif|jpe?g|webp|bmp|svg)$/i, '') : 'clipboard_image';
-    const targetType = isGif ? 'gif' : 'png';
+  // Hook for global & manual paste handling
+  const handleImageExtracted = useCallback((blob, resolvedFilename, targetType) => {
     const preview = URL.createObjectURL(blob);
-
     setPendingBlob(blob);
     setBlobType(targetType);
     setPreviewUrl(preview);
-    setFilename(`${cleanName}.${targetType}`);
+    setFilename(resolvedFilename);
     setShowModal(true);
   }, []);
 
-  // Global Clipboard Listener
-  useEffect(() => {
-    const handlePaste = async (e) => {
-      // Don't intercept paste when typing in inputs/textareas/contenteditable
-      if (
-        e.target.tagName === 'INPUT' || 
-        e.target.tagName === 'TEXTAREA' || 
-        e.target.isContentEditable ||
-        e.target.closest('input') ||
-        e.target.closest('textarea') ||
-        e.target.closest('[contenteditable="true"]')
-      ) {
-        return;
-      }
+  const showToast = useCallback((msg) => {
+    setGlobalToast(msg);
+  }, []);
 
-      const clipboardData = e.clipboardData || e.originalEvent?.clipboardData;
-      if (!clipboardData) return;
-
-      // 1. Direct files check (handles files copied from Windows Explorer / Desktop or dropped)
-      if (clipboardData.files && clipboardData.files.length > 0) {
-        for (let i = 0; i < clipboardData.files.length; i++) {
-          const file = clipboardData.files[i];
-          if (isImageFile(file) || file.type.startsWith('image/')) {
-            e.preventDefault();
-            processImageBlob(file, file.name);
-            return;
-          }
-        }
-      }
-
-      // 2. Synchronously extract direct image item & html/text items
-      const items = clipboardData.items;
-      let directImageFile = null;
-      let htmlItem = null;
-      let textItem = null;
-
-      if (items) {
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          if (item.type.startsWith('image/')) {
-            // Must extract synchronously before any async tick clears clipboardData!
-            directImageFile = item.getAsFile();
-          } else if (item.type === 'text/html') {
-            htmlItem = item;
-          } else if (item.type === 'text/plain') {
-            textItem = item;
-          }
-        }
-      }
-
-      // 3. If direct image is present
-      if (directImageFile) {
-        e.preventDefault();
-
-        // If Google Slides HTML is also present, try to extract original GIF/asset from Google CDN
-        if (htmlItem) {
-          htmlItem.getAsString(async (html) => {
-            if (html && (html.includes('googleusercontent.com') || html.includes('docs.google.com'))) {
-              const res = await processHtmlPaste(html, processImageBlob);
-              if (res?.success) return;
-            }
-            // For standard web images or if Google extraction failed, use our direct synchronous image blob
-            processImageBlob(directImageFile);
-          });
-          return;
-        }
-
-        // Screenshots, Snipping tool, or native images without HTML
-        processImageBlob(directImageFile);
-        return;
-      }
-
-      // 4. No direct image blob, but HTML item exists (e.g. copied from web without binary image)
-      if (htmlItem) {
-        e.preventDefault();
-        htmlItem.getAsString(async (html) => {
-          const res = await processHtmlPaste(html, processImageBlob);
-          if (!res?.success) {
-            setGlobalToast("No image could be extracted from copied content.");
-            window.dispatchEvent(new Event('paste-error'));
-          }
-        });
-        return;
-      }
-
-      // 5. Plain text fallback: data URI or direct image URL
-      if (textItem) {
-        textItem.getAsString(async (text) => {
-          if (text) {
-            const trimmed = text.trim();
-            if (trimmed.startsWith('data:image/')) {
-              e.preventDefault();
-              try {
-                const resp = await fetch(trimmed);
-                const b = await resp.blob();
-                processImageBlob(b, 'pasted_data_uri');
-                return;
-              } catch (err) {
-                console.warn("Failed to parse data URI:", err);
-              }
-            } else if (/^https?:\/\/.*\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(trimmed)) {
-              e.preventDefault();
-              const res = await processHtmlPaste(`<img src="${trimmed}" />`, processImageBlob);
-              if (res?.success) return;
-            }
-          }
-          window.dispatchEvent(new Event('paste-error'));
-        });
-        return;
-      }
-
-      window.dispatchEvent(new Event('paste-error'));
-    };
-
-    window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
-  }, [processImageBlob]);
-
-  const handleManualPaste = async () => {
-    try {
-      // 1. Try modern navigator.clipboard.read()
-      if (navigator.clipboard && navigator.clipboard.read) {
-        const clipboardItems = await navigator.clipboard.read();
-
-        for (const clipboardItem of clipboardItems) {
-          const imageType = clipboardItem.types.find(t => t.startsWith('image/'));
-          const hasHtml = clipboardItem.types.includes('text/html');
-
-          // Check if Google Slides HTML with animated GIF is available
-          if (hasHtml) {
-            try {
-              const htmlBlob = await clipboardItem.getType('text/html');
-              const html = await htmlBlob.text();
-              if (html && (html.includes('googleusercontent.com') || html.includes('docs.google.com'))) {
-                const res = await processHtmlPaste(html, processImageBlob);
-                if (res?.success) return;
-              }
-            } catch (e) {
-              console.warn("HTML read failed:", e);
-            }
-          }
-
-          // If direct image is available on clipboard, read and display immediately
-          if (imageType) {
-            const blob = await clipboardItem.getType(imageType);
-            if (blob) {
-              processImageBlob(blob);
-              return;
-            }
-          }
-
-          // If HTML is present without direct image
-          if (hasHtml) {
-            try {
-              const htmlBlob = await clipboardItem.getType('text/html');
-              const html = await htmlBlob.text();
-              const res = await processHtmlPaste(html, processImageBlob);
-              if (res?.success) return;
-            } catch (e) {
-              console.warn("HTML fallback failed:", e);
-            }
-          }
-        }
-      }
-
-      // 2. Try text/plain fallback (data URI or direct image URL)
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        const text = await navigator.clipboard.readText();
-        if (text) {
-          const trimmed = text.trim();
-          if (trimmed.startsWith('data:image/')) {
-            const resp = await fetch(trimmed);
-            const b = await resp.blob();
-            processImageBlob(b, 'pasted_data_uri');
-            return;
-          }
-          if (/^https?:\/\/.*\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(trimmed)) {
-            const res = await processHtmlPaste(`<img src="${trimmed}" />`, processImageBlob);
-            if (res?.success) return;
-          }
-        }
-      }
-
-      setGlobalToast("No image found on clipboard. Copy an image or screenshot first!");
-      window.dispatchEvent(new Event('paste-error'));
-    } catch (err) {
-      console.warn("Clipboard API failed:", err);
-      setGlobalToast("Clipboard access blocked by browser. Please use Ctrl+V instead!");
-      window.dispatchEvent(new Event('paste-error'));
-    }
-  };
+  const { processImageBlob, handleManualPaste } = useGlobalClipboard({
+    onImageExtracted: handleImageExtracted,
+    onToast: showToast
+  });
 
   const handleDownload = async () => {
     if (pendingBlob && filename) {
@@ -390,31 +182,24 @@ function App() {
       const ext = isGif ? '.gif' : '.png';
       const downloadFilename = `${cleanName}${ext}`;
 
-      let downloadBlob = pendingBlob;
+      let downloadTargetBlob = pendingBlob;
       if (!isGif && pendingBlob.type !== 'image/png') {
         try {
-          downloadBlob = await convertBlobToPng(pendingBlob);
+          downloadTargetBlob = await convertBlobToPng(pendingBlob);
         } catch (err) {
           console.warn("Conversion to PNG fallback:", err);
-          downloadBlob = pendingBlob;
+          downloadTargetBlob = pendingBlob;
         }
       }
 
-      const url = URL.createObjectURL(downloadBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = downloadFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      downloadBlob(downloadTargetBlob, downloadFilename);
       setGlobalToast({ text: `Saved ${downloadFilename}!`, type: 'success' });
     }
     setShowModal(false);
     setPendingBlob(null);
   };
 
-  const handleCancel = () => {
+  const handleCancelModal = () => {
     setShowModal(false);
     setPendingBlob(null);
   };
@@ -434,12 +219,19 @@ function App() {
         <div className="app-layout">
           <div className="mobile-header">
             <button onClick={() => setIsSidebarOpen(true)}>
-              <Bars3Icon style={{width: '28px', height: '28px'}} />
+              <Bars3Icon style={{ width: '28px', height: '28px' }} />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '1rem' }}>
               <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="WebTools Logo" width="24" height="24" />
               <span style={{ fontWeight: 'normal', fontSize: '1.2rem' }}>Web<span className="text-gradient">Tools</span></span>
             </div>
+            <button 
+              onClick={() => setIsCommandPaletteOpen(true)}
+              style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '6px' }}
+              title="Quick Search (Ctrl+K)"
+            >
+              <MagnifyingGlassIcon style={{ width: '24px', height: '24px' }} />
+            </button>
           </div>
           
           {globalToast && (
@@ -448,44 +240,40 @@ function App() {
             </div>
           )}
 
-          {isClockMode && <ClockModeOverlay 
-            onClose={() => setIsClockMode(false)} 
-            onDropFile={(file) => {
-              if (isImageFile(file) || file.type.startsWith('image/')) {
-                const img = new Image();
-                img.onload = () => {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = img.width;
-                  canvas.height = img.height;
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(img, 0, 0);
-                  
-                  canvas.toBlob((blob) => {
-                    if (!blob) return;
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name ? file.name.replace(/\.[^/.]+$/, "") + ".png" : 'pngconvert.png';
-                    a.click();
-                    URL.revokeObjectURL(url);
+          {isClockMode && (
+            <ClockModeOverlay 
+              onClose={() => setIsClockMode(false)} 
+              onDropFile={async (file) => {
+                if (isImageFile(file) || file.type.startsWith('image/')) {
+                  try {
+                    await convertImageAndDownload(file, 'png');
                     setGlobalToast({ text: "Image auto-converted to PNG and downloaded!", type: 'success' });
-                  }, 'image/png');
-                };
-                img.src = URL.createObjectURL(file);
-              } else if (isVideoFile(file)) {
-                alert('Passive Video to GIF conversion via ffmpeg.wasm will trigger here!');
-              } else {
-                alert('Unsupported file type for passive conversion.');
-              }
-            }}
-          />}
+                  } catch (e) {
+                    setGlobalToast({ text: "Failed to convert image.", type: 'error' });
+                  }
+                } else if (isVideoFile(file)) {
+                  alert('Passive Video to GIF conversion via ffmpeg.wasm will trigger here!');
+                } else {
+                  alert('Unsupported file type for passive conversion.');
+                }
+              }}
+            />
+          )}
 
-          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onManualPaste={handleManualPaste} onClockClick={() => setIsClockMode(true)} showDiagnostics={showDiagnostics} onToggleDiagnostics={() => setShowDiagnostics(!showDiagnostics)} />
+          <Sidebar 
+            isOpen={isSidebarOpen} 
+            onClose={() => setIsSidebarOpen(false)} 
+            onOpenSearch={() => setIsCommandPaletteOpen(true)}
+            onManualPaste={handleManualPaste} 
+            onClockClick={() => setIsClockMode(true)} 
+            showDiagnostics={showDiagnostics} 
+            onToggleDiagnostics={() => setShowDiagnostics(!showDiagnostics)} 
+          />
           
           <MainContentWrapper>
             <Suspense fallback={<RouteLoading />}>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Home onOpenSearch={() => setIsCommandPaletteOpen(true)} />} />
                 <Route path="/image-tools" element={<ImageTools />} />
                 <Route path="/bg-remover" element={<BackgroundRemover />} />
                 <Route path="/video-compressor" element={<VideoCompressor />} />
@@ -505,36 +293,20 @@ function App() {
                 <Route path="/video-frame-extractor" element={<VideoFrameExtractor />} />
                 <Route path="/collage-maker" element={<CollageMaker />} />
                 <Route path="/asset-extractor" element={<AssetExtractor />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
           </MainContentWrapper>
           
           <DragDropOverlay 
             onDropImageToModal={(file) => processImageBlob(file, file.name)}
-            onDirectDownload={(file, format = 'png') => {
-              const img = new Image();
-              img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                
-                canvas.toBlob((blob) => {
-                  if (!blob) return;
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = file.name ? file.name.replace(/\.[^/.]+$/, "") + `.${format}` : `converted.${format}`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                  setGlobalToast({ text: `Image auto-converted to ${format.toUpperCase()} and downloaded!`, type: 'success' });
-                }, `image/${format}`);
-              };
-              img.onerror = () => {
-                setGlobalToast({ text: "Error: The dragged file is not a valid image.", type: 'error' });
-              };
-              img.src = URL.createObjectURL(file);
+            onDirectDownload={async (file, format = 'png') => {
+              try {
+                await convertImageAndDownload(file, format);
+                setGlobalToast({ text: `Image auto-converted to ${format.toUpperCase()} and downloaded!`, type: 'success' });
+              } catch (err) {
+                setGlobalToast({ text: `Error: ${err.message}`, type: 'error' });
+              }
             }}
             onCompressImage={async (file) => {
               try {
@@ -561,77 +333,21 @@ function App() {
 
           <BackgroundJobsWidget />
 
-          {showModal && (
-            <div className="modal-overlay">
-              <div className="modal glass-panel animate-fade-in" style={{ maxWidth: '420px', width: '90%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <h3 style={{ margin: 0 }}>Save {blobType === 'gif' ? 'Animated GIF' : 'Image'}</h3>
-                  {blobType === 'gif' && (
-                    <span style={{ 
-                      fontSize: '0.7rem', 
-                      fontWeight: 'bold', 
-                      background: 'rgba(64, 224, 208, 0.15)', 
-                      color: 'var(--accent-color)', 
-                      padding: '0.2rem 0.6rem', 
-                      borderRadius: '12px',
-                      border: '1px solid var(--accent-color)',
-                      letterSpacing: '0.5px'
-                    }}>
-                      ✨ ANIMATED GIF
-                    </span>
-                  )}
-                </div>
-                <p style={{ marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  {blobType === 'gif' 
-                    ? 'Animated GIF detected! We preserved all frames and original animation.' 
-                    : 'Enter a name for your pasted image.'}
-                </p>
+          <SaveImageModal 
+            isOpen={showModal}
+            blobType={blobType}
+            previewUrl={previewUrl}
+            filename={filename}
+            onFilenameChange={setFilename}
+            onSave={handleDownload}
+            onCancel={handleCancelModal}
+          />
 
-                {previewUrl && (
-                  <div style={{ 
-                    maxHeight: '160px', 
-                    borderRadius: 'var(--border-radius-sm)', 
-                    overflow: 'hidden', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    marginBottom: '1rem',
-                    background: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\'><rect width=\'8\' height=\'8\' fill=\'%23222\'/><rect x=\'8\' y=\'8\' width=\'8\' height=\'8\' fill=\'%23222\'/><rect x=\'8\' width=\'8\' height=\'8\' fill=\'%23333\'/><rect y=\'8\' width=\'8\' height=\'8\' fill=\'%23333\'/></svg>")',
-                    border: '1px solid var(--border-color)',
-                    padding: '0.5rem'
-                  }}>
-                    <img 
-                      src={previewUrl} 
-                      alt="Pasted Preview" 
-                      style={{ maxWidth: '100%', maxHeight: '140px', objectFit: 'contain' }} 
-                    />
-                  </div>
-                )}
-
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
-                  Filename ({blobType === 'gif' ? '.gif' : '.png'}):
-                </label>
-                <input 
-                  ref={inputRef}
-                  type="text" 
-                  className="input-field" 
-                  value={filename}
-                  onChange={(e) => setFilename(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleDownload();
-                    if (e.key === 'Escape') handleCancel();
-                  }}
-                  style={{ width: '100%' }}
-                />
-                <div className="button-group" style={{ justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                  <button className="btn" onClick={handleCancel}>Cancel</button>
-                  <button className="btn btn-primary" onClick={handleDownload}>
-                    Save {blobType === 'gif' ? 'as GIF' : 'as PNG'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          <CommandPalette 
+            isOpen={isCommandPaletteOpen}
+            onClose={() => setIsCommandPaletteOpen(false)}
+            onOpen={() => setIsCommandPaletteOpen(true)}
+          />
         </div>
       </Router>
     </ProcessingProvider>

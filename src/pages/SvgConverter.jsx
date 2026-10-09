@@ -1,7 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { CommandLineIcon as FileCode2, ArrowDownTrayIcon as Download, ClipboardDocumentIcon, CheckIcon as Check } from '@heroicons/react/24/solid';
+import { 
+  CommandLineIcon as FileCode2, 
+  ArrowDownTrayIcon as Download, 
+  ClipboardDocumentIcon, 
+  CheckIcon as Check 
+} from '@heroicons/react/24/solid';
 import SendToDropdown from '../components/SendToDropdown';
+import { downloadUrl, copyBlobToClipboard } from '../utils/downloadUtils';
+import { parseSvgDimensions } from './SvgConverter/svgParser';
+import { rasterizeSvgToBlob } from './SvgConverter/svgRasterizer';
+import DimensionControls from './SvgConverter/DimensionControls';
+import ColorTintControls from './SvgConverter/ColorTintControls';
 
 export default function SvgConverter() {
   const location = useLocation();
@@ -30,51 +40,13 @@ export default function SvgConverter() {
 
   // Robust SVG Dimension & Native Aspect Ratio Parser
   useEffect(() => {
-    if (!svgText.trim() || !svgText.includes('<svg')) return;
-    try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(svgText, "image/svg+xml");
-      const svgEl = doc.querySelector('svg');
-      if (svgEl) {
-        let wAttr = svgEl.getAttribute('width');
-        let hAttr = svgEl.getAttribute('height');
-        const viewBox = svgEl.getAttribute('viewBox');
-        
-        let parsedW = null;
-        let parsedH = null;
-
-        // Parse viewBox first for accurate aspect ratio
-        if (viewBox) {
-          const parts = viewBox.split(/[ ,\n\t]+/).filter(Boolean).map(parseFloat);
-          if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
-            parsedW = parts[2];
-            parsedH = parts[3];
-          }
-        }
-
-        // If width/height attributes are explicit numeric pixels, use them
-        if (wAttr && !wAttr.includes('%')) {
-          const wVal = parseFloat(wAttr);
-          if (wVal > 0) parsedW = wVal;
-        }
-        if (hAttr && !hAttr.includes('%')) {
-          const hVal = parseFloat(hAttr);
-          if (hVal > 0) parsedH = hVal;
-        }
-
-        if (parsedW && parsedH && parsedW > 0 && parsedH > 0) {
-          const ratio = parsedW / parsedH;
-          setAspectRatio(ratio);
-          
-          // Match output height to keep initial proportions without stretching
-          const targetW = 512;
-          const targetH = Math.round(targetW / ratio);
-          setWidth(targetW);
-          setHeight(targetH);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to parse SVG dimensions", e);
+    const dims = parseSvgDimensions(svgText);
+    if (dims.width && dims.height && dims.aspectRatio) {
+      setAspectRatio(dims.aspectRatio);
+      const targetW = 512;
+      const targetH = Math.round(targetW / dims.aspectRatio);
+      setWidth(targetW);
+      setHeight(targetH);
     }
   }, [svgText]);
 
@@ -85,73 +57,25 @@ export default function SvgConverter() {
   }, [previewUrl]);
 
   const handleConvert = useCallback(() => {
-    if (!svgText.trim() || !canvasRef.current || !svgText.includes('<svg')) return;
-
-    // Sanitize SVG blob so width/height match viewbox aspect ratio
-    const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    
-    const img = new Image();
-    img.onload = () => {
-      const canvas = canvasRef.current;
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, width, height);
-
-      // Calculate Contain-Fit Aspect Ratio so vector NEVER stretches
-      const imgW = img.naturalWidth || img.width || width;
-      const imgH = img.naturalHeight || img.height || height;
-      const imgAspect = imgW / imgH;
-
-      let drawW = width;
-      let drawH = height;
-      let drawX = 0;
-      let drawY = 0;
-
-      if (keepProportions && imgAspect > 0) {
-        const canvasAspect = width / height;
-        if (imgAspect > canvasAspect) {
-          drawH = width / imgAspect;
-          drawY = (height - drawH) / 2;
-        } else {
-          drawW = height * imgAspect;
-          drawX = (width - drawW) / 2;
-        }
-      }
-
-      ctx.drawImage(img, drawX, drawY, drawW, drawH);
-      
-      if (applyTint) {
-        ctx.globalCompositeOperation = 'source-in';
-        if (tintMode === 'solid') {
-          ctx.fillStyle = solidColor;
-        } else {
-          let x0 = 0, y0 = 0, x1 = 0, y1 = 0;
-          if (gradDirection === 'to-bottom') { y1 = height; }
-          else if (gradDirection === 'to-right') { x1 = width; }
-          else if (gradDirection === 'to-bottom-right') { x1 = width; y1 = height; }
-          else if (gradDirection === 'to-top-right') { y0 = height; x1 = width; }
-          
-          const grad = ctx.createLinearGradient(x0, y0, x1, y1);
-          grad.addColorStop(0, gradStart);
-          grad.addColorStop(1, gradEnd);
-          ctx.fillStyle = grad;
-        }
-        ctx.fillRect(0, 0, width, height);
-        ctx.globalCompositeOperation = 'source-over';
-      }
-      
-      canvas.toBlob((pngBlob) => {
-        if (!pngBlob) return;
-        setPreviewUrl(prev => {
-           if (prev) URL.revokeObjectURL(prev);
-           return URL.createObjectURL(pngBlob);
-        });
-      }, 'image/png');
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
+    rasterizeSvgToBlob({
+      canvas: canvasRef.current,
+      svgText,
+      width,
+      height,
+      keepProportions,
+      applyTint,
+      tintMode,
+      solidColor,
+      gradStart,
+      gradEnd,
+      gradDirection
+    }).then((pngBlob) => {
+      if (!pngBlob) return;
+      setPreviewUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(pngBlob);
+      });
+    });
   }, [svgText, width, height, keepProportions, applyTint, tintMode, solidColor, gradStart, gradEnd, gradDirection]);
 
   useEffect(() => {
@@ -163,10 +87,7 @@ export default function SvgConverter() {
 
   const handleDownload = () => {
     if (!previewUrl) return;
-    const a = document.createElement('a');
-    a.href = previewUrl;
-    a.download = `vector-${width}x${height}.png`;
-    a.click();
+    downloadUrl(previewUrl, `vector-${width}x${height}.png`);
   };
 
   const handleCopy = async () => {
@@ -174,26 +95,31 @@ export default function SvgConverter() {
     try {
       const response = await fetch(previewUrl);
       const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob })
-      ]);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
+      const success = await copyBlobToClipboard(blob);
+      if (success) {
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } else {
+        alert("Failed to copy image to clipboard.");
+      }
     } catch (err) {
       console.error("Failed to copy", err);
       alert("Failed to copy image to clipboard.");
     }
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
+  const loadSvgFile = (file) => {
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (event) => {
       setSvgText(event.target.result);
     };
     reader.readAsText(file);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    loadSvgFile(file);
   };
 
   const handleDragEnter = (e) => {
@@ -225,11 +151,7 @@ export default function SvgConverter() {
     }
     
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setSvgText(event.target.result);
-      };
-      reader.readAsText(file);
+      loadSvgFile(file);
       return;
     }
     
@@ -283,133 +205,34 @@ export default function SvgConverter() {
               placeholder="<svg>...</svg> or drag & drop a .svg file anywhere in this panel"
             />
           </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-            <div className="control-group" style={{ flex: 1, marginBottom: 0 }}>
-              <label>Output Width (px)</label>
-              <input 
-                type="number" 
-                className="input-field" 
-                value={width || ''} 
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setWidth(val);
-                  if (keepProportions && aspectRatio) setHeight(Math.round(val / aspectRatio));
-                }} 
-              />
-            </div>
-            <div className="control-group" style={{ flex: 1, marginBottom: 0 }}>
-              <label>Output Height (px)</label>
-              <input 
-                type="number" 
-                className="input-field" 
-                value={height || ''} 
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setHeight(val);
-                  if (keepProportions && aspectRatio) setWidth(Math.round(val * aspectRatio));
-                }} 
-              />
-            </div>
-          </div>
-          
-          <div style={{ marginBottom: '1rem', marginTop: '0.75rem' }}>
-            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>
-              Vertical Height Presets:
-            </label>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {[500, 1000, 1500, 2000].map(size => (
-                <button 
-                  key={size}
-                  className="btn" 
-                  style={{ 
-                    padding: '0.3rem 0.75rem', 
-                    fontSize: '0.8rem', 
-                    background: height === size ? 'var(--accent-color)' : 'var(--bg-tertiary)', 
-                    color: 'white',
-                    border: height === size ? '1px solid var(--accent-color)' : '1px solid var(--border-color)'
-                  }}
-                  onClick={() => {
-                    setHeight(size);
-                    if (keepProportions && aspectRatio) setWidth(Math.round(size * aspectRatio));
-                  }}
-                >
-                  {size}px
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-            <input 
-              type="checkbox" 
-              checked={keepProportions}
-              onChange={(e) => {
-                setKeepProportions(e.target.checked);
-                if (e.target.checked && width && height) {
-                  setAspectRatio(width / height);
-                }
-              }}
-              className="accent-primary"
-            />
-            Keep proportions
-          </label>
+
+          {/* Width, Height, Height Presets & Keep Proportions */}
+          <DimensionControls
+            width={width}
+            setWidth={setWidth}
+            height={height}
+            setHeight={setHeight}
+            aspectRatio={aspectRatio}
+            setAspectRatio={setAspectRatio}
+            keepProportions={keepProportions}
+            setKeepProportions={setKeepProportions}
+          />
 
           {/* Color Tint Controls */}
-          <div style={{ padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--border-radius)', marginBottom: '1.5rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', fontWeight: 'bold' }}>
-              <input 
-                type="checkbox" 
-                checked={applyTint}
-                onChange={(e) => setApplyTint(e.target.checked)}
-                className="accent-primary"
-              />
-              Override Colors
-            </label>
-            
-            {applyTint && (
-              <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <input type="radio" checked={tintMode === 'solid'} onChange={() => setTintMode('solid')} className="accent-primary" /> Solid
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <input type="radio" checked={tintMode === 'gradient'} onChange={() => setTintMode('gradient')} className="accent-primary" /> Gradient
-                  </label>
-                </div>
-
-                {tintMode === 'solid' ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input type="color" value={solidColor} onChange={(e) => setSolidColor(e.target.value)} style={{ width: '40px', height: '30px', padding: 0, border: 'none' }} />
-                    <span>Color</span>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <input type="color" value={gradStart} onChange={(e) => setGradStart(e.target.value)} style={{ width: '40px', height: '30px', padding: 0, border: 'none' }} />
-                        <span>Start</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <input type="color" value={gradEnd} onChange={(e) => setGradEnd(e.target.value)} style={{ width: '40px', height: '30px', padding: 0, border: 'none' }} />
-                        <span>End</span>
-                      </div>
-                    </div>
-                    <select 
-                      className="input-field" 
-                      value={gradDirection} 
-                      onChange={(e) => setGradDirection(e.target.value)}
-                      style={{ padding: '0.25rem 0.5rem' }}
-                    >
-                      <option value="to-bottom">Top to Bottom</option>
-                      <option value="to-right">Left to Right</option>
-                      <option value="to-bottom-right">Diagonal (TL to BR)</option>
-                      <option value="to-top-right">Diagonal (BL to TR)</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <ColorTintControls
+            applyTint={applyTint}
+            setApplyTint={setApplyTint}
+            tintMode={tintMode}
+            setTintMode={setTintMode}
+            solidColor={solidColor}
+            setSolidColor={setSolidColor}
+            gradStart={gradStart}
+            setGradStart={setGradStart}
+            gradEnd={gradEnd}
+            setGradEnd={setGradEnd}
+            gradDirection={gradDirection}
+            setGradDirection={setGradDirection}
+          />
         </div>
 
         <div className="glass-panel preview-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -424,7 +247,7 @@ export default function SvgConverter() {
                   maxHeight: '400px', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  justify: 'center',
+                  justifyContent: 'center',
                   padding: '1rem',
                   borderRadius: 'var(--border-radius-sm)',
                   background: 'linear-gradient(45deg, rgba(255,255,255,0.08) 25%, transparent 25%), linear-gradient(-45deg, rgba(255,255,255,0.08) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.08) 75%), linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.08) 75%) #090d16',

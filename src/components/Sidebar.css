@@ -24,6 +24,46 @@
   position: relative;
 }
 
+.sidebar-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.sidebar-search-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+}
+
+.sidebar-search-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-search-kbd {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 .logo-container {
   display: flex;
   align-items: center;
@@ -85,6 +125,35 @@
   margin-bottom: min(0.15rem, 0.3vh);
   margin-top: min(0.25rem, 0.5vh);
   opacity: 0.7;
+}
+
+.nav-items-grid {
+  display: flex;
+  flex-direction: column;
+  gap: min(0.25rem, 0.5vh);
+}
+
+.nav-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.nav-label {
+  font-size: 0.9rem;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.mobile-drawer-handle,
+.mobile-drawer-close-btn {
+  display: none;
 }
 
 .nav-link {
@@ -177,24 +246,232 @@
 }
 
 @media (max-width: 768px) {
+  /* Bottom Sheet App Drawer Container */
   .sidebar {
     position: fixed;
-    top: 0;
-    left: -100%;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100vw;
+    height: 88vh;
+    max-height: 88dvh;
+    border-radius: 26px 26px 0 0;
+    border-top: 1px solid var(--border-color);
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    transform: translateY(105%);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 1000;
-    width: 280px;
     background: var(--bg-secondary);
-    box-shadow: 4px 0 20px rgba(0,0,0,0.5);
-    overflow-y: auto;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
+
   .sidebar.open {
+    transform: translateY(0);
     left: 0;
   }
-  
-  .sidebar-header {
-    margin-bottom: 1rem;
+
+  /* Tactile Pill Handle at top of App Drawer */
+  .mobile-drawer-handle {
+    display: block;
+    width: 44px;
+    height: 5px;
+    border-radius: 4px;
+    background: var(--text-secondary);
+    opacity: 0.4;
+    margin: 10px auto 4px auto;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
   }
-  
+
+  .mobile-drawer-handle:active {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+
+  /* Header inside App Drawer */
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 1.25rem 0.5rem 1.25rem;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .mobile-drawer-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  .mobile-drawer-close-btn:hover,
+  .mobile-drawer-close-btn:active {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transform: scale(0.95);
+  }
+
+  /* Search bar inside App Drawer */
+  .sidebar-search-btn {
+    margin: 0.65rem 1rem 0.5rem 1rem;
+    width: calc(100% - 2rem);
+  }
+
+  /* Scrollable App Drawer Area */
+  .sidebar-nav {
+    padding: 0.5rem 0.75rem 2rem 0.75rem;
+    gap: 1.25rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav-category {
+    margin-bottom: 0.5rem;
+    gap: 0.4rem;
+  }
+
+  .nav-category-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    margin: 0.5rem 0 0.5rem 0.5rem;
+    display: block;
+  }
+
+  /* Grid of App Tiles (Mobile App Centric Layout) */
+  .nav-items-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px 6px;
+    justify-items: center;
+  }
+
+  @media (max-width: 360px) {
+    .nav-items-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px 4px;
+    }
+  }
+
+  /* App tile button */
+  .nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    gap: 6px;
+    padding: 4px 2px;
+    border-radius: 14px;
+    text-decoration: none;
+    width: 100%;
+    max-width: 80px;
+    background: transparent;
+    border: none;
+    overflow: visible;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Remove desktop sliding hover bars on mobile */
+  .nav-link::before,
+  .nav-link::after {
+    display: none !important;
+  }
+
+  /* The Rounded Square App Icon Box (Squircle) */
+  .nav-icon-box {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+    transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .nav-link:active .nav-icon-box {
+    transform: scale(0.92);
+  }
+
+  /* Active App Tile */
+  .nav-link.active .nav-icon-box {
+    background: var(--accent-gradient);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 6px 18px rgba(64, 224, 208, 0.45);
+    transform: scale(1.04);
+  }
+
+  /* Icon inside the Squircle */
+  .nav-icon {
+    width: 28px !important;
+    height: 28px !important;
+    transition: transform 0.15s ease;
+  }
+
+  .nav-link:hover .nav-icon {
+    transform: none;
+  }
+
+  .nav-link svg {
+    fill: url(#accent-grad);
+  }
+
+  .nav-link.active svg {
+    fill: #ffffff !important;
+    color: #ffffff !important;
+  }
+
+  /* App Title Below the Rounded Square */
+  .nav-label {
+    font-size: 0.72rem;
+    line-height: 1.15;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 72px;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 2px;
+    transition: color 0.15s ease;
+  }
+
+  .nav-link.active .nav-label {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .sidebar-footer {
+    padding: 0.75rem 1rem env(safe-area-inset-bottom, 0.75rem) 1rem;
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+  }
+
   .hidden-on-mobile {
     display: none !important;
   }
@@ -226,7 +503,7 @@
   justify-content: center;
 }
 
-@media (max-height: 800px) {
+@media (min-width: 769px) and (max-height: 800px) {
   .nav-category-title {
     display: none;
   }

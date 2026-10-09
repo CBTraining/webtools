@@ -37,6 +37,7 @@ export default defineConfig({
         ]
       },
       workbox: {
+        globIgnores: ['**/*.wasm'],
         maximumFileSizeToCacheInBytes: 50000000, // 50MB
         skipWaiting: true,
         clientsClaim: true,

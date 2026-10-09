@@ -6,6 +6,17 @@ import {
 } from '@heroicons/react/24/solid';
 import { ArrowDownTrayIcon as Download } from '@heroicons/react/24/outline';
 import SendToDropdown from '../../components/SendToDropdown';
+import { downloadBlob } from '../../utils/downloadUtils';
+import {
+  sampleColorsAlongLine,
+  applyEdgeInset,
+  applyDefringe,
+  computeColorKeyImageData
+} from './utils/imageMath';
+import RefineTab from './tabs/RefineTab';
+import BackdropTab from './tabs/BackdropTab';
+import BrushTab from './tabs/BrushTab';
+import ColorKeyTab from './tabs/ColorKeyTab';
 
 export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDiscard }) {
   const canvasRef = useRef(null);
@@ -142,51 +153,10 @@ export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDisca
     for (let i = 0; i < src.length; i++) dst[i] = src[i];
 
     // Morphological Erode / Inset (-5px to +5px)
-    if (edgeInset < 0) {
-      const radius = Math.abs(edgeInset);
-      const rInt = Math.ceil(radius);
-      const alphaCopy = new Uint8Array(w * h);
-      for (let i = 0; i < w * h; i++) alphaCopy[i] = src[i * 4 + 3];
-
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const idx = y * w + x;
-          const a = alphaCopy[idx];
-          if (a > 0 && a < 255) {
-            let minA = a;
-            for (let dy = -rInt; dy <= rInt; dy++) {
-              const ny = y + dy;
-              if (ny < 0 || ny >= h) continue;
-              for (let dx = -rInt; dx <= rInt; dx++) {
-                const nx = x + dx;
-                if (nx < 0 || nx >= w) continue;
-                if (dx * dx + dy * dy <= radius * radius) {
-                  const neighborA = alphaCopy[ny * w + nx];
-                  if (neighborA < minA) minA = neighborA;
-                }
-              }
-            }
-            dst[idx * 4 + 3] = minA;
-          }
-        }
-      }
-    }
+    applyEdgeInset(src, dst, w, h, edgeInset);
 
     // De-fringe / Anti-Halo (Remove background color bleed on edge pixels)
-    if (defringe > 0 && orig) {
-      const factor = defringe / 100;
-      for (let i = 0; i < w * h; i++) {
-        const pi = i * 4;
-        const a = dst[pi + 3];
-        if (a > 5 && a < 250) {
-          const alphaFrac = a / 255;
-          const desat = (dst[pi] + dst[pi + 1] + dst[pi + 2]) / 3;
-          dst[pi] = Math.round(dst[pi] * (1 - factor * (1 - alphaFrac)) + desat * factor * (1 - alphaFrac));
-          dst[pi + 1] = Math.round(dst[pi + 1] * (1 - factor * (1 - alphaFrac)) + desat * factor * (1 - alphaFrac));
-          dst[pi + 2] = Math.round(dst[pi + 2] * (1 - factor * (1 - alphaFrac)) + desat * factor * (1 - alphaFrac));
-        }
-      }
-    }
+    applyDefringe(dst, w, h, defringe, orig);
 
     cutCtx.putImageData(outputData, 0, 0);
 
@@ -223,94 +193,13 @@ export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDisca
     };
   };
 
-  const sampleColorsAlongLine = (x0, y0, x1, y1, data, width, height, targetArray) => {
-    const dx = Math.abs(x1 - x0);
-    const dy = Math.abs(y1 - y0);
-    const steps = Math.max(Math.ceil(Math.max(dx, dy)), 1);
-    
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const px = Math.round(x0 + (x1 - x0) * t);
-      const py = Math.round(y0 + (y1 - y0) * t);
-      
-      if (px >= 0 && px < width && py >= 0 && py < height) {
-        const idx = (py * width + px) * 4;
-        if (data[idx + 3] > 0) {
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
-          
-          let isDuplicate = false;
-          for (let c = 0; c < targetArray.length; c++) {
-            const sc = targetArray[c];
-            const dist = Math.sqrt((r - sc.r)**2 + (g - sc.g)**2 + (b - sc.b)**2);
-            if (dist < 4) { isDuplicate = true; break; }
-          }
-          
-          if (!isDuplicate) {
-            targetArray.push({ r, g, b });
-          }
-        }
-      }
-    }
-  };
-
-  const applyColorKey = (colors, currentTolerance, currentFeather) => {
+  const applyColorKey = useCallback((colors, currentTolerance, currentFeather) => {
     if (!canvasRef.current || !baseImageData) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
-    if (!colors || colors.length === 0) {
-      ctx.putImageData(baseImageData, 0, 0);
-      return;
-    }
-    
-    const w = baseImageData.width;
-    const h = baseImageData.height;
-    const imgData = ctx.createImageData(w, h);
-    const src = baseImageData.data;
-    const dst = imgData.data;
-    
-    const tolSq = currentTolerance * currentTolerance * 3;
-    const featherDist = currentFeather * 1.5;
-    const outerTolSq = (currentTolerance + featherDist) * (currentTolerance + featherDist) * 3;
-    
-    for (let i = 0; i < src.length; i += 4) {
-      const a = src[i + 3];
-      if (a === 0) {
-        dst[i] = src[i]; dst[i+1] = src[i+1]; dst[i+2] = src[i+2]; dst[i+3] = 0;
-        continue;
-      }
-      
-      const r = src[i];
-      const g = src[i + 1];
-      const b = src[i + 2];
-      
-      let minDistanceSq = Infinity;
-      for (let j = 0; j < colors.length; j++) {
-        const sc = colors[j];
-        const dSq = (r - sc.r)**2 + (g - sc.g)**2 + (b - sc.b)**2;
-        if (dSq < minDistanceSq) {
-          minDistanceSq = dSq;
-          if (minDistanceSq <= tolSq) break;
-        }
-      }
-      
-      dst[i] = r; dst[i + 1] = g; dst[i + 2] = b;
-      
-      if (minDistanceSq <= tolSq) {
-        dst[i + 3] = 0;
-      } else if (minDistanceSq < outerTolSq && currentFeather > 0) {
-        const dist = Math.sqrt(minDistanceSq);
-        const factor = (dist - currentTolerance * Math.sqrt(3)) / (featherDist * Math.sqrt(3));
-        dst[i + 3] = Math.round(a * Math.max(0, Math.min(1, factor)));
-      } else {
-        dst[i + 3] = a;
-      }
-    }
-    
+    const imgData = computeColorKeyImageData(baseImageData, colors, currentTolerance, currentFeather, ctx);
     ctx.putImageData(imgData, 0, 0);
-  };
+  }, [baseImageData]);
 
   const drawBrush = (e) => {
     if (!isDrawing || !canvasRef.current) return;
@@ -432,12 +321,7 @@ export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDisca
     const canvas = canvasRef.current;
     canvas.toBlob((blob) => {
       if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName ? `nobg-${fileName.replace(/\.[^/.]+$/, "")}.png` : `nobg-${Date.now()}.png`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      downloadBlob(blob, fileName ? `nobg-${fileName.replace(/\.[^/.]+$/, "")}.png` : `nobg-${Date.now()}.png`);
     }, 'image/png');
   };
 
@@ -512,256 +396,56 @@ export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDisca
 
        {/* Tab 1: Edge Refinement */}
        {editorTab === 'refine' && (
-         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-primary)', padding: '0.75rem 1rem', borderRadius: 'var(--border-radius-sm)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              {/* Edge Inset / Erode */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.25rem' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>📐 Edge Inset / Erode</span>
-                  <span style={{ color: edgeInset !== 0 ? 'var(--accent-color)' : 'var(--text-muted)', fontWeight: 'bold' }}>{edgeInset}px</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="-4" 
-                  max="4" 
-                  step="0.5"
-                  value={edgeInset} 
-                  onChange={(e) => setEdgeInset(parseFloat(e.target.value))}
-                  style={{ width: '100%', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
-                />
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                  Contract inward (-px) to instantly eliminate edge halos.
-                </div>
-              </div>
-
-              {/* De-Fringe / Anti-Halo */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.25rem' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>✨ De-Fringe (De-Spill)</span>
-                  <span style={{ color: defringe > 0 ? 'var(--accent-color)' : 'var(--text-muted)', fontWeight: 'bold' }}>{defringe}%</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="100" 
-                  value={defringe} 
-                  onChange={(e) => setDefringe(parseInt(e.target.value))}
-                  style={{ width: '100%', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
-                />
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                  Removes background color bleed & light bounce from hair.
-                </div>
-              </div>
-
-              {/* Edge Feather */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.25rem' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>🪶 Edge Softness / Feather</span>
-                  <span style={{ color: edgeFeather > 0 ? 'var(--accent-color)' : 'var(--text-muted)', fontWeight: 'bold' }}>{edgeFeather}px</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="8" 
-                  step="0.5"
-                  value={edgeFeather} 
-                  onChange={(e) => setEdgeFeather(parseFloat(e.target.value))}
-                  style={{ width: '100%', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
-                />
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                  Smooths pixelated cut lines for natural transition.
-                </div>
-              </div>
-            </div>
-         </div>
+         <RefineTab
+           edgeInset={edgeInset}
+           setEdgeInset={setEdgeInset}
+           defringe={defringe}
+           setDefringe={setDefringe}
+           edgeFeather={edgeFeather}
+           setEdgeFeather={setEdgeFeather}
+         />
        )}
 
        {/* Tab 2: Studio Backdrop */}
        {editorTab === 'backdrop' && (
-         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-primary)', padding: '0.75rem 1rem', borderRadius: 'var(--border-radius-sm)' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-               {[
-                 { id: 'transparent', label: 'Transparent' },
-                 { id: 'solid', label: 'Studio Solid' },
-                 { id: 'gradient', label: 'Gradient' },
-                 { id: 'bokeh', label: 'Portrait Bokeh Blur' }
-               ].map(b => (
-                 <button
-                   key={b.id}
-                   type="button"
-                   className="btn"
-                   onClick={() => setBackdropType(b.id)}
-                   style={{
-                     padding: '0.3rem 0.6rem', fontSize: '0.78rem',
-                     background: backdropType === b.id ? 'var(--accent-color)' : 'var(--bg-tertiary)',
-                     color: backdropType === b.id ? 'white' : 'var(--text-secondary)',
-                     border: backdropType === b.id ? '1px solid var(--accent-color)' : '1px solid var(--border-color)'
-                   }}
-                 >
-                   {b.label}
-                 </button>
-               ))}
-            </div>
-
-            {backdropType === 'solid' && (
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Color Preset:</span>
-                {['#ffffff', '#0b0f19', '#f1f5f9', '#ef4444', '#3b82f6', '#10b981'].map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setSolidColor(c)}
-                    style={{
-                      width: '24px', height: '24px', borderRadius: '50%', background: c,
-                      border: solidColor === c ? '2px solid var(--accent-color)' : '1px solid rgba(255,255,255,0.2)',
-                      cursor: 'pointer'
-                    }}
-                  />
-                ))}
-                <input 
-                  type="color" 
-                  value={solidColor} 
-                  onChange={(e) => setSolidColor(e.target.value)} 
-                  style={{ width: '32px', height: '26px', border: 'none', background: 'none', cursor: 'pointer', marginLeft: '0.5rem' }}
-                  title="Custom Color"
-                />
-              </div>
-            )}
-
-            {backdropType === 'gradient' && (
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Style:</span>
-                {[
-                  { id: 'studio', label: 'Studio Minimal' },
-                  { id: 'tech', label: 'Cyber Tech' },
-                  { id: 'sunset', label: 'Sunset Glow' },
-                  { id: 'dark', label: 'Dark Charcoal' }
-                ].map(g => (
-                  <button
-                    key={g.id}
-                    type="button"
-                    className="btn"
-                    onClick={() => setGradientPreset(g.id)}
-                    style={{
-                      padding: '0.25rem 0.5rem', fontSize: '0.75rem',
-                      background: gradientPreset === g.id ? 'var(--accent-color)' : 'var(--bg-tertiary)'
-                    }}
-                  >
-                    {g.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {backdropType === 'bokeh' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Background Blur: {bokehBlur}px</span>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="30" 
-                  value={bokehBlur} 
-                  onChange={(e) => setBokehBlur(parseInt(e.target.value))}
-                  style={{ flex: 1, accentColor: 'var(--accent-color)', cursor: 'pointer' }}
-                />
-              </div>
-            )}
-         </div>
+         <BackdropTab
+           backdropType={backdropType}
+           setBackdropType={setBackdropType}
+           solidColor={solidColor}
+           setSolidColor={setSolidColor}
+           gradientPreset={gradientPreset}
+           setGradientPreset={setGradientPreset}
+           bokehBlur={bokehBlur}
+           setBokehBlur={setBokehBlur}
+         />
        )}
 
        {/* Tab 3: Brush Controls */}
        {editorTab === 'brush' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.75rem 1rem', borderRadius: 'var(--border-radius-sm)' }}>
-             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                   <button 
-                      className={`btn ${mode === 'erase' ? 'btn-primary' : ''}`}
-                      onClick={() => setMode('erase')}
-                      style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
-                   >Erase</button>
-                   <button 
-                      className={`btn ${mode === 'restore' ? 'btn-primary' : ''}`}
-                      onClick={() => setMode('restore')}
-                      style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
-                   >Restore Original</button>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '150px' }}>
-                   <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Brush: {brushSize}px</span>
-                   <input 
-                      type="range" 
-                      min="5" 
-                      max="150" 
-                      value={brushSize} 
-                      onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                      style={{ flex: 1 }}
-                   />
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '150px' }}>
-                   <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Guide Opacity: {Math.round(overlayOpacity * 100)}%</span>
-                   <input 
-                      type="range" 
-                      min="0" 
-                      max="1" 
-                      step="0.05"
-                      value={overlayOpacity} 
-                      onChange={(e) => setOverlayOpacity(parseFloat(e.target.value))}
-                      style={{ flex: 1 }}
-                   />
-                </div>
-             </div>
-          </div>
+         <BrushTab
+           mode={mode}
+           setMode={setMode}
+           brushSize={brushSize}
+           setBrushSize={setBrushSize}
+           overlayOpacity={overlayOpacity}
+           setOverlayOpacity={setOverlayOpacity}
+         />
        )}
 
        {/* Tab 4: Color Key Controls */}
        {editorTab === 'colorkey' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.75rem 1rem', borderRadius: 'var(--border-radius-sm)' }}>
-             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <button 
-                   className="btn"
-                   onClick={() => {
-                     setSampledColors([]);
-                     applyColorKey([], tolerance, feather);
-                   }}
-                   style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
-                >
-                   Clear Sampled Colors ({sampledColors.length})
-                </button>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '130px' }}>
-                   <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Tolerance: {tolerance}</span>
-                   <input 
-                      type="range" 
-                      min="1" 
-                      max="100" 
-                      value={tolerance} 
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        setTolerance(val);
-                        applyColorKey(sampledColors, val, feather);
-                      }}
-                      style={{ flex: 1 }}
-                   />
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '130px' }}>
-                   <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Feather: {feather}%</span>
-                   <input 
-                      type="range" 
-                      min="0" 
-                      max="100" 
-                      value={feather} 
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        setFeather(val);
-                        applyColorKey(sampledColors, tolerance, val);
-                      }}
-                      style={{ flex: 1 }}
-                   />
-                </div>
-             </div>
-          </div>
+         <ColorKeyTab
+           sampledColors={sampledColors}
+           onClearColors={() => {
+             setSampledColors([]);
+             applyColorKey([], tolerance, feather);
+           }}
+           tolerance={tolerance}
+           setTolerance={setTolerance}
+           feather={feather}
+           setFeather={setFeather}
+           onApplyColorKey={applyColorKey}
+         />
        )}
 
        {/* Canvas Display */}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useProcessing } from '../contexts/ProcessingContext';
 import { XMarkIcon, ArrowDownTrayIcon, PlayCircleIcon } from '@heroicons/react/24/solid';
+import { downloadUrl } from '../utils/downloadUtils';
 
 export default function BackgroundJobsWidget() {
   const { jobs, removeJob } = useProcessing();
@@ -9,10 +10,7 @@ export default function BackgroundJobsWidget() {
 
   const handleDownload = (job) => {
     if (job.resultUrl) {
-      const a = document.createElement('a');
-      a.href = job.resultUrl;
-      a.download = job.downloadName || 'download';
-      a.click();
+      downloadUrl(job.resultUrl, job.downloadName || 'download');
     }
   };
 

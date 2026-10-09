@@ -1,45 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { RectangleGroupIcon, ArrowDownTrayIcon as Download, ClipboardDocumentIcon, CheckIcon as Check } from '@heroicons/react/24/solid';
 import GradientEditor from '../components/GradientEditor';
-
-const trimCanvas = (canvas) => {
-  const ctx = canvas.getContext('2d');
-  const width = canvas.width;
-  const height = canvas.height;
-  const pixels = ctx.getImageData(0, 0, width, height).data;
-  
-  let x, y, bound = {
-    top: height,
-    left: width,
-    right: 0,
-    bottom: 0
-  };
-
-  for (y = 0; y < height; y++) {
-    for (x = 0; x < width; x++) {
-      let alpha = pixels[(y * width + x) * 4 + 3];
-      if (alpha > 0) {
-        if (y < bound.top) bound.top = y;
-        if (y > bound.bottom) bound.bottom = y;
-        if (x < bound.left) bound.left = x;
-        if (x > bound.right) bound.right = x;
-      }
-    }
-  }
-
-  if (bound.top > bound.bottom || bound.left > bound.right) return canvas;
-
-  const trimHeight = bound.bottom - bound.top + 1;
-  const trimWidth = bound.right - bound.left + 1;
-
-  const trimmed = document.createElement('canvas');
-  trimmed.width = trimWidth;
-  trimmed.height = trimHeight;
-  const tCtx = trimmed.getContext('2d');
-  tCtx.drawImage(canvas, bound.left, bound.top, trimWidth, trimHeight, 0, 0, trimWidth, trimHeight);
-  
-  return trimmed;
-};
+import { downloadUrl, copyBlobToClipboard } from '../utils/downloadUtils';
+import { renderShapeToTrimmedCanvas } from './ShapeGenerator/shapeCanvasUtils';
+import ShapePresetsBar from './ShapeGenerator/ShapePresetsBar';
 
 export default function ShapeGenerator() {
   const [shapeWidth, setShapeWidth] = useState(() => {
@@ -107,64 +71,17 @@ export default function ShapeGenerator() {
   const [copySuccess, setCopySuccess] = useState(false);
   
   const renderShape = useCallback(() => {
-    const canvas = document.createElement('canvas');
-    // Give enough padding for any blur to avoid clipping
-    const padding = blurRadius * 4 + 20; 
-    canvas.width = shapeWidth + padding * 2;
-    canvas.height = shapeHeight + padding * 2;
-    const ctx = canvas.getContext('2d');
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (tintMode === 'solid') {
-      ctx.fillStyle = solidColor;
-    } else {
-      let x0 = 0, y0 = 0, x1 = 0, y1 = 0;
-      switch(gradDirection) {
-        case 'to-bottom': x0 = 0; y0 = 0; x1 = 0; y1 = canvas.height; break;
-        case 'to-top': x0 = 0; y0 = canvas.height; x1 = 0; y1 = 0; break;
-        case 'to-right': x0 = 0; y0 = 0; x1 = canvas.width; y1 = 0; break;
-        case 'to-left': x0 = canvas.width; y0 = 0; x1 = 0; y1 = 0; break;
-        case 'to-bottom-right': x0 = 0; y0 = 0; x1 = canvas.width; y1 = canvas.height; break;
-        case 'to-top-left': x0 = canvas.width; y0 = canvas.height; x1 = 0; y1 = 0; break;
-        case 'to-top-right': x0 = 0; y0 = canvas.height; x1 = canvas.width; y1 = 0; break;
-        case 'to-bottom-left': x0 = canvas.width; y0 = 0; x1 = 0; y1 = canvas.height; break;
-        default: x0 = 0; y0 = 0; x1 = canvas.width; y1 = canvas.height;
-      }
-      const gradient = ctx.createLinearGradient(x0, y0, x1, y1);
-      
-      const sortedStops = [...gradStops].sort((a, b) => a.position - b.position);
-      sortedStops.forEach(stop => {
-        gradient.addColorStop(stop.position, stop.color);
-      });
-      
-      ctx.fillStyle = gradient;
-    }
-
-    const x = padding;
-    const y = padding;
-    
-    const drawPath = () => {
-      ctx.beginPath();
-      ctx.roundRect(x, y, shapeWidth, shapeHeight, borderRadius);
-      ctx.fill();
-    };
-
-    if (glowMode && blurRadius > 0) {
-      ctx.filter = `blur(${blurRadius}px)`;
-      drawPath();
-      
-      ctx.filter = 'none';
-      drawPath();
-    } else {
-      ctx.filter = blurRadius > 0 ? `blur(${blurRadius}px)` : 'none';
-      drawPath();
-    }
-
-    ctx.filter = 'none';
-
-    // Trim the canvas to perfectly crop out all empty space
-    const trimmed = trimCanvas(canvas);
+    const trimmed = renderShapeToTrimmedCanvas({
+      shapeWidth,
+      shapeHeight,
+      borderRadius,
+      blurRadius,
+      glowMode,
+      tintMode,
+      solidColor,
+      gradStops,
+      gradDirection
+    });
     setActualWidth(trimmed.width);
     setActualHeight(trimmed.height);
     setPreviewUrl(trimmed.toDataURL('image/png'));
@@ -182,11 +99,11 @@ export default function ShapeGenerator() {
     try {
       const response = await fetch(previewUrl);
       const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
+      const success = await copyBlobToClipboard(blob);
+      if (success) {
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      }
     } catch (err) {
       console.error('Failed to copy image: ', err);
     }
@@ -194,10 +111,7 @@ export default function ShapeGenerator() {
 
   const handleDownload = () => {
     if (!previewUrl) return;
-    const a = document.createElement('a');
-    a.href = previewUrl;
-    a.download = 'generated-shape.png';
-    a.click();
+    downloadUrl(previewUrl, 'generated-shape.png');
   };
 
   const applyGooglePreset = () => {
@@ -379,48 +293,17 @@ export default function ShapeGenerator() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Presets:</span>
-              <button className="primary-btn outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }} onClick={applyGooglePreset}>Google</button>
-              <button className="primary-btn outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }} onClick={applyNotebookLMPreset}>NotebookLM</button>
-              <button className="primary-btn outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }} onClick={applyOceanPreset}>Ocean</button>
-              
-              {savedPresets.map(preset => (
-                <div key={preset.id} style={{ display: 'flex', alignItems: 'center' }}>
-                  <button 
-                    className="primary-btn outline" 
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', borderTopRightRadius: 0, borderBottomRightRadius: 0 }} 
-                    onClick={() => applyCustomPreset(preset)}
-                  >
-                    {preset.name}
-                  </button>
-                  <button 
-                    className="primary-btn outline" 
-                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: 'none', color: 'var(--error-color)' }} 
-                    onClick={() => deletePreset(preset.id)}
-                    title="Delete Preset"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              
-              <button className="primary-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', marginLeft: '0.5rem' }} onClick={saveCurrentAsPreset}>+ Save Custom Preset</button>
-              
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Direction:</label>
-                <select className="text-input" value={gradDirection} onChange={e => setGradDirection(e.target.value)} style={{ padding: '0.25rem 0.5rem' }}>
-                  <option value="to-bottom-right">Top-Left to Bottom-Right</option>
-                  <option value="to-top-left">Bottom-Right to Top-Left</option>
-                  <option value="to-top-right">Bottom-Left to Top-Right</option>
-                  <option value="to-bottom-left">Top-Right to Bottom-Left</option>
-                  <option value="to-right">Left to Right</option>
-                  <option value="to-left">Right to Left</option>
-                  <option value="to-bottom">Top to Bottom</option>
-                  <option value="to-top">Bottom to Top</option>
-                </select>
-              </div>
-            </div>
+            <ShapePresetsBar
+              onApplyGooglePreset={applyGooglePreset}
+              onApplyNotebookLMPreset={applyNotebookLMPreset}
+              onApplyOceanPreset={applyOceanPreset}
+              savedPresets={savedPresets}
+              onApplyCustomPreset={applyCustomPreset}
+              onDeletePreset={deletePreset}
+              onSaveCurrentAsPreset={saveCurrentAsPreset}
+              gradDirection={gradDirection}
+              setGradDirection={setGradDirection}
+            />
 
             <GradientEditor stops={gradStops} onChange={setGradStops} />
           </div>

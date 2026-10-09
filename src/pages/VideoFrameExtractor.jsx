@@ -1,72 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { FilmIcon, CloudArrowUpIcon as UploadCloud, ArrowDownTrayIcon as Download, XMarkIcon as XMark, ClipboardDocumentIcon, CheckIcon as Check, PlayIcon, PauseIcon, ForwardIcon, BackwardIcon } from '@heroicons/react/24/solid';
+import { FilmIcon, CloudArrowUpIcon as UploadCloud, XMarkIcon as XMark } from '@heroicons/react/24/solid';
 import { isVideoFile } from '../utils/fileTypes';
-import SendToDropdown from '../components/SendToDropdown';
-
-function extractYouTubeVideoId(url) {
-  if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-}
-
-const fetchYouTubeVideoStream = async (youtubeUrl, videoId) => {
-  // Strategy 1: Try Cobalt API
-  try {
-    const res = await fetch('https://api.cobalt.tools/', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url: youtubeUrl,
-        videoQuality: '1080'
-      })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.url) return data.url;
-    }
-  } catch (e) {
-    console.warn("Cobalt API failed", e);
-  }
-
-  // Strategy 2: Try Piped API
-  try {
-    const res = await fetch(`https://pipedapi.kavin.rocks/streams/${videoId}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.videoStreams && data.videoStreams.length > 0) {
-        const mp4Streams = data.videoStreams.filter(s => s.mimeType?.includes('mp4') || s.format === 'v1080p' || s.format === 'v720p');
-        const bestStream = mp4Streams[0] || data.videoStreams[0];
-        if (bestStream?.url) return bestStream.url;
-      }
-    }
-  } catch (e) {
-    console.warn("Piped API failed", e);
-  }
-
-  // Strategy 3: Try Invidious API instances
-  const invidiousInstances = ['https://invidious.drgns.space', 'https://inv.privacydev.net'];
-  for (const instance of invidiousInstances) {
-    try {
-      const res = await fetch(`${instance}/api/v1/videos/${videoId}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.formatStreams && data.formatStreams.length > 0) {
-          const mp4 = data.formatStreams.find(s => s.container === 'mp4') || data.formatStreams[0];
-          if (mp4?.url) return mp4.url;
-        }
-      }
-    } catch (e) {
-      console.warn(`Invidious instance ${instance} failed`, e);
-    }
-  }
-
-  throw new Error("Unable to resolve direct video stream for this YouTube link. Please ensure the video is public.");
-};
+import { downloadBlob, copyBlobToClipboard } from '../utils/downloadUtils';
+import { extractYouTubeVideoId, fetchYouTubeVideoStream } from './VideoFrameExtractor/youtubeResolver';
+import VideoPlayerControls from './VideoFrameExtractor/VideoPlayerControls';
 
 export default function VideoFrameExtractor() {
   const [videoFile, setVideoFile] = useState(null);
@@ -182,8 +120,8 @@ export default function VideoFrameExtractor() {
   const handleProgress = () => {
     if (videoRef.current && videoRef.current.buffered.length > 0 && videoRef.current.duration) {
       const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
-      const duration = videoRef.current.duration;
-      setLoadingProgress(Math.round((bufferedEnd / duration) * 100));
+      const dur = videoRef.current.duration;
+      setLoadingProgress(Math.round((bufferedEnd / dur) * 100));
     }
   };
 
@@ -248,38 +186,23 @@ export default function VideoFrameExtractor() {
   const handleDownload = () => {
     captureFrame((blob) => {
       if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
       const baseName = videoFile ? videoFile.name.replace(/\.[^/.]+$/, "") : 'extracted_frame';
       const timeStamp = currentTime.toFixed(2).replace('.', '_');
-      a.download = `${baseName}_frame_${timeStamp}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${baseName}_frame_${timeStamp}.png`);
     });
   };
 
   const handleCopy = () => {
     captureFrame(async (blob) => {
       if (!blob) return;
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob })
-        ]);
+      const success = await copyBlobToClipboard(blob);
+      if (success) {
         setCopySuccess(true);
         setTimeout(() => setCopySuccess(false), 2000);
-      } catch (err) {
-        console.error("Clipboard copy failed", err);
+      } else {
         alert("Failed to copy to clipboard. Ensure your browser supports this feature.");
       }
     });
-  };
-
-  const formatTime = (timeInSeconds) => {
-    const mins = Math.floor(timeInSeconds / 60);
-    const secs = Math.floor(timeInSeconds % 60);
-    const ms = Math.floor((timeInSeconds % 1) * 100);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -352,17 +275,17 @@ export default function VideoFrameExtractor() {
             }}>
               {isLoading && (
                 <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10, color: 'white' }}>
-                   <div style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{ytLoadingText || 'Loading Video...'}</div>
-                   <div style={{ width: '80%', maxWidth: '300px', height: '10px', background: 'var(--bg-tertiary)', borderRadius: '5px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${loadingProgress}%`, background: 'var(--accent-color)', transition: 'width 0.2s ease-out' }}></div>
-                   </div>
-                   <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>{loadingProgress}%</div>
+                  <div style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{ytLoadingText || 'Loading Video...'}</div>
+                  <div style={{ width: '80%', maxWidth: '300px', height: '10px', background: 'var(--bg-tertiary)', borderRadius: '5px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${loadingProgress}%`, background: 'var(--accent-color)', transition: 'width 0.2s ease-out' }}></div>
+                  </div>
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>{loadingProgress}%</div>
                 </div>
               )}
               <video 
                 ref={videoRef}
                 src={videoUrl} 
-                crossOrigin="anonymous" /* Important for extracting frames from external URLs if CORS is supported */
+                crossOrigin="anonymous"
                 onLoadedMetadata={handleLoadedMetadata}
                 onLoadedData={handleLoadedData}
                 onProgress={handleProgress}
@@ -373,52 +296,18 @@ export default function VideoFrameExtractor() {
               />
             </div>
             
-            {/* Custom Controls */}
-            <div className="glass-panel" style={{ width: '100%', maxWidth: '800px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-tertiary)' }}>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ fontSize: '0.85rem', fontFamily: 'monospace', minWidth: '60px' }}>{formatTime(currentTime)}</span>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max={duration || 100} 
-                  step="0.001" 
-                  value={currentTime} 
-                  onChange={handleSeek}
-                  style={{ flex: 1, accentColor: 'var(--accent-color)', cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: '0.85rem', fontFamily: 'monospace', minWidth: '60px' }}>{formatTime(duration)}</span>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
-                <button className="btn" onClick={() => stepFrame(false)} title="Previous Frame (-1/30s)">
-                  <BackwardIcon style={{width: '20px', height: '20px'}} />
-                </button>
-                <button className="btn btn-primary" onClick={togglePlay} style={{ padding: '0.75rem', borderRadius: '50%' }}>
-                  {isPlaying ? <PauseIcon style={{width: '24px', height: '24px'}} /> : <PlayIcon style={{width: '24px', height: '24px', marginLeft: '4px'}} />}
-                </button>
-                <button className="btn" onClick={() => stepFrame(true)} title="Next Frame (+1/30s)">
-                  <ForwardIcon style={{width: '20px', height: '20px'}} />
-                </button>
-              </div>
-              
-            </div>
-
-            {/* Export Options */}
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <button className="btn btn-primary" onClick={handleDownload} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem' }}>
-                <Download style={{width: '18px', height: '18px'}} />
-                Download PNG Frame
-              </button>
-              <button className="btn" onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem' }}>
-                {copySuccess ? <Check style={{width: '18px', height: '18px', color: '#10b981' }} /> : <ClipboardDocumentIcon style={{width: '18px', height: '18px'}} />}
-                {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
-              </button>
-              <SendToDropdown 
-                imageUrl={canvasRef.current ? canvasRef.current.toDataURL('image/png') : undefined}
-                mediaType="image"
-              />
-            </div>
+            <VideoPlayerControls
+              currentTime={currentTime}
+              duration={duration}
+              onSeek={handleSeek}
+              isPlaying={isPlaying}
+              onTogglePlay={togglePlay}
+              onStepFrame={stepFrame}
+              onDownload={handleDownload}
+              onCopy={handleCopy}
+              copySuccess={copySuccess}
+              canvasRef={canvasRef}
+            />
             
             {/* Invisible Canvas for extraction */}
             <canvas ref={canvasRef} style={{ display: 'none' }} />

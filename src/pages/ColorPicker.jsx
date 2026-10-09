@@ -1,53 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { EyeDropperIcon as EyeDropper, DocumentDuplicateIcon as CopyIcon, CheckIcon as Check, TrashIcon as Trash, SwatchIcon } from '@heroicons/react/24/solid';
-
-const hexToHSL = (hex) => {
-  if (!hex || hex.length < 7) return [0, 0, 0];
-  let r = parseInt(hex.slice(1, 3), 16) / 255;
-  let g = parseInt(hex.slice(3, 5), 16) / 255;
-  let b = parseInt(hex.slice(5, 7), 16) / 255;
-  let max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
-
-  if (max !== min) {
-    let d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
-};
-
-const hslToHex = (h, s, l) => {
-  l /= 100;
-  const a = s * Math.min(l, 1 - l) / 100;
-  const f = n => {
-    const k = (n + h / 30) % 12;
-    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color).toString(16).padStart(2, '0');
-  };
-  return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
-};
-
-const generateScheme = (baseHex) => {
-  if (!baseHex) return null;
-  const [h, s, l] = hexToHSL(baseHex);
-  
-  return [
-    { label: 'Complementary', hex: hslToHex((h + 180) % 360, s, l) },
-    { label: 'Analogous', hex: hslToHex((h + 30) % 360, s, l) },
-    { label: 'Analogous', hex: hslToHex((h + 330) % 360, s, l) },
-    { label: 'Triadic', hex: hslToHex((h + 120) % 360, s, l) },
-    { label: 'Triadic', hex: hslToHex((h + 240) % 360, s, l) }
-  ];
-};
+import { EyeDropperIcon as EyeDropper, CheckIcon as Check } from '@heroicons/react/24/solid';
+import ColorHistoryGrid from './ColorPicker/ColorHistoryGrid';
+import ColorSwatchesScheme from './ColorPicker/ColorSwatchesScheme';
 
 export default function ColorPicker() {
-  const [colors, setColors] = useState([]);
+  const [colors, setColors] = useState(() => {
+    try {
+      const saved = localStorage.getItem('colorPickerHistory');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [copiedColor, setCopiedColor] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
   const [isDropping, setIsDropping] = useState(false);
@@ -60,16 +24,12 @@ export default function ColorPicker() {
     if (!window.EyeDropper || isWindows) {
       setUseNative(false);
     }
-    // Load history
-    const saved = localStorage.getItem('colorPickerHistory');
-    if (saved) {
-      try {
-        setColors(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse color history");
-      }
-    }
   }, []);
+
+  const saveColors = (newColors) => {
+    setColors(newColors);
+    localStorage.setItem('colorPickerHistory', JSON.stringify(newColors));
+  };
 
   const handleFallbackColorChange = (e) => {
     const hex = e.target.value.toUpperCase();
@@ -93,11 +53,6 @@ export default function ColorPicker() {
         setTimeout(() => setCopiedColor(null), 2000);
       }).catch(err => console.error("Clipboard copy failed", err));
     }, 600); // 600ms pause means they have finalized their color
-  };
-
-  const saveColors = (newColors) => {
-    setColors(newColors);
-    localStorage.setItem('colorPickerHistory', JSON.stringify(newColors));
   };
 
   const pickColor = async () => {
@@ -138,20 +93,24 @@ export default function ColorPicker() {
     if (e) e.stopPropagation();
     const newColors = colors.filter(c => c !== colorToDelete);
     saveColors(newColors);
+    if (selectedColor === colorToDelete) {
+      setSelectedColor(null);
+    }
   };
 
   const clearAll = () => {
     saveColors([]);
+    setSelectedColor(null);
   };
 
   return (
     <div className="animate-fade-in">
       <header className="page-header">
         <div>
-          <h1 style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-            <EyeDropper style={{width: 32, height: 32}}/> Color Picker
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <EyeDropper style={{ width: 32, height: 32 }} /> Color Picker
           </h1>
-          <p style={{marginTop: '0.5rem', color: 'var(--text-secondary)'}}>
+          <p style={{ marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
             Pick any color from your screen using the native eyedropper, and save your palette history.
           </p>
         </div>
@@ -172,7 +131,7 @@ export default function ColorPicker() {
               disabled={isDropping}
               style={{ fontSize: '1rem', padding: '0.75rem 2rem', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', borderRadius: '50px' }}
             >
-              <EyeDropper style={{width: 24, height: 24}}/> 
+              <EyeDropper style={{ width: 24, height: 24 }} /> 
               {isDropping ? 'Picking...' : 'Pick Color'}
             </button>
           ) : (
@@ -194,7 +153,7 @@ export default function ColorPicker() {
                 className="btn btn-primary" 
                 style={{ fontSize: '1rem', padding: '0.75rem 2rem', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', borderRadius: '50px', pointerEvents: 'none' }}
               >
-                <EyeDropper style={{width: 24, height: 24}}/> 
+                <EyeDropper style={{ width: 24, height: 24 }} /> 
                 Pick Color
               </button>
             </div>
@@ -207,105 +166,13 @@ export default function ColorPicker() {
           </p>
         </div>
 
-        <div className="glass-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3>Color History</h3>
-            {colors.length > 0 && (
-              <button className="btn" onClick={clearAll} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
-                Clear All
-              </button>
-            )}
-          </div>
-          
-          {colors.length === 0 ? (
-            <div className="empty-state">
-              <EyeDropper style={{width: 48, height: 48, opacity: 0.5, marginBottom: '1rem'}}/>
-              <p>Your saved colors will appear here.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '1rem' }}>
-              {colors.map((color, i) => (
-                <div 
-                  key={`${color}-${i}`}
-                  onClick={() => copyToClipboard(color)}
-                  style={{ 
-                    background: color, 
-                    height: '80px', 
-                    borderRadius: 'var(--border-radius-sm)', 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    color: '#fff',
-                    textShadow: '0 1px 3px rgba(0,0,0,0.8)',
-                    fontWeight: 'bold',
-                    fontSize: '1rem',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    position: 'relative',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-5px)';
-                    e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.3)';
-                    e.currentTarget.querySelector('.delete-btn').style.opacity = '1';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.2)';
-                    e.currentTarget.querySelector('.delete-btn').style.opacity = '0';
-                  }}
-                >
-                  <button 
-                    className="delete-btn"
-                    onClick={(e) => deleteColor(color, e)}
-                    style={{
-                      position: 'absolute',
-                      top: '0.5rem',
-                      right: '0.5rem',
-                      background: 'rgba(0,0,0,0.5)',
-                      border: 'none',
-                      color: 'white',
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      opacity: 0,
-                      transition: 'opacity 0.2s',
-                      padding: '4px'
-                    }}
-                    title="Remove color"
-                  >
-                    <Trash />
-                  </button>
-                  
-                  {copiedColor === color ? (
-                    <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>
-                      <Check style={{width: 20, height: 20}}/> Copied!
-                    </span>
-                  ) : (
-                    color
-                  )}
-                  
-                  <span style={{
-                    fontSize: '0.8rem', 
-                    opacity: 0.8, 
-                    marginTop: '0.5rem',
-                    fontWeight: 'normal',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}>
-                    <CopyIcon style={{width: 14, height: 14}}/> Click to copy
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ColorHistoryGrid
+          colors={colors}
+          copiedColor={copiedColor}
+          onCopy={copyToClipboard}
+          onDelete={deleteColor}
+          onClearAll={clearAll}
+        />
       </div>
       
       {/* Toast Notification */}
@@ -326,71 +193,17 @@ export default function ColorPicker() {
           color: 'white',
           fontWeight: 'bold'
         }}>
-          <Check style={{width: 24, height: 24}}/>
+          <Check style={{ width: 24, height: 24 }} />
           {copiedColor} copied to clipboard!
         </div>
       )}
       
       {colors.length > 0 && (
-        <div className="glass-panel" style={{ marginTop: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <SwatchIcon style={{width: 24, height: 24, color: 'var(--accent-color)'}} />
-            <h3 style={{ margin: 0 }}>Color Swatches</h3>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
-            {generateScheme(selectedColor || colors[0]).map((item, i) => (
-              <div 
-                key={`${item.hex}-${i}`}
-                onClick={() => copyToClipboard(item.hex)}
-                style={{ 
-                  background: item.hex, 
-                  height: '80px', 
-                  borderRadius: 'var(--border-radius-sm)', 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: '#fff',
-                  textShadow: '0 1px 3px rgba(0,0,0,0.8)',
-                  fontWeight: 'bold',
-                  fontSize: '1.1rem',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.3)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.2)';
-                }}
-              >
-                {copiedColor === item.hex ? (
-                  <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>
-                    <Check style={{width: 20, height: 20}}/> Copied!
-                  </span>
-                ) : (
-                  item.hex
-                )}
-                
-                <span style={{
-                  fontSize: '0.8rem', 
-                  opacity: 0.9, 
-                  marginTop: '0.5rem',
-                  fontWeight: 'normal',
-                  background: 'rgba(0,0,0,0.3)',
-                  padding: '2px 8px',
-                  borderRadius: '10px'
-                }}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ColorSwatchesScheme
+          baseColor={selectedColor || colors[0]}
+          copiedColor={copiedColor}
+          onCopy={copyToClipboard}
+        />
       )}
     </div>
   );

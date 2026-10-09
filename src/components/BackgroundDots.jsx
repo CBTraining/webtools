@@ -5,8 +5,11 @@ export default function BackgroundDots() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const ctx = canvas.getContext('2d', { alpha: true });
-    let animationFrameId;
+    let animationFrameId = null;
+    let isLoopRunning = false;
     let dots = [];
     let bursts = []; // { x, y, radius, alpha }
     const spacing = 26; // Space between dots
@@ -14,6 +17,25 @@ export default function BackgroundDots() {
     
     let mouse = { x: -1000, y: -1000 };
     let mouseActivity = 0; // Tracks if mouse is actively moving
+    let mouseInViewport = true;
+    let globalOpacity = 1;
+
+    const startLoop = () => {
+      if (!isLoopRunning && !document.hidden) {
+        isLoopRunning = true;
+        animationFrameId = requestAnimationFrame(draw);
+      }
+    };
+
+    const stopLoop = () => {
+      if (isLoopRunning) {
+        isLoopRunning = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+      }
+    };
 
     const handleBurst = (e) => {
       bursts.push({
@@ -23,12 +45,18 @@ export default function BackgroundDots() {
         radius: 0,
         alpha: 1
       });
+      startLoop();
     };
     window.addEventListener('burst', handleBurst);
 
-    let mouseInViewport = true;
-    const handleMouseLeave = () => { mouseInViewport = false; };
-    const handleMouseEnter = () => { mouseInViewport = true; };
+    const handleMouseLeave = () => { 
+      mouseInViewport = false; 
+      startLoop();
+    };
+    const handleMouseEnter = () => { 
+      mouseInViewport = true; 
+      startLoop();
+    };
     window.addEventListener('mouseleave', handleMouseLeave);
     window.addEventListener('mouseenter', handleMouseEnter);
 
@@ -37,20 +65,30 @@ export default function BackgroundDots() {
       mouse.y = e.clientY;
       mouseInViewport = true;
       mouseActivity = 1; // reset activity to max
+      startLoop();
     };
     
-    // Add touch support for mobile
     const handleTouchMove = (e) => {
       if (e.touches.length > 0) {
         mouse.x = e.touches[0].clientX;
         mouse.y = e.touches[0].clientY;
         mouseInViewport = true;
         mouseActivity = 1;
+        startLoop();
       }
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopLoop();
+      } else {
+        startLoop();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const init = () => {
       width = window.innerWidth;
@@ -74,25 +112,30 @@ export default function BackgroundDots() {
             baseRadius: 2, // Regular size
             radius: 2,
             targetRadius: 2,
+            intensity: 0
           });
         }
       }
+      startLoop();
     };
 
     window.addEventListener('resize', init);
     init();
 
-    let globalOpacity = 1;
-
     const draw = () => {
+      if (document.hidden) {
+        isLoopRunning = false;
+        return;
+      }
+
       ctx.clearRect(0, 0, width, height);
       
       // Update global opacity based on mouse presence
       globalOpacity += (mouseInViewport ? (1 - globalOpacity) * 0.05 : (0 - globalOpacity) * 0.05);
       
-      // If fully invisible, skip heavy rendering
+      // If fully invisible, sleep until interaction
       if (globalOpacity < 0.01) {
-        animationFrameId = requestAnimationFrame(draw);
+        isLoopRunning = false;
         return;
       }
       
@@ -103,9 +146,10 @@ export default function BackgroundDots() {
       
       const isLightMode = document.documentElement.getAttribute('data-theme') === 'light';
       
-      // Parse out the turquoise accent color visually
       const accentRGB = '64, 224, 208'; // #40E0D0
       const baseRGB = isLightMode ? '0, 0, 0' : '255, 255, 255';
+      const baseArr = isLightMode ? [0, 0, 0] : [255, 255, 255];
+      const accentArr = [64, 224, 208];
 
       // Update bursts
       for (let i = bursts.length - 1; i >= 0; i--) {
@@ -117,6 +161,8 @@ export default function BackgroundDots() {
         }
       }
       
+      let isAnyDotMoving = false;
+
       for (let i = 0; i < dots.length; i++) {
         const dot = dots[i];
         
@@ -126,43 +172,38 @@ export default function BackgroundDots() {
         
         // Interaction radius (wider area: 180px)
         if (dist < 180 && dist > 0 && mouseActivity > 0) {
-          // Push away from mouse
           const force = ((180 - dist) / 180) * mouseActivity;
           dot.vx -= (dx / dist) * force * 0.8;
           dot.vy -= (dy / dist) * force * 0.8;
-          
-          // Max radius 2.2 when distance is 0
           dot.targetRadius = 2 + force * 0.2;
         } else {
           dot.targetRadius = dot.baseRadius;
         }
         
-        // Easing to go back to normal slowly (trailing effect)
-        // A lower multiplier makes it shrink slower
         dot.radius += (dot.targetRadius - dot.radius) * 0.035; 
 
         // Shockwave interaction overriding normal radius temporarily
-        for (const b of bursts) {
-           if (b.type === 'radial') {
-             const bdx = b.x - dot.x;
-             const bdy = b.y - dot.y;
-             const bdist = Math.sqrt(bdx * bdx + bdy * bdy);
-             const distToWave = Math.abs(bdist - b.radius);
-             if (distToWave < 80 && bdist > 0) {
-               const push = (80 - distToWave) / 80; // 0 to 1
-               dot.radius = Math.max(dot.radius, dot.baseRadius + push * 0.2 * b.alpha);
-               dot.vx -= (bdx / bdist) * push * 8 * b.alpha;
-               dot.vy -= (bdy / bdist) * push * 8 * b.alpha;
-             }
-           } else if (b.type === 'vertical') {
-             const distToWave = Math.abs(dot.x - b.radius);
-             if (distToWave < 40) {
-               const push = (40 - distToWave) / 40;
-               dot.radius = Math.max(dot.radius, dot.baseRadius + push * 0.2 * b.alpha);
-               // Push to the right
-               dot.vx += push * 3.3 * b.alpha;
-             }
-           }
+        for (let j = 0; j < bursts.length; j++) {
+          const b = bursts[j];
+          if (b.type === 'radial') {
+            const bdx = b.x - dot.x;
+            const bdy = b.y - dot.y;
+            const bdist = Math.sqrt(bdx * bdx + bdy * bdy);
+            const distToWave = Math.abs(bdist - b.radius);
+            if (distToWave < 80 && bdist > 0) {
+              const push = (80 - distToWave) / 80;
+              dot.radius = Math.max(dot.radius, dot.baseRadius + push * 0.2 * b.alpha);
+              dot.vx -= (bdx / bdist) * push * 8 * b.alpha;
+              dot.vy -= (bdy / bdist) * push * 8 * b.alpha;
+            }
+          } else if (b.type === 'vertical') {
+            const distToWave = Math.abs(dot.x - b.radius);
+            if (distToWave < 40) {
+              const push = (40 - distToWave) / 40;
+              dot.radius = Math.max(dot.radius, dot.baseRadius + push * 0.2 * b.alpha);
+              dot.vx += push * 3.3 * b.alpha;
+            }
+          }
         } 
         
         // Spring dynamics (pull back to base position)
@@ -180,30 +221,31 @@ export default function BackgroundDots() {
         dot.y += dot.vy;
 
         // Calculate interaction intensity for smooth color blending
-        const displacementDist = Math.sqrt(Math.pow(dot.x - dot.baseX, 2) + Math.pow(dot.y - dot.baseY, 2));
-        const sizeIntensity = Math.max(0, dot.radius - dot.baseRadius) / 0.2; // 0 to 1 based on growth
-        const displaceIntensity = Math.min(displacementDist / 5, 1); // 0 to 1 based on movement
+        const displacementDist = Math.sqrt((dot.x - dot.baseX) ** 2 + (dot.y - dot.baseY) ** 2);
+        const sizeIntensity = Math.max(0, dot.radius - dot.baseRadius) / 0.2;
+        const displaceIntensity = Math.min(displacementDist / 5, 1);
         const targetIntensity = Math.min(Math.max(sizeIntensity, displaceIntensity), 1);
         
-        dot.intensity = dot.intensity || 0;
         if (targetIntensity > dot.intensity) {
-            dot.intensity += (targetIntensity - dot.intensity) * 0.4; // Light up fast
+          dot.intensity += (targetIntensity - dot.intensity) * 0.4;
         } else {
-            dot.intensity += (targetIntensity - dot.intensity) * 0.08; // Fade out moderately fast
+          dot.intensity += (targetIntensity - dot.intensity) * 0.08;
         }
         const totalIntensity = dot.intensity;
 
+        if (
+          Math.abs(dot.vx) > 0.01 || 
+          Math.abs(dot.vy) > 0.01 || 
+          totalIntensity > 0.01 || 
+          Math.abs(dot.radius - dot.baseRadius) > 0.01
+        ) {
+          isAnyDotMoving = true;
+        }
+
         if (totalIntensity > 0.01) {
-          // Parse baseRGB and accentRGB into arrays
-          const baseArr = baseRGB.split(',').map(n => parseInt(n.trim()));
-          const accentArr = accentRGB.split(',').map(n => parseInt(n.trim()));
-          
-          // Interpolate RGB
           const r = Math.round(baseArr[0] + (accentArr[0] - baseArr[0]) * totalIntensity);
           const g = Math.round(baseArr[1] + (accentArr[1] - baseArr[1]) * totalIntensity);
           const b = Math.round(baseArr[2] + (accentArr[2] - baseArr[2]) * totalIntensity);
-          
-          // Smoothly ramp alpha from 0.2 to 1.0
           const alpha = 0.2 + totalIntensity * 0.8;
           
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -211,18 +253,21 @@ export default function BackgroundDots() {
           ctx.arc(dot.x, dot.y, Math.max(dot.radius, 2), 0, Math.PI * 2);
           ctx.fill();
         } else {
-          ctx.fillStyle = `rgba(${baseRGB}, 0.1)`; // Base visibility
-          // Using a square for the base 2px dot is faster and looks identical to a 2px circle
+          ctx.fillStyle = `rgba(${baseRGB}, 0.1)`;
           ctx.fillRect(dot.baseX - 1.5, dot.baseY - 1.5, 3, 3);
         }
       }
 
-
+      // Check if we can sleep the render loop
+      if (!isAnyDotMoving && bursts.length === 0 && mouseActivity <= 0 && Math.abs(globalOpacity - (mouseInViewport ? 1 : 0)) < 0.01) {
+        isLoopRunning = false;
+        return;
+      }
       
       animationFrameId = requestAnimationFrame(draw);
     };
     
-    draw();
+    startLoop();
 
     return () => {
       window.removeEventListener('mouseleave', handleMouseLeave);
@@ -231,7 +276,8 @@ export default function BackgroundDots() {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('resize', init);
       window.removeEventListener('burst', handleBurst);
-      cancelAnimationFrame(animationFrameId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopLoop();
     };
   }, []);
 

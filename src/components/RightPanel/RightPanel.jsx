@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, WrenchScrewdriverIcon, ClipboardDocumentIcon } from '@heroicons/react/24/solid';
+import { ChevronRightIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/solid';
 import Calculator from './Calculator';
 import AspectRatioCalc from './AspectRatioCalc';
 import ImageStash from './ImageStash';
@@ -8,13 +8,9 @@ import './RightPanel.css';
 
 export default function RightPanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const [scratchpad, setScratchpad] = useState('');
-
-  // Load scratchpad from localstorage
-  useEffect(() => {
-    const saved = localStorage.getItem('webtools-scratchpad');
-    if (saved) setScratchpad(saved);
-  }, []);
+  const [scratchpad, setScratchpad] = useState(() => {
+    return localStorage.getItem('webtools-scratchpad') || '';
+  });
 
   const handleScratchpadChange = (e) => {
     const val = e.target.value;
