@@ -4,12 +4,12 @@ import {
   MoonIcon, 
   HomeIcon, 
   ChartBarIcon, 
-  ClipboardDocumentIcon 
+  ClipboardDocumentIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon
 } from '@heroicons/react/24/solid';
 import { 
-  ChevronDownIcon as ChevronDownOutline, 
-  MagnifyingGlassIcon,
-  XMarkIcon 
+  ChevronDownIcon as ChevronDownOutline 
 } from '@heroicons/react/24/outline';
 import BackgroundJobsWidget from './BackgroundJobsWidget';
 import SidebarClock from './SidebarClock';

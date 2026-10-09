@@ -404,12 +404,12 @@
     height: 58px;
     border-radius: 16px;
     background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
-    transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease, box-shadow 0.2s ease;
   }
 
   .nav-link:active .nav-icon-box {
@@ -419,7 +419,7 @@
   /* Active App Tile */
   .nav-link.active .nav-icon-box {
     background: var(--accent-gradient);
-    border-color: rgba(255, 255, 255, 0.35);
+    border: none;
     box-shadow: 0 6px 18px rgba(64, 224, 208, 0.45);
     transform: scale(1.04);
   }

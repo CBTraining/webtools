@@ -14,7 +14,7 @@ import {
   ClockIcon,
   WindowIcon,
   Square3Stack3DIcon
-} from '@heroicons/react/24/outline';
+} from '@heroicons/react/24/solid';
 
 export const FEATURE_CATEGORIES = [
   {

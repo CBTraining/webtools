@@ -6,7 +6,7 @@ import {
   SparklesIcon, 
   ClockIcon,
   CommandLineIcon
-} from '@heroicons/react/24/outline';
+} from '@heroicons/react/24/solid';
 import { FEATURE_CATEGORIES, getAllTools, searchTools } from '../config/navigation';
 
 export default function Home({ onOpenSearch }) {
