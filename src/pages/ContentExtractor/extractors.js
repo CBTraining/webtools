@@ -12,6 +12,7 @@ export const MIME_MAP = {
   mp4: 'video/mp4',
   mov: 'video/quicktime',
   webm: 'video/webm',
+  avi: 'video/x-msvideo',
   mp3: 'audio/mpeg',
   wav: 'audio/wav',
   m4a: 'audio/mp4',
@@ -37,7 +38,7 @@ export async function extractZipArchive(file, { onProgress, onStatus }) {
     if (onProgress) onProgress(Math.round(((i + 1) / total) * 100));
 
     const fileExt = path.split('.').pop().toLowerCase();
-    const isMedia = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'mp4', 'mov', 'webm', 'mp3', 'wav', 'm4a', 'ogg', 'emf', 'wmf'].includes(fileExt);
+    const isMedia = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'mp4', 'mov', 'webm', 'avi', 'mp3', 'wav', 'm4a', 'ogg', 'emf', 'wmf'].includes(fileExt);
 
     // Check if it's inside a media folder or has media extension
     if (isMedia || path.includes('/media/') || path.includes('/embeddings/')) {
@@ -52,7 +53,7 @@ export async function extractZipArchive(file, { onProgress, onStatus }) {
         else if (['png'].includes(fileExt)) mediaCategory = 'png';
         else if (['jpg', 'jpeg'].includes(fileExt)) mediaCategory = 'jpg';
         else if (fileExt === 'svg') mediaCategory = 'svg';
-        else if (['mp4', 'mov', 'webm'].includes(fileExt)) mediaCategory = 'video';
+        else if (['mp4', 'mov', 'webm', 'avi'].includes(fileExt)) mediaCategory = 'video';
         else if (['mp3', 'wav', 'm4a', 'ogg'].includes(fileExt)) mediaCategory = 'audio';
 
         // Try to get dimensions if image

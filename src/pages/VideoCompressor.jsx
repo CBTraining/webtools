@@ -35,7 +35,7 @@ export default function VideoCompressor() {
         <Compress style={{ width: 32, height: 32, fill: "url(#accent-grad)" }} />
         <h1>Video Compressor</h1>
       </div>
-      <p>Compress MP4 & MOV videos instantly, fully offline in your browser. Open multiple windows below!</p>
+      <p>Compress MP4, MOV & AVI videos instantly, fully offline in your browser. Open multiple windows below!</p>
       
       {!isFfmpegLoaded && (
         <div className="glass-panel" style={{ marginBottom: '1rem', background: 'var(--accent-transparent)', border: '1px solid var(--accent-color)' }}>
@@ -54,7 +54,7 @@ export default function VideoCompressor() {
             onDrop={handleAddVideos}
             accept="video/*,.mov,.mp4,.webm,.mkv,.avi,.quicktime"
             title={slots.length > 0 ? "Add another video" : "Upload Video"}
-            subtitle="Drag & drop or click to select (.mov, .mp4, etc.)"
+            subtitle="Drag & drop or click to select (.mp4, .mov, .avi, etc.)"
             icon={<UploadCloud style={{ width: 48, height: 48, color: 'var(--text-secondary)' }} />}
           />
         </div>

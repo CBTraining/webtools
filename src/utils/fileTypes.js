@@ -1,8 +1,16 @@
 import { downloadBlob } from './downloadUtils';
 
+export function isAviFile(file) {
+  if (!file) return false;
+  const name = file.name || '';
+  if (name.toLowerCase().endsWith('.avi')) return true;
+  const type = (file.type || '').toLowerCase();
+  return type.includes('avi') || type.includes('msvideo');
+}
+
 export function isVideoFile(file) {
   if (!file) return false;
-  if (file.type && (file.type.startsWith('video/') || file.type.includes('quicktime'))) return true;
+  if (file.type && (file.type.startsWith('video/') || file.type.includes('quicktime') || file.type.includes('avi') || file.type.includes('msvideo'))) return true;
   const name = file.name || '';
   const ext = name.split('.').pop().toLowerCase();
   return ['mov', 'mp4', 'webm', 'mkv', 'avi', 'ogv', '3gp', 'm4v', 'flv', 'quicktime'].includes(ext);

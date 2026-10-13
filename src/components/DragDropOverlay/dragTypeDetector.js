@@ -27,7 +27,7 @@ export function detectDragType(dataTransfer) {
         return 'json';
       } else if (type === 'image/gif') {
         return 'gif';
-      } else if (type.startsWith('video/') || type.includes('quicktime')) {
+      } else if (type.startsWith('video/') || type.includes('quicktime') || type.includes('avi') || type.includes('msvideo')) {
         return 'video';
       } else if (type.startsWith('image/')) {
         return 'image';

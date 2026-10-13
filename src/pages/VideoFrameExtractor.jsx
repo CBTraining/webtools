@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FilmIcon, CloudArrowUpIcon as UploadCloud, XMarkIcon as XMark } from '@heroicons/react/24/solid';
-import { isVideoFile } from '../utils/fileTypes';
+import { fetchFile } from '@ffmpeg/util';
+import { isVideoFile, isAviFile } from '../utils/fileTypes';
+import { useProcessing } from '../contexts/ProcessingContext';
 import { downloadBlob, copyBlobToClipboard } from '../utils/downloadUtils';
 import { extractYouTubeVideoId, fetchYouTubeVideoStream } from './VideoFrameExtractor/youtubeResolver';
 import VideoPlayerControls from './VideoFrameExtractor/VideoPlayerControls';
 
 export default function VideoFrameExtractor() {
+  const { createFfmpegInstance } = useProcessing();
   const [videoFile, setVideoFile] = useState(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [externalUrl, setExternalUrl] = useState('');
@@ -23,14 +26,72 @@ export default function VideoFrameExtractor() {
   const location = useLocation();
   const initFromState = useRef(false);
 
+  const loadVideoFile = async (file) => {
+    if (!file || !isVideoFile(file)) return;
+    setVideoFile(file);
+    setExternalUrl('');
+    if (videoUrl && !videoUrl.startsWith('http')) {
+      URL.revokeObjectURL(videoUrl);
+    }
+
+    if (isAviFile(file)) {
+      setIsLoading(true);
+      setLoadingProgress(20);
+      setYtLoadingText('Decoding AVI video for frame extraction...');
+      let localFfmpeg = null;
+      try {
+        localFfmpeg = await createFfmpegInstance();
+        setLoadingProgress(40);
+        const ext = (file.name || '').split('.').pop() || 'avi';
+        const inputName = `extractor_${Date.now()}.${ext}`;
+        const outputName = `extractor_${Date.now()}.mp4`;
+        await localFfmpeg.writeFile(inputName, await fetchFile(file));
+        setLoadingProgress(60);
+
+        // Transcode at full resolution with libx264 ultrafast preset
+        const res = await localFfmpeg.exec([
+          '-y',
+          '-i', inputName,
+          '-c:v', 'libx264',
+          '-preset', 'ultrafast',
+          '-crf', '18',
+          '-c:a', 'aac',
+          '-movflags', '+faststart',
+          outputName
+        ]);
+
+        if (res === 0) {
+          setLoadingProgress(90);
+          const data = await localFfmpeg.readFile(outputName);
+          const blob = new Blob([data], { type: 'video/mp4' });
+          const mp4Url = URL.createObjectURL(blob);
+          setVideoUrl(mp4Url);
+        } else {
+          throw new Error('Failed to transcode AVI video');
+        }
+      } catch (err) {
+        console.error("AVI transcode error", err);
+        alert("Could not load AVI file: " + err.message);
+        setIsLoading(false);
+      } finally {
+        if (localFfmpeg) {
+          try { localFfmpeg.terminate(); } catch (e) { void e; }
+        }
+        setYtLoadingText('');
+      }
+    } else {
+      setVideoUrl(URL.createObjectURL(file));
+      setIsLoading(true);
+      setLoadingProgress(0);
+    }
+  };
+
   // Handle incoming file from drag-drop overlay
   useEffect(() => {
     if (location.state?.videoFile && !initFromState.current) {
       const file = location.state.videoFile;
       initFromState.current = true;
-      setVideoFile(file);
-      setVideoUrl(URL.createObjectURL(file));
-      setIsLoading(true);
+      loadVideoFile(file);
       
       // Clear state so it doesn't trigger again on refresh
       window.history.replaceState({}, document.title);
@@ -49,14 +110,7 @@ export default function VideoFrameExtractor() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && isVideoFile(file)) {
-      setVideoFile(file);
-      if (videoUrl && !videoUrl.startsWith('http')) {
-        URL.revokeObjectURL(videoUrl);
-      }
-      setVideoUrl(URL.createObjectURL(file));
-      setExternalUrl('');
-      setIsLoading(true);
-      setLoadingProgress(0);
+      loadVideoFile(file);
     }
   };
 
@@ -64,7 +118,7 @@ export default function VideoFrameExtractor() {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file && isVideoFile(file)) {
-      handleFileChange({ target: { files: [file] } });
+      loadVideoFile(file);
     }
   };
 
@@ -227,7 +281,7 @@ export default function VideoFrameExtractor() {
                 onChange={handleFileChange}
               />
               <UploadCloud style={{ width: '48px', height: '48px' }} />
-              <h3>Drag & Drop Video (.MOV, .MP4) Here</h3>
+              <h3>Drag & Drop Video (.MP4, .MOV, .AVI) Here</h3>
               <p>or click to browse</p>
             </div>
             
@@ -239,7 +293,7 @@ export default function VideoFrameExtractor() {
                 <input 
                   type="text" 
                   className="input-field" 
-                  placeholder="Paste YouTube link or direct video URL (.mp4)..." 
+                  placeholder="Paste YouTube link or direct video URL (.mp4, .avi, etc.)..." 
                   value={externalUrl}
                   onChange={(e) => setExternalUrl(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleUrlLoad(); }}
@@ -249,7 +303,7 @@ export default function VideoFrameExtractor() {
                 </button>
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                Supports YouTube videos (<code style={{ fontSize: '0.7rem' }}>youtube.com/watch?v=...</code>, <code style={{ fontSize: '0.7rem' }}>youtu.be/...</code>, Shorts), Google Drive, and MP4 links.
+                Supports YouTube videos (<code style={{ fontSize: '0.7rem' }}>youtube.com/watch?v=...</code>, <code style={{ fontSize: '0.7rem' }}>youtu.be/...</code>, Shorts), Google Drive, and MP4/MOV/AVI links.
               </div>
             </div>
           </div>

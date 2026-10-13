@@ -86,21 +86,21 @@ export const FEATURE_CATEGORIES = [
         icon: FilmIcon,
         title: 'Video Compressor',
         desc: 'Client-side FFmpeg compression to shrink video file size while maintaining visual clarity.',
-        keywords: ['video', 'compress', 'shrink', 'mp4', 'ffmpeg', 'reduce size', 'resolution', 'bitrate', 'crf']
+        keywords: ['video', 'compress', 'shrink', 'mp4', 'mov', 'avi', 'ffmpeg', 'reduce size', 'resolution', 'bitrate', 'crf']
       },
       {
         to: '/video-to-gif',
         icon: GifIcon,
         title: 'Video to GIF & Cropper',
         desc: 'Convert video clips or compress/crop existing GIFs with spatial crop overlay, custom FPS, and target size presets (e.g. Under 50MB for Discord/Slack).',
-        keywords: ['gif', 'video to gif', 'crop gif', 'compress gif', 'discord', 'slack', '50mb', '25mb', 'spatial crop', 'animation', 'fps']
+        keywords: ['gif', 'video to gif', 'crop gif', 'compress gif', 'discord', 'slack', '50mb', '25mb', 'spatial crop', 'animation', 'fps', 'mp4', 'mov', 'avi']
       },
       {
         to: '/video-frame-extractor',
         icon: FilmIcon,
         title: 'Video Frame Extractor',
         desc: 'Capture full-resolution still frames from uploaded video files or direct video URLs.',
-        keywords: ['frame', 'snapshot', 'still', 'screenshot', 'youtube', 'capture', 'video frame', 'timestamp']
+        keywords: ['frame', 'snapshot', 'still', 'screenshot', 'youtube', 'capture', 'video frame', 'timestamp', 'mp4', 'mov', 'avi']
       },
       {
         to: '/lottie-to-gif',

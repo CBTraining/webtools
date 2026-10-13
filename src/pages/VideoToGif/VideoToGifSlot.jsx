@@ -11,7 +11,7 @@ import { fetchFile } from '@ffmpeg/util';
 import { playDing } from '../../utils/audio';
 import { useProcessing } from '../../contexts/ProcessingContext';
 import { formatBytes } from '../../utils/formatters';
-import { probeVideoFps } from '../../utils/videoProbe';
+import { probeVideoMetadata, isAviFile } from '../../utils/videoProbe';
 import DirectTimelineTrimmer from '../../components/DirectTimelineTrimmer';
 import GifSpatialCropper from './GifSpatialCropper';
 import { 
@@ -59,8 +59,8 @@ export default function VideoToGifSlot({ slot }) {
     : (targetSizeLimit === 'custom' ? (Number(customTargetMb) || 50) : Number(targetSizeLimit));
 
   // Determine crop pixel bounds if spatial crop is enabled
-  const naturalWidth = videoRef.current?.videoWidth || 640;
-  const naturalHeight = videoRef.current?.videoHeight || 360;
+  const naturalWidth = slot.videoWidth || videoRef.current?.videoWidth || 640;
+  const naturalHeight = slot.videoHeight || videoRef.current?.videoHeight || 360;
   const cropBounds = enableSpatialCrop 
     ? calculateCropPixelBounds(cropRect, naturalWidth, naturalHeight)
     : null;
@@ -81,27 +81,43 @@ export default function VideoToGifSlot({ slot }) {
 
   const estimatedBytes = budgetParams.estimatedBytes;
 
-  // Initial Probe for FPS and Duration
+  // Initial Probe for FPS, Duration, Dimensions, and AVI MP4 Preview
   useEffect(() => {
     if (isFfmpegLoaded && videoFile && originalFps === null && !slot.isProbing) {
       updateSlot(TOOL_ID, slot.id, { isProbing: true });
       const probe = async () => {
-        const detectedFps = await probeVideoFps(createFfmpegInstance, slot.id, videoFile);
-        if (detectedFps) {
-          const roundedFps = Math.round(detectedFps);
-          let newFps = fps;
-          if (fps !== 'original' && parseInt(fps) > roundedFps) {
-            if (roundedFps >= 15) newFps = '15';
-            else newFps = '10';
-          }
-          updateSlot(TOOL_ID, slot.id, { originalFps: roundedFps, fps: newFps });
-        } else {
-          updateSlot(TOOL_ID, slot.id, { originalFps: 30 });
+        const metadata = await probeVideoMetadata(createFfmpegInstance, slot.id, videoFile);
+        const detectedFps = metadata?.fps;
+        const roundedFps = detectedFps ? Math.round(detectedFps) : 30;
+        let newFps = fps;
+        if (fps !== 'original' && parseInt(fps) > roundedFps) {
+          if (roundedFps >= 15) newFps = '15';
+          else newFps = '10';
         }
+
+        const updates = { 
+          originalFps: roundedFps, 
+          fps: newFps,
+          isProbing: false
+        };
+
+        if (metadata?.duration) {
+          updates.videoDuration = metadata.duration;
+          const initialEnd = (endTime === 5 && metadata.duration > 0)
+            ? Math.min(metadata.duration, Math.floor(metadata.duration * 10) / 10)
+            : Math.min(metadata.duration, endTime);
+          updates.endTime = initialEnd;
+        }
+
+        if (metadata?.width) updates.videoWidth = metadata.width;
+        if (metadata?.height) updates.videoHeight = metadata.height;
+        if (metadata?.previewUrl) updates.previewUrl = metadata.previewUrl;
+
+        updateSlot(TOOL_ID, slot.id, updates);
       };
       probe();
     }
-  }, [isFfmpegLoaded, videoFile, originalFps, slot.isProbing, slot.id, updateSlot, createFfmpegInstance, fps]);
+  }, [isFfmpegLoaded, videoFile, originalFps, slot.isProbing, slot.id, updateSlot, createFfmpegInstance, fps, endTime]);
 
   const handleVideoLoadedMetadata = () => {
     if (videoRef.current && videoRef.current.duration > 0) {
@@ -348,6 +364,31 @@ export default function VideoToGifSlot({ slot }) {
             onTimeUpdate={handleTimeUpdate}
             style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', display: 'block' }} 
           />
+
+          {slot.isProbing && isAviFile(videoFile) && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(15, 23, 42, 0.92)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 15,
+              gap: '0.75rem',
+              padding: '1.5rem',
+              textAlign: 'center'
+            }}>
+              <div className="loader" style={{ width: '32px', height: '32px', borderTopColor: 'var(--accent-color)' }} />
+              <div style={{ color: '#fff', fontWeight: '600', fontSize: '0.95rem' }}>
+                Decoding AVI Video...
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', maxWidth: '320px' }}>
+                Preparing video preview for timeline trimming, spatial cropping, and conversion.
+              </div>
+            </div>
+          )}
 
           {enableSpatialCrop && (
             <GifSpatialCropper

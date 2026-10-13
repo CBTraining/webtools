@@ -69,7 +69,7 @@ export default function VideoToGif() {
             onDrop={handleAddVideos}
             accept="video/*,.mov,.mp4,.webm,.mkv,.avi,.quicktime,.gif,image/gif"
             title={slots.length > 0 ? "Add another video or GIF" : "Upload Video or GIF"}
-            subtitle="Drag & drop or click to select (.mp4, .mov, .gif, etc.)"
+            subtitle="Drag & drop or click to select (.mp4, .mov, .avi, .gif, etc.)"
             icon={<UploadCloud style={{ width: 48, height: 48, color: 'var(--text-secondary)' }} />}
           />
         </div>

@@ -7,7 +7,7 @@ import { fetchFile } from '@ffmpeg/util';
 import { playDing } from '../../utils/audio';
 import { useProcessing } from '../../contexts/ProcessingContext';
 import { formatBytes } from '../../utils/formatters';
-import { probeVideoFps } from '../../utils/videoProbe';
+import { probeVideoMetadata, isAviFile } from '../../utils/videoProbe';
 
 const TOOL_ID = 'video-compress';
 
@@ -45,8 +45,16 @@ export default function VideoCompressorSlot({ slot }) {
     if (isFfmpegLoaded && videoFile && originalFps === null && !slot.isProbing) {
       updateSlot(TOOL_ID, slot.id, { isProbing: true });
       const probe = async () => {
-        const detectedFps = await probeVideoFps(createFfmpegInstance, slot.id, videoFile);
-        updateSlot(TOOL_ID, slot.id, { originalFps: detectedFps ? Math.round(detectedFps) : 30 });
+        const metadata = await probeVideoMetadata(createFfmpegInstance, slot.id, videoFile);
+        const detectedFps = metadata?.fps;
+        const updates = { 
+          originalFps: detectedFps ? Math.round(detectedFps) : 30,
+          isProbing: false
+        };
+        if (metadata?.previewUrl) {
+          updates.previewUrl = metadata.previewUrl;
+        }
+        updateSlot(TOOL_ID, slot.id, updates);
       };
       probe();
     }
@@ -85,7 +93,9 @@ export default function VideoCompressorSlot({ slot }) {
         '-i', inputName, 
         '-vcodec', 'libx264', 
         '-crf', estimatedCrf.toString(), 
-        '-preset', preset
+        '-preset', preset,
+        '-c:a', 'aac',
+        '-b:a', '128k'
       ];
 
       // Enforce FPS limit
@@ -111,7 +121,8 @@ export default function VideoCompressorSlot({ slot }) {
 
       const blob = new Blob([data], { type: 'video/mp4' });
       const rUrl = URL.createObjectURL(blob);
-      updateJob(myJobId, { status: 'success', resultUrl: rUrl, downloadName: `compressed_${videoFile.name}` });
+      const baseName = videoFile.name.replace(/\.[^.]+$/, '');
+      updateJob(myJobId, { status: 'success', resultUrl: rUrl, downloadName: `compressed_${baseName}.mp4` });
       playDing();
     } catch (err) {
       console.error(err);
@@ -146,7 +157,28 @@ export default function VideoCompressorSlot({ slot }) {
         <XMark style={{ width: 20, height: 20, color: 'var(--text-secondary)' }} />
       </button>
       
-      <video src={previewUrl} controls style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', borderRadius: 'var(--border-radius-sm)', background: '#000', marginBottom: '1rem' }} />
+      <div style={{ position: 'relative', width: '100%', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', background: '#000', marginBottom: '1rem' }}>
+        <video src={previewUrl} controls style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', display: 'block' }} />
+        {slot.isProbing && isAviFile(videoFile) && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(15, 23, 42, 0.92)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 5,
+            gap: '0.75rem',
+            padding: '1.5rem',
+            textAlign: 'center'
+          }}>
+            <div className="loader" style={{ width: '28px', height: '28px', borderTopColor: 'var(--accent-color)' }} />
+            <div style={{ color: '#fff', fontWeight: '600', fontSize: '0.9rem' }}>Preparing AVI preview...</div>
+          </div>
+        )}
+      </div>
       
       {!isProcessing && !resultUrl && (
         <div style={{ marginBottom: '1.5rem' }}>
