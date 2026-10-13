@@ -18,6 +18,48 @@ import { extractDroppedFiles } from '../utils/fileTypes';
 import { detectDragType } from './DragDropOverlay/dragTypeDetector';
 import { routeDroppedFiles } from './DragDropOverlay/dragDropRouter';
 
+function DropZoneCard({ title, subtitle, icon, action, onDropAction }) {
+  return (
+    <div 
+      className="dropzone"
+      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('active'); }}
+      onDragLeave={(e) => { e.currentTarget.classList.remove('active'); }}
+      onDrop={(e) => { e.currentTarget.classList.remove('active'); onDropAction(e, action); }}
+      style={{
+        minHeight: '230px',
+        padding: '2.5rem 1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        gap: '0.75rem',
+        cursor: 'pointer'
+      }}
+    >
+      {icon}
+      <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.2rem' }}>{title}</h3>
+      {subtitle && (
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem', maxWidth: '280px' }}>
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+}
+
+const overlayStyle = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  backgroundColor: 'rgba(0,0,0,0.7)',
+  backdropFilter: 'blur(10px)',
+  zIndex: 9998,
+  display: 'flex',
+  padding: '2rem',
+  alignItems: 'center',
+  justifyContent: 'center',
+  pointerEvents: 'auto'
+};
+
 export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, onCompressImage }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragType, setDragType] = useState('none');
@@ -96,99 +138,61 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
     });
   };
 
-  const overlayStyle = {
-    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    backdropFilter: 'blur(10px)',
-    zIndex: 9998,
-    display: 'flex',
-    padding: '2rem',
-    alignItems: 'center',
-    justifyContent: 'center',
-    pointerEvents: 'auto'
-  };
-
-  const Card = ({ title, subtitle, icon, action }) => (
-    <div 
-      className="dropzone"
-      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('active'); }}
-      onDragLeave={(e) => { e.currentTarget.classList.remove('active'); }}
-      onDrop={(e) => { e.currentTarget.classList.remove('active'); handleZoneDrop(e, action); }}
-      style={{
-        minHeight: '230px',
-        padding: '2.5rem 1.5rem',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        gap: '0.75rem',
-        cursor: 'pointer'
-      }}
-    >
-      {icon}
-      <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.2rem' }}>{title}</h3>
-      {subtitle && (
-        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem', maxWidth: '280px' }}>
-          {subtitle}
-        </p>
-      )}
-    </div>
-  );
-
   return (
     <div style={overlayStyle} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setIsDragging(false); }}>
       <div style={{ width: '100%', maxWidth: '950px', display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         {dragType === 'gif' && (
           <>
-            <Card title="Crop & Compress GIF" subtitle="Auto-compress under 50MB, crop dimensions, and trim duration" icon={<GifIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-gif" />
-            <Card title="Extract Frame" subtitle="Extract individual PNG frames from animated GIF" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="extract-frame" />
-            <Card title="Create Photo Collage" icon={<Square3Stack3DIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="create-collage" />
-            <Card title="Download as PNG" icon={<ArrowDownTrayIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="download-png" />
-            <Card title="Compress (<20MB)" icon={<ArrowsPointingInIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-image" />
-            <Card title="Image Editor" icon={<AdjustmentsHorizontalIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="edit-image" />
+            <DropZoneCard title="Crop & Compress GIF" subtitle="Auto-compress under 50MB, crop dimensions, and trim duration" icon={<GifIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-gif" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Extract Frame" subtitle="Extract individual PNG frames from animated GIF" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="extract-frame" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Create Photo Collage" icon={<Square3Stack3DIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="create-collage" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Download as PNG" icon={<ArrowDownTrayIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="download-png" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Compress (<20MB)" icon={<ArrowsPointingInIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-image" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Image Editor" icon={<AdjustmentsHorizontalIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="edit-image" onDropAction={handleZoneDrop} />
           </>
         )}
         {dragType === 'image' && (
           <>
-            <Card title="Create Photo Collage" icon={<Square3Stack3DIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="create-collage" />
-            <Card title="Remove background" icon={<SparklesIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="remove-bg" />
-            <Card title="Upscale" icon={<PhotoIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="upscale" />
-            <Card title="Download as PNG" icon={<ArrowDownTrayIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="download-png" />
-            <Card title="Compress (<20MB)" icon={<ArrowsPointingInIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-image" />
-            <Card title="Image Editor" icon={<AdjustmentsHorizontalIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="edit-image" />
+            <DropZoneCard title="Create Photo Collage" icon={<Square3Stack3DIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="create-collage" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Remove background" icon={<SparklesIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="remove-bg" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Upscale" icon={<PhotoIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="upscale" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Download as PNG" icon={<ArrowDownTrayIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="download-png" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Compress (<20MB)" icon={<ArrowsPointingInIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-image" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Image Editor" icon={<AdjustmentsHorizontalIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="edit-image" onDropAction={handleZoneDrop} />
           </>
         )}
         {dragType === 'video' && (
           <>
-            <Card title="Convert & Crop to GIF" subtitle="Target under 50MB, crop dimensions, and trim" icon={<GifIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="convert-gif" />
-            <Card title="Compress Video" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-video" />
-            <Card title="Extract Frame" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="extract-frame" />
+            <DropZoneCard title="Convert & Crop to GIF" subtitle="Target under 50MB, crop dimensions, and trim" icon={<GifIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="convert-gif" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Compress Video" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="compress-video" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Extract Frame" icon={<FilmIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="extract-frame" onDropAction={handleZoneDrop} />
           </>
         )}
         {dragType === 'pdf' && (
-          <Card 
+          <DropZoneCard 
             title="Content Extractor (PDF)" 
             subtitle="Extract all embedded images, diagrams, and figures across all PDF pages"
             icon={<DocumentArrowDownIcon style={{ width: 52, height: 52, color: 'var(--primary-color)' }} />} 
             action="content-extract" 
+            onDropAction={handleZoneDrop}
           />
         )}
         {dragType === 'doc' && (
-          <Card 
+          <DropZoneCard 
             title="Content Extractor (PPTX / DOCX / ZIP)" 
             subtitle="Extract all embedded raw animated GIFs, images, videos, and audio clips"
             icon={<DocumentArrowDownIcon style={{ width: 52, height: 52, color: 'var(--primary-color)' }} />} 
             action="content-extract" 
+            onDropAction={handleZoneDrop}
           />
         )}
         {dragType === 'svg' && (
-          <Card title="SVG Converter" subtitle="Scale vector graphics, apply color fills, and export PNGs" icon={<CodeBracketIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="svg-convert" />
+          <DropZoneCard title="SVG Converter" subtitle="Scale vector graphics, apply color fills, and export PNGs" icon={<CodeBracketIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="svg-convert" onDropAction={handleZoneDrop} />
         )}
         {dragType === 'json' && (
           <>
-            <Card title="Format & Save JSON" icon={<CodeBracketIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="json-editor" />
-            <Card title="Convert Lottie to GIF" icon={<GifIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="lottie-convert" />
+            <DropZoneCard title="Format & Save JSON" icon={<CodeBracketIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="json-editor" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Convert Lottie to GIF" icon={<GifIcon style={{ width: 44, height: 44, color: 'var(--primary-color)' }} />} action="lottie-convert" onDropAction={handleZoneDrop} />
           </>
         )}
         {dragType === 'unknown' && (

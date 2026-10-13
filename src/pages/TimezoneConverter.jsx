@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ClockIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 const TIMEZONES = [

@@ -15,15 +15,18 @@ export default function ColorPicker() {
   const [copiedColor, setCopiedColor] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
   const [isDropping, setIsDropping] = useState(false);
-  const [useNative, setUseNative] = useState(true);
+  const [useNative] = useState(() => {
+    const isWindows = navigator.userAgent.toLowerCase().includes('windows');
+    return Boolean(window.EyeDropper && !isWindows);
+  });
   const debounceTimerRef = useRef(null);
 
   useEffect(() => {
-    // Check API support and OS
-    const isWindows = navigator.userAgent.toLowerCase().includes('windows');
-    if (!window.EyeDropper || isWindows) {
-      setUseNative(false);
-    }
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, []);
 
   const saveColors = (newColors) => {

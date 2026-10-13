@@ -18,7 +18,7 @@ export default function Alarms() {
         const parsed = JSON.parse(saved);
         // Reset running state on load so they don't unexpectedly continue from hours ago
         return parsed.map(a => ({ ...a, isRunning: false, isRinging: false }));
-      } catch (e) {
+      } catch {
         return getDefaultAlarms();
       }
     }

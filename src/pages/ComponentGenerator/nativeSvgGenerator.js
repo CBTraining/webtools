@@ -3,44 +3,46 @@
  */
 export async function generateNativeSvg({
   element,
-  gradStops,
-  glowBlur,
-  glowHeight,
-  showBottomGlow,
-  borderRadius,
-  innerShadowColor,
-  backgroundColor,
-  hoverAnimations,
-  animIntensity,
-  bgImageUrl,
-  bgTint,
-  showIcon,
-  iconType,
-  iconSvg,
-  iconName,
-  iconFill,
-  iconSize,
-  showText,
-  cardTitle,
-  cardSubtitle,
-  cardTitleColor,
-  cardSubtitleColor,
-  fontFamily
-}) {
-  if (!element) return '';
-  const cardRect = element.getBoundingClientRect();
+  previewEl,
+  gradStops = [],
+  glowBlur = 15,
+  glowHeight = 30,
+  showBottomGlow = true,
+  borderRadius = 32,
+  innerShadowColor = '#13243f',
+  backgroundColor = 'transparent',
+  hoverAnimations = {},
+  animIntensity = 1,
+  bgImageUrl = '',
+  bgTint = 'transparent',
+  showIcon = true,
+  iconType = 'material',
+  iconSvg = '',
+  iconName = 'star',
+  iconFill = true,
+  iconSize = 50,
+  showText = true,
+  cardTitle = '',
+  cardSubtitle = '',
+  cardTitleColor = '#ffffff',
+  cardSubtitleColor = '#ffffff',
+  fontFamily = 'system-ui, -apple-system, sans-serif'
+} = {}) {
+  const targetEl = element || previewEl;
+  if (!targetEl) return '';
+  const cardRect = targetEl.getBoundingClientRect();
   const w = cardRect.width;
   const h = cardRect.height;
   const r = borderRadius;
 
-  const hasOuterGlow = hoverAnimations.outerGlow || hoverAnimations.edgeGlow;
+  const hasOuterGlow = Boolean(hoverAnimations?.outerGlow || hoverAnimations?.edgeGlow);
   const pad = hasOuterGlow ? Math.round(40 * animIntensity + 20) : 0;
 
   let svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${w + pad * 2}" height="${h + pad * 2}" viewBox="-${pad} -${pad} ${w + pad * 2} ${h + pad * 2}">`;
   svgStr += `<defs>`;
   
   svgStr += `<linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="0%">`;
-  const sortedStops = [...gradStops].sort((a, b) => a.position - b.position);
+  const sortedStops = [...(gradStops || [])].sort((a, b) => a.position - b.position);
   sortedStops.forEach(stop => {
     svgStr += `<stop offset="${stop.position * 100}%" stop-color="${stop.color}" />`;
   });
@@ -101,7 +103,7 @@ export async function generateNativeSvg({
   svgStr += `<rect x="0.5" y="0.5" width="${w-1}" height="${h-1}" rx="${r}" fill="none" stroke="${innerShadowColor}" stroke-width="1.5" />`;
 
   // Elements
-  const iconNode = element.querySelector('.glow-card-icon');
+  const iconNode = targetEl.querySelector('.glow-card-icon');
   if (iconNode && showIcon) {
     const iRect = iconNode.getBoundingClientRect();
     const dx = iRect.left - cardRect.left;
@@ -123,13 +125,13 @@ export async function generateNativeSvg({
          } else {
            throw new Error('Icon fetch failed');
          }
-       } catch (e) {
+       } catch {
          svgStr += `<text x="${dx}" y="${dy}" dominant-baseline="hanging" font-family="Material Symbols Rounded" font-size="${iconSize}px" fill="white" font-weight="400">${iconName}</text>`;
        }
     }
   }
 
-  const titleNode = element.querySelector('.glow-card-title');
+  const titleNode = targetEl.querySelector('.glow-card-title');
   if (titleNode && showText) {
     const tRect = titleNode.getBoundingClientRect();
     const dx = tRect.left - cardRect.left;
@@ -140,7 +142,7 @@ export async function generateNativeSvg({
     svgStr += `<text x="${dx}" y="${dy + parseFloat(fontSize) * 0.1}" dominant-baseline="hanging" font-family="${fontFamily.replace(/"/g, "'")}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${cardTitleColor}">${cardTitle}</text>`;
   }
 
-  const subNode = element.querySelector('.glow-card-subtitle');
+  const subNode = targetEl.querySelector('.glow-card-subtitle');
   if (subNode && showText) {
     const sRect = subNode.getBoundingClientRect();
     const dx = sRect.left - cardRect.left;

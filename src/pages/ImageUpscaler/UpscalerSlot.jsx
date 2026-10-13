@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { XMarkIcon as XMark } from '@heroicons/react/24/solid';
 import { ArrowDownTrayIcon as Download } from '@heroicons/react/24/outline';
 import SendToDropdown from '../../components/SendToDropdown';
@@ -28,7 +28,7 @@ export default function UpscalerSlot({ slot }) {
     }
   }, [previewUrl, resolution]);
 
-  const initWorker = () => {
+  const initWorker = useCallback(function setupWorker() {
     if (workerRef.current) workerRef.current.terminate();
 
     const worker = new Worker(new URL('../../workers/upscalerWorker.js', import.meta.url), {
@@ -62,7 +62,7 @@ export default function UpscalerSlot({ slot }) {
       } else if (status === 'webgpu_error') {
         updateJob(myJobId, { log: 'Hardware acceleration failed, restarting with CPU... This will be slower.' });
         // Recreate worker to completely clear corrupted memory
-        initWorker();
+        setupWorker();
         // Automatically retry with WASM
         workerRef.current.postMessage({
           jobId: myJobId,
@@ -73,7 +73,7 @@ export default function UpscalerSlot({ slot }) {
     };
 
     workerRef.current = worker;
-  };
+  }, [myJobId, previewUrl, updateJob]);
 
   useEffect(() => {
     initWorker();
@@ -83,7 +83,7 @@ export default function UpscalerSlot({ slot }) {
         workerRef.current.terminate();
       }
     };
-  }, [myJobId, updateJob]);
+  }, [initWorker]);
 
   const processImage = async () => {
     if (!imageFile || isProcessing) return;

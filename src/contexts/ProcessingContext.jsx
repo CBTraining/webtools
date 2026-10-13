@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { get, set } from 'idb-keyval';
+import { initializeFfmpeg } from '../utils/ffmpegConfig';
 
 const ProcessingContext = createContext();
 
@@ -8,20 +8,19 @@ export function ProcessingProvider({ children }) {
   // Array of { id, title, type, progress, log, status: 'running'|'success'|'error', resultUrl, resultBlob, error, downloadName }
   const [jobs, setJobs] = useState([]); 
   const [isFfmpegLoaded, setIsFfmpegLoaded] = useState(false);
-  const ffmpegRef = useRef(null);
+  const [ffmpegInstance, setFfmpegInstance] = useState(null);
+  const ffmpegInitRef = useRef(false);
 
   useEffect(() => {
     const loadFfmpeg = async () => {
-      if (ffmpegRef.current) return;
-      ffmpegRef.current = new FFmpeg();
+      if (ffmpegInitRef.current) return;
+      ffmpegInitRef.current = true;
       try {
-        const baseURL = `${import.meta.env.BASE_URL}ffmpeg`;
-        await ffmpegRef.current.load({
-          coreURL: `${baseURL}/ffmpeg-core.js?v=2`,
-          wasmURL: `${baseURL}/ffmpeg-core.wasm?v=2`,
-        });
+        const instance = await initializeFfmpeg();
+        setFfmpegInstance(instance);
         setIsFfmpegLoaded(true);
       } catch (err) {
+        ffmpegInitRef.current = false;
         console.error("FFmpeg failed to load globally:", err);
       }
     };
@@ -45,20 +44,14 @@ export function ProcessingProvider({ children }) {
     }));
   }, []);
 
-  const createFfmpegInstance = async () => {
-    const instance = new FFmpeg();
+  const createFfmpegInstance = useCallback(async () => {
     try {
-      const baseURL = `${import.meta.env.BASE_URL}ffmpeg`;
-      await instance.load({
-        coreURL: `${baseURL}/ffmpeg-core.js?v=2`,
-        wasmURL: `${baseURL}/ffmpeg-core.wasm?v=2`,
-      });
-      return instance;
+      return await initializeFfmpeg();
     } catch (err) {
       console.error("FFmpeg failed to spawn:", err);
       throw err;
     }
-  };
+  }, []);
 
   const removeJob = useCallback((id) => {
     setJobs((prev) => {
@@ -105,14 +98,14 @@ export function ProcessingProvider({ children }) {
     }
   }, [workspaces, isWorkspacesLoaded]);
 
-  const addSlot = (toolId, slotData) => {
+  const addSlot = useCallback((toolId, slotData) => {
     setWorkspaces(prev => ({
       ...prev,
       [toolId]: [...(prev[toolId] || []), slotData]
     }));
-  };
+  }, []);
 
-  const updateSlot = (toolId, slotId, updates) => {
+  const updateSlot = useCallback((toolId, slotId, updates) => {
     setWorkspaces(prev => ({
       ...prev,
       [toolId]: (prev[toolId] || []).map(slot => {
@@ -126,9 +119,9 @@ export function ProcessingProvider({ children }) {
         return slot;
       })
     }));
-  };
+  }, []);
 
-  const removeSlot = (toolId, slotId) => {
+  const removeSlot = useCallback((toolId, slotId) => {
     setWorkspaces(prev => {
       const toolSlots = prev[toolId] || [];
       const slot = toolSlots.find(s => s.id === slotId);
@@ -142,12 +135,12 @@ export function ProcessingProvider({ children }) {
     });
     // Optional: remove job if it was running for this slot
     removeJob(slotId);
-  };
+  }, [removeJob]);
 
   return (
     <ProcessingContext.Provider value={{ 
       jobs, addJob, updateJob, removeJob, 
-      ffmpeg: ffmpegRef.current, isFfmpegLoaded, createFfmpegInstance,
+      ffmpeg: ffmpegInstance, isFfmpegLoaded, createFfmpegInstance,
       workspaces, addSlot, updateSlot, removeSlot
     }}>
       {children}

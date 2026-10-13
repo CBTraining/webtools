@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   ScissorsIcon as Scissors, 
   ArrowDownTrayIcon as Download, 
@@ -39,14 +39,12 @@ export default function LottieToGifSlot({ slot }) {
   const [copied, setCopied] = useState(false);
 
   // In-slot code editor state
-  const [prevLottieData, setPrevLottieData] = useState(lottieData);
   const [rawCode, setRawCode] = useState(() => JSON.stringify(lottieData, null, 2));
   const [codeError, setCodeError] = useState(null);
 
-  if (lottieData !== prevLottieData) {
-    setPrevLottieData(lottieData);
+  useEffect(() => {
     setRawCode(JSON.stringify(lottieData, null, 2));
-  }
+  }, [lottieData]);
 
   // GIF conversion settings
   const [showGifSettings, setShowGifSettings] = useState(false);

@@ -9,11 +9,11 @@ import {
   FilmIcon,
   PhotoIcon
 } from '@heroicons/react/24/outline';
-import JSZip from 'jszip';
 import Dropzone from '../components/Dropzone';
 import { playDing } from '../utils/audio';
 import { formatBytes } from '../utils/formatters';
 import { downloadBlob, copyBlobToClipboard } from '../utils/downloadUtils';
+import { createAndDownloadZip } from '../utils/zipUtils';
 import { useLocation } from 'react-router-dom';
 import { extractZipArchive, extractPdf } from './ContentExtractor/extractors';
 import ExtractedItemCard from './ContentExtractor/ExtractedItemCard';
@@ -158,17 +158,11 @@ export default function ContentExtractor() {
 
   const downloadZip = async () => {
     if (selectedIds.size === 0) return;
-    const zip = new JSZip();
-    const folder = zip.folder(`${fileName}_extracted_media`);
+    const selectedFiles = items
+      .filter(item => selectedIds.has(item.id))
+      .map(item => ({ name: item.name, data: item.blob }));
     
-    items.forEach(item => {
-      if (selectedIds.has(item.id)) {
-        folder.file(item.name, item.blob);
-      }
-    });
-    
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    downloadBlob(zipBlob, `${fileName}_extracted_media.zip`);
+    await createAndDownloadZip(`${fileName}_extracted_media.zip`, selectedFiles, `${fileName}_extracted_media`);
   };
 
   const reset = () => {

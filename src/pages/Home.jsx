@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom';
 import { 
   MagnifyingGlassIcon, 
   XMarkIcon, 
-  SparklesIcon, 
   ClockIcon,
   CommandLineIcon
 } from '@heroicons/react/24/solid';

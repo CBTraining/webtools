@@ -11,7 +11,6 @@ import {
 import { 
   ChevronDownIcon as ChevronDownOutline 
 } from '@heroicons/react/24/outline';
-import BackgroundJobsWidget from './BackgroundJobsWidget';
 import SidebarClock from './SidebarClock';
 import { useState, useEffect, useRef } from 'react';
 import { FEATURE_CATEGORIES } from '../config/navigation';

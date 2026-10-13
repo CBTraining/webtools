@@ -1,5 +1,5 @@
-export function buildGradientString(gradStops, colorCycle) {
-  const sortedStops = [...gradStops].sort((a, b) => a.position - b.position);
+export function buildGradientString(gradStops = [], colorCycle = false) {
+  const sortedStops = [...(gradStops || [])].sort((a, b) => a.position - b.position);
   const loopStops = [];
   sortedStops.forEach(s => { loopStops.push(`${s.color} ${Math.round(s.position * 50)}%`); });
   sortedStops.forEach(s => { loopStops.push(`${s.color} ${Math.round(50 + s.position * 50)}%`); });
@@ -9,7 +9,28 @@ export function buildGradientString(gradStops, colorCycle) {
     : `linear-gradient(90deg, ${sortedStops.map(s => `${s.color} ${Math.round(s.position * 100)}%`).join(', ')})`;
 }
 
-export function buildAnimationCss({ hoverAnimations, animIntensity, sortedStops, showBottomGlow, glowBlur, glowHeight }) {
+export function buildAnimationCss(options = {}, maybeIntensity = 1) {
+  let hoverAnimations = {};
+  let animIntensity = 1;
+  let sortedStops = [];
+  let showBottomGlow = true;
+  let glowBlur = 15;
+  let glowHeight = 30;
+
+  if (options && typeof options === 'object') {
+    if ('hoverAnimations' in options || 'animIntensity' in options || 'sortedStops' in options) {
+      hoverAnimations = options.hoverAnimations || {};
+      animIntensity = options.animIntensity ?? 1;
+      sortedStops = options.sortedStops || [];
+      showBottomGlow = options.showBottomGlow ?? true;
+      glowBlur = options.glowBlur ?? 15;
+      glowHeight = options.glowHeight ?? 30;
+    } else {
+      hoverAnimations = options;
+      animIntensity = maybeIntensity ?? 1;
+    }
+  }
+
   let animationCss = '';
   let transformStr = `perspective(1000px) rotateX(0deg) rotateY(0deg) `;
   if (hoverAnimations.expand) transformStr += `scale(${1 + (0.02 * animIntensity)}) `;
@@ -108,14 +129,33 @@ export function buildAnimationCss({ hoverAnimations, animIntensity, sortedStops,
   return animationCss;
 }
 
-export function generateComponentCss(props) {
+export function generateComponentCss(props = {}) {
   const {
-    fontFamily, maxWidth, maxWidthUnit, minHeight, minHeightUnit,
-    backgroundColor, borderRadius, innerShadowColor, showBottomGlow,
-    glowHeight, glowBlur, gradientString, hoverAnimations, bgImageUrl,
-    bgImagePosition, bgBrightness, bgContrast, bgTint, enableLuminance,
-    iconSize, cardTitleSize, cardTitleColor, cardSubtitleSize, cardSubtitleColor,
-    animationCss
+    fontFamily = 'system-ui, -apple-system, sans-serif',
+    maxWidth = 400,
+    maxWidthUnit = 'px',
+    minHeight = 250,
+    minHeightUnit = 'px',
+    backgroundColor = 'transparent',
+    borderRadius = 32,
+    innerShadowColor = '#13243f',
+    showBottomGlow = true,
+    glowHeight = 30,
+    glowBlur = 15,
+    gradientString = '',
+    hoverAnimations = {},
+    bgImageUrl = '',
+    bgImagePosition = 'center',
+    bgBrightness = 100,
+    bgContrast = 100,
+    bgTint = 'transparent',
+    enableLuminance = true,
+    iconSize = 50,
+    cardTitleSize = 1.1,
+    cardTitleColor = '#ffffff',
+    cardSubtitleSize = 0.9,
+    cardSubtitleColor = '#ffffff',
+    animationCss = ''
   } = props;
 
   return `
@@ -252,8 +292,22 @@ ${enableLuminance ? `
 }${animationCss}`.trim();
 }
 
-export function generateJsSnippet({ enableLuminance, hoverAnimations, animIntensity }) {
-  if (!enableLuminance && !hoverAnimations.tilt) return '';
+export function generateJsSnippet(options = {}, maybeAnimations = {}, maybeIntensity = 1) {
+  let enableLuminance;
+  let hoverAnimations;
+  let animIntensity;
+
+  if (typeof options === 'object' && options !== null && ('enableLuminance' in options || 'hoverAnimations' in options)) {
+    enableLuminance = Boolean(options.enableLuminance);
+    hoverAnimations = options.hoverAnimations || {};
+    animIntensity = options.animIntensity ?? 1;
+  } else {
+    enableLuminance = Boolean(options);
+    hoverAnimations = maybeAnimations || {};
+    animIntensity = maybeIntensity ?? 1;
+  }
+
+  if (!enableLuminance && !hoverAnimations?.tilt) return '';
 
   return `
 <script>
@@ -266,21 +320,21 @@ export function generateJsSnippet({ enableLuminance, hoverAnimations, animIntens
       card.style.setProperty('--mouse-x', \`\${x}px\`);
       card.style.setProperty('--mouse-y', \`\${y}px\`);
       ` : ''}
-      ${hoverAnimations.tilt ? `
+      ${hoverAnimations?.tilt ? `
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       const rotateX = ((y - centerY) / centerY) * -${15 * animIntensity};
       const rotateY = ((x - centerX) / centerX) * ${15 * animIntensity};
       
       let transformStr = \`perspective(1000px) rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) \`;
-      ${hoverAnimations.expand ? `transformStr += \`scale(${1 + (0.02 * animIntensity)}) \`;` : 'transformStr += `scale(1) `;'}
-      ${hoverAnimations.float ? `transformStr += \`translateY(${-5 * animIntensity}px) \`;` : 'transformStr += `translateY(0px) `;'}
-      ${hoverAnimations.shiftRight ? `transformStr += \`translateX(${8 * animIntensity}px) \`;` : 'transformStr += `translateX(0px) `;'}
+      ${hoverAnimations?.expand ? `transformStr += \`scale(${1 + (0.02 * animIntensity)}) \`;` : 'transformStr += `scale(1) `;'}
+      ${hoverAnimations?.float ? `transformStr += \`translateY(${-5 * animIntensity}px) \`;` : 'transformStr += `translateY(0px) `;'}
+      ${hoverAnimations?.shiftRight ? `transformStr += \`translateX(${8 * animIntensity}px) \`;` : 'transformStr += `translateX(0px) `;'}
       
       card.style.transform = transformStr;
       ` : ''}
     });
-    ${hoverAnimations.tilt ? `
+    ${hoverAnimations?.tilt ? `
     card.addEventListener('mouseleave', () => {
       card.style.transform = '';
     });

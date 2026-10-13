@@ -20,7 +20,9 @@ const recoverFromStaleChunk = async () => {
         const keys = await caches.keys();
         await Promise.all(keys.map(k => caches.delete(k).catch(() => {})));
       }
-    } catch {}
+    } catch (err) {
+      void err;
+    }
     const url = new URL(window.location.href);
     url.searchParams.set('v', String(now));
     window.location.href = url.toString();

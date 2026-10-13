@@ -1,3 +1,4 @@
+import { PhotoIcon, CheckIcon } from '@heroicons/react/24/solid';
 import GradientEditor from '../../../components/GradientEditor';
 
 export default function EffectsControls({
@@ -11,6 +12,8 @@ export default function EffectsControls({
   setGlowBlur,
   bgImageUrl,
   setBgImageUrl,
+  bgImagePosition = 'center',
+  setBgImagePosition,
   bgBrightness,
   setBgBrightness,
   bgContrast,
@@ -49,15 +52,37 @@ export default function EffectsControls({
               <label style={{ fontSize: '0.8rem' }}>Glow Blur</label>
               <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{glowBlur}px</span>
             </div>
-            <input type="range" min="0" max="60" value={glowBlur} onChange={e => setGlowBlur(Number(e.target.value))} />
+            <input type="range" min="0" max="100" value={glowBlur} onChange={e => setGlowBlur(Number(e.target.value))} />
           </div>
         </div>
       )}
 
       {/* Background Image Setup */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Background Image (URL)</label>
-        <input type="url" className="input-field" placeholder="https://images.unsplash.com/..." value={bgImageUrl} onChange={e => setBgImageUrl(e.target.value)} style={{ width: '100%', fontSize: '0.8rem' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Background Image</label>
+          {setBgImagePosition && (
+            <select className="input-field" value={bgImagePosition} onChange={e => setBgImagePosition(e.target.value)} style={{ padding: '2px 8px', fontSize: '0.75rem', width: 'auto' }}>
+              <option value="top">Align Top</option>
+              <option value="center">Align Center</option>
+              <option value="bottom">Align Bottom</option>
+            </select>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input type="text" className="input-field" placeholder="https://images.unsplash.com/..." value={bgImageUrl} onChange={e => setBgImageUrl(e.target.value)} style={{ flex: 1, fontSize: '0.8rem' }} />
+          <label className="btn" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: '0.4rem 0.6rem', fontSize: '0.8rem', flexShrink: 0 }}>
+            <PhotoIcon style={{ width: '14px', height: '14px' }} /> Upload
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => setBgImageUrl(event.target.result);
+                reader.readAsDataURL(file);
+              }
+            }} />
+          </label>
+        </div>
       </div>
 
       {bgImageUrl && (
@@ -100,7 +125,7 @@ export default function EffectsControls({
             outerGlow: 'Outer Glow',
             edgeGlow: 'Edge Glow'
           }).map(([key, label]) => {
-            const isSelected = hoverAnimations[key];
+            const isSelected = Boolean(hoverAnimations?.[key]);
             return (
               <label key={key} style={{ 
                 display: 'flex', 
@@ -123,6 +148,7 @@ export default function EffectsControls({
                   checked={isSelected} 
                   onChange={e => setHoverAnimations({ ...hoverAnimations, [key]: e.target.checked })} 
                 />
+                {isSelected && <CheckIcon style={{ width: '12px', height: '12px' }} />}
                 {label}
               </label>
             );

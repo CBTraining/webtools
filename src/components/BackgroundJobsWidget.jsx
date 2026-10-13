@@ -1,6 +1,5 @@
-import React from 'react';
 import { useProcessing } from '../contexts/ProcessingContext';
-import { XMarkIcon, ArrowDownTrayIcon, PlayCircleIcon } from '@heroicons/react/24/solid';
+import { XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { downloadUrl } from '../utils/downloadUtils';
 
 export default function BackgroundJobsWidget() {

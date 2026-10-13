@@ -83,21 +83,6 @@ export default function GifSpatialCropper({
     onChangeCrop({ x: 0, y: 0, width: 100, height: 100 });
   };
 
-  const handleMouseDown = (e, handleType) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    isDraggingRef.current = handleType;
-    dragStartRef.current = {
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      startRect: { ...cropRect }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  };
-
   const handleMouseMove = useCallback((e) => {
     if (!isDraggingRef.current || !containerRef.current) return;
 
@@ -152,13 +137,28 @@ export default function GifSpatialCropper({
       width: Math.round(newRect.width * 10) / 10,
       height: Math.round(newRect.height * 10) / 10
     });
-  }, [aspectRatio, applyAspectRatio, cropRect, onChangeCrop]);
+  }, [aspectRatio, applyAspectRatio, onChangeCrop]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback(function onMouseUp() {
     isDraggingRef.current = null;
     window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
+    window.removeEventListener('mouseup', onMouseUp);
   }, [handleMouseMove]);
+
+  const handleMouseDown = (e, handleType) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    isDraggingRef.current = handleType;
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      startRect: { ...cropRect }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
 
   const pixelWidth = naturalDimensions.width ? Math.round((cropRect.width / 100) * naturalDimensions.width) : 0;
   const pixelHeight = naturalDimensions.height ? Math.round((cropRect.height / 100) * naturalDimensions.height) : 0;

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { ClipboardIcon, CheckIcon } from '@heroicons/react/24/outline';
 import './Calculator.css';
 
@@ -49,7 +49,7 @@ export default function Calculator() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }).catch(err => console.error("Clipboard copy failed", err));
-    } catch (e) {
+    } catch {
       setDisplay('Error');
     }
   };

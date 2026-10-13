@@ -100,13 +100,14 @@ function App() {
     }
   }, [globalToast]);
 
-  // Revoke preview URL on close
+  // Revoke preview URL on unmount or when replaced
   useEffect(() => {
-    if (!showModal && previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
-  }, [showModal, previewUrl]);
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   // High-performance pointer tracking for glowing card effect (delegated to active card only)
   useEffect(() => {
@@ -197,11 +198,13 @@ function App() {
     }
     setShowModal(false);
     setPendingBlob(null);
+    setPreviewUrl(null);
   };
 
   const handleCancelModal = () => {
     setShowModal(false);
     setPendingBlob(null);
+    setPreviewUrl(null);
   };
 
   return (
@@ -248,7 +251,7 @@ function App() {
                   try {
                     await convertImageAndDownload(file, 'png');
                     setGlobalToast({ text: "Image auto-converted to PNG and downloaded!", type: 'success' });
-                  } catch (e) {
+                  } catch {
                     setGlobalToast({ text: "Failed to convert image.", type: 'error' });
                   }
                 } else if (isVideoFile(file)) {

@@ -1,18 +1,5 @@
-// Check magic bytes for GIF (GIF87a or GIF89a)
-export async function isGifBlob(blob) {
-  if (!blob) return false;
-  if (blob.type === 'image/gif') return true;
-  if (blob.size >= 6) {
-    try {
-      const buffer = await blob.slice(0, 6).arrayBuffer();
-      const header = new TextDecoder().decode(buffer);
-      if (header.startsWith('GIF8')) return true;
-    } catch (e) {
-      // ignore
-    }
-  }
-  return false;
-}
+import { isGifBlob } from './fileTypes';
+export { isGifBlob };
 
 export function loadImageFallback(url, timeoutMs = 2500) {
   return new Promise((resolve, reject) => {
@@ -121,7 +108,7 @@ export async function processHtmlPaste(html, onImageBlob) {
         const blob = await response.blob();
         onImageBlob(blob, src.startsWith('data:image/gif') ? 'pasted_animation' : 'clipboard_image');
         return { success: true };
-      } catch (err) {
+      } catch {
         // Fallback manual base64 parsing if fetch fails
         try {
           const arr = src.split(',');
@@ -160,34 +147,34 @@ export async function processHtmlPaste(html, onImageBlob) {
       const rawBlob = await fetchDirectBlob(targetUrl);
       onImageBlob(rawBlob, 'google_slides_image');
       return { success: true };
-    } catch (eDirect) {
+    } catch {
       // 2. Try Codetabs CORS Proxy Raw Fetch (Fastest CORS proxy for images)
       try {
         const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
         const rawBlob = await fetchDirectBlob(proxyUrl);
         onImageBlob(rawBlob, 'google_slides_image');
         return { success: true };
-      } catch (eProxy0) {
+      } catch {
         // 3. Try AllOrigins CORS Proxy Raw Fetch
         try {
           const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
           const rawBlob = await fetchDirectBlob(proxyUrl);
           onImageBlob(rawBlob, 'google_slides_image');
           return { success: true };
-        } catch (eProxy1) {
+        } catch {
           // 4. Try CorsProxy.io Raw Fetch
           try {
             const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
             const rawBlob = await fetchDirectBlob(proxyUrl2);
             onImageBlob(rawBlob, 'google_slides_image');
             return { success: true };
-          } catch (eProxy2) {
+          } catch {
             // 5. Final Fallback: Canvas DOM image load
             try {
               const fallbackBlob = await loadImageFallback(targetUrl);
               onImageBlob(fallbackBlob, 'google_slides_image');
               return { success: true };
-            } catch (eFinal) {
+            } catch {
               return { success: false, error: 'Network fetch blocked by CORS on all proxies.' };
             }
           }

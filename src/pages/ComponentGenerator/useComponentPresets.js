@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 
 const STORAGE_KEY = 'componentGeneratorPresets';
 
@@ -6,19 +6,16 @@ const STORAGE_KEY = 'componentGeneratorPresets';
  * Custom hook for managing ComponentGenerator user presets in localStorage.
  */
 export function useComponentPresets(currentProps, applyProps) {
-  const [presets, setPresets] = useState({});
-  const [presetName, setPresetName] = useState('');
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setPresets(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load presets:", e);
-      }
+  const [presets, setPresets] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      console.error("Failed to load presets:", e);
+      return {};
     }
-  }, []);
+  });
+  const [presetName, setPresetName] = useState('');
 
   const savePreset = useCallback(() => {
     if (!presetName.trim()) {

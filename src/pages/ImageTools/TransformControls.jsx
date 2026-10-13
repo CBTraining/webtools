@@ -103,7 +103,7 @@ export default function TransformControls({
           {/* Rotation & Flip */}
           <div>
             <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-              Orientation & Flip
+              Orientation & Flip {rotation ? `(${rotation}°)` : ''}
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
               <button 

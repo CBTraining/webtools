@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProcessing } from '../contexts/ProcessingContext';
 import { 
   PaperAirplaneIcon,
   SparklesIcon, 
   PhotoIcon, 
-  CubeIcon, 
   QrCodeIcon, 
   Square3Stack3DIcon, 
   CodeBracketIcon, 

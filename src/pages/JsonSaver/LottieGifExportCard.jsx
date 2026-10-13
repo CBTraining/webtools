@@ -30,7 +30,7 @@ export default function LottieGifExportCard({ parsedLottieData }) {
       });
 
       const rUrl = URL.createObjectURL(blob);
-      setGifJob({ status: 'success', progress: 100, log: 'Ready!', resultUrl: rUrl, error: '' });
+      setGifJob({ status: 'success', progress: 100, log: 'Ready!', resultUrl: rUrl, downloadName: `lottie-export-${Date.now()}.gif`, error: '' });
     } catch (err) {
       console.error(err);
       setGifJob({ status: 'error', progress: 0, log: '', resultUrl: '', error: err?.message || 'Failed to render GIF.' });
@@ -84,7 +84,7 @@ export default function LottieGifExportCard({ parsedLottieData }) {
             <img src={gifJob.resultUrl} alt="Generated GIF" style={{ maxWidth: '150px', maxHeight: '150px', objectFit: 'contain' }} />
           </div>
           <div className="button-group" style={{ width: '100%', gap: '0.5rem' }}>
-            <a href={gifJob.resultUrl} download={`lottie-export-${Date.now()}.gif`} className="btn btn-primary" style={{ flex: 1 }}>
+            <a href={gifJob.resultUrl} download={gifJob.downloadName || 'lottie-export.gif'} className="btn btn-primary" style={{ flex: 1 }}>
               <Download style={{ width: "18px", height: "18px" }} /> Download GIF
             </a>
             <button className="btn" onClick={handleDiscardGif}>

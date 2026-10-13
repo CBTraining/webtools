@@ -24,6 +24,26 @@ export function isImageFile(file) {
   return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp', 'ico', 'avif', 'heic', 'tiff'].includes(ext);
 }
 
+/**
+ * Checks magic bytes for GIF (GIF87a or GIF89a) or MIME type.
+ * @param {Blob} blob
+ * @returns {Promise<boolean>}
+ */
+export async function isGifBlob(blob) {
+  if (!blob) return false;
+  if (blob.type === 'image/gif') return true;
+  if (blob.size >= 6) {
+    try {
+      const buffer = await blob.slice(0, 6).arrayBuffer();
+      const header = new TextDecoder().decode(buffer);
+      if (header.startsWith('GIF8')) return true;
+    } catch {
+      // ignore
+    }
+  }
+  return false;
+}
+
 export function getOriginalGoogleAssetUrl(url) {
   if (!url) return url;
   if (/googleusercontent\.com/i.test(url)) {
@@ -62,14 +82,7 @@ export async function extractDroppedFiles(e) {
       const blob = await resp.blob();
       
       // Check magic bytes for GIF
-      let isGif = blob.type === 'image/gif';
-      if (!isGif && blob.size >= 6) {
-        try {
-          const buf = await blob.slice(0, 6).arrayBuffer();
-          const head = new TextDecoder().decode(buf);
-          if (head.startsWith('GIF8')) isGif = true;
-        } catch {}
-      }
+      const isGif = await isGifBlob(blob);
 
       const ext = isGif ? 'gif' : (blob.type.split('/')[1] || 'png');
       const filename = `image-${Date.now()}.${ext}`;

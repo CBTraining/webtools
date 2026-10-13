@@ -1,14 +1,38 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 export default function GradientEditor({ stops, onChange }) {
   const trackRef = useRef(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const isDragging = useRef(false);
   const dragIndex = useRef(null);
+  const latestRef = useRef({ stops, onChange });
+  useEffect(() => {
+    latestRef.current = { stops, onChange };
+  }, [stops, onChange]);
 
   // Ensure stops are valid and sorted for the background
   const sortedStops = [...stops].sort((a, b) => a.position - b.position);
   const bgGradient = `linear-gradient(to right, ${sortedStops.map(s => `${s.color} ${s.position * 100}%`).join(', ')})`;
+
+  const handlePointerMove = useCallback((e) => {
+    if (!isDragging.current || dragIndex.current === null || !trackRef.current) return;
+    
+    const rect = trackRef.current.getBoundingClientRect();
+    let newPos = (e.clientX - rect.left) / rect.width;
+    newPos = Math.max(0, Math.min(1, newPos));
+    
+    const { stops: currentStops, onChange: currentOnChange } = latestRef.current;
+    const newStops = [...currentStops];
+    newStops[dragIndex.current] = { ...newStops[dragIndex.current], position: newPos };
+    currentOnChange(newStops);
+  }, []);
+
+  const handlePointerUp = useCallback(function onPointerUp() {
+    isDragging.current = false;
+    dragIndex.current = null;
+    window.removeEventListener('pointermove', handlePointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+  }, [handlePointerMove]);
 
   const handlePointerDown = (e, index) => {
     e.stopPropagation(); // prevent triggering track click
@@ -20,25 +44,6 @@ export default function GradientEditor({ stops, onChange }) {
     // Add global listeners
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
-  };
-
-  const handlePointerMove = (e) => {
-    if (!isDragging.current || dragIndex.current === null || !trackRef.current) return;
-    
-    const rect = trackRef.current.getBoundingClientRect();
-    let newPos = (e.clientX - rect.left) / rect.width;
-    newPos = Math.max(0, Math.min(1, newPos));
-    
-    const newStops = [...stops];
-    newStops[dragIndex.current] = { ...newStops[dragIndex.current], position: newPos };
-    onChange(newStops);
-  };
-
-  const handlePointerUp = () => {
-    isDragging.current = false;
-    dragIndex.current = null;
-    window.removeEventListener('pointermove', handlePointerMove);
-    window.removeEventListener('pointerup', handlePointerUp);
   };
 
   const handleTrackClick = (e) => {
@@ -114,7 +119,7 @@ export default function GradientEditor({ stops, onChange }) {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, []);
+  }, [handlePointerMove, handlePointerUp]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>

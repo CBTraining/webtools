@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CodeBracketSquareIcon as FileJson } from '@heroicons/react/24/solid';
 import { downloadBlob } from '../utils/downloadUtils';
@@ -7,31 +7,17 @@ import LottieGifExportCard from './JsonSaver/LottieGifExportCard';
 import JsonEditorPanel from './JsonSaver/JsonEditorPanel';
 
 export default function JsonSaver() {
-  const [jsonText, setJsonText] = useState('');
+  const location = useLocation();
+  const [jsonText, setJsonText] = useState(() => location.state?.jsonText || '');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   // Lottie and preview state
   const [activeTab, setActiveTab] = useState('editor'); // 'editor' | 'preview'
-  const [parsedLottieData, setParsedLottieData] = useState(null);
   const [isPlaying, setIsPlaying] = useState(true);
 
-  const location = useLocation();
-
-  // Load state if navigated with state (e.g., from drag and drop overlay)
-  useEffect(() => {
-    if (location.state?.jsonText) {
-      setJsonText(location.state.jsonText);
-    }
-  }, [location.state]);
-
-  // Check if pasted JSON is Lottie animation whenever JSON text changes
-  useEffect(() => {
-    if (!jsonText.trim()) {
-      setParsedLottieData(null);
-      setActiveTab('editor');
-      return;
-    }
+  const parsedLottieData = useMemo(() => {
+    if (!jsonText.trim()) return null;
     try {
       const parsed = JSON.parse(jsonText);
       if (
@@ -43,16 +29,15 @@ export default function JsonSaver() {
         typeof parsed.op === 'number' &&
         Array.isArray(parsed.layers)
       ) {
-        setParsedLottieData(parsed);
-      } else {
-        setParsedLottieData(null);
-        setActiveTab('editor');
+        return parsed;
       }
+      return null;
     } catch {
-      setParsedLottieData(null);
-      setActiveTab('editor');
+      return null;
     }
   }, [jsonText]);
+
+  const currentTab = parsedLottieData ? activeTab : 'editor';
 
   const handleFormat = () => {
     try {
@@ -110,14 +95,14 @@ export default function JsonSaver() {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button 
-              className={`btn ${activeTab === 'editor' ? 'btn-primary' : ''}`} 
+              className={`btn ${currentTab === 'editor' ? 'btn-primary' : ''}`} 
               onClick={() => setActiveTab('editor')}
               style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
             >
               JSON Editor
             </button>
             <button 
-              className={`btn ${activeTab === 'preview' ? 'btn-primary' : ''}`} 
+              className={`btn ${currentTab === 'preview' ? 'btn-primary' : ''}`} 
               onClick={() => setActiveTab('preview')}
               style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
             >
@@ -127,7 +112,7 @@ export default function JsonSaver() {
         </div>
       )}
 
-      {activeTab === 'editor' ? (
+      {currentTab === 'editor' ? (
         <JsonEditorPanel
           jsonText={jsonText}
           setJsonText={setJsonText}

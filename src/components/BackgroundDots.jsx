@@ -143,7 +143,6 @@ export default function BackgroundDots() {
       
       const isLightMode = document.documentElement.getAttribute('data-theme') === 'light';
       
-      const accentRGB = '64, 224, 208'; // #40E0D0
       const baseRGB = isLightMode ? '0, 0, 0' : '255, 255, 255';
       const baseArr = isLightMode ? [0, 0, 0] : [255, 255, 255];
       const accentArr = [64, 224, 208];

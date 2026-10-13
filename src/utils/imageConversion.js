@@ -25,7 +25,7 @@ export function convertBlobToPng(blob) {
           if (pngBlob) resolve(pngBlob);
           else resolve(blob);
         }, 'image/png');
-      } catch (e) {
+      } catch {
         resolve(blob);
       }
     };
@@ -74,7 +74,7 @@ export function convertImageAndDownload(file, format = 'png', customFileName) {
         reject(err);
       }
     };
-    img.onerror = (err) => {
+    img.onerror = () => {
       URL.revokeObjectURL(url);
       reject(new Error('The file is not a valid or readable image.'));
     };

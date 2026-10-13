@@ -5,9 +5,10 @@ export default function DiagnosticsOverlay() {
   const [memory, setMemory] = useState(null);
   const requestRef = useRef();
   const frameCountRef = useRef(0);
-  const lastFpsUpdateTimeRef = useRef(window.performance && window.performance.now ? window.performance.now() : Date.now());
+  const lastFpsUpdateTimeRef = useRef(0);
 
   useEffect(() => {
+    lastFpsUpdateTimeRef.current = window.performance && window.performance.now ? window.performance.now() : Date.now();
     const loop = (time) => {
       frameCountRef.current += 1;
       const t = time || (window.performance && window.performance.now ? window.performance.now() : Date.now());
@@ -39,7 +40,7 @@ export default function DiagnosticsOverlay() {
             limit: (window.performance.memory.jsHeapSizeLimit / 1048576).toFixed(1)
           });
         }
-      } catch (err) {
+      } catch {
         // Safe fallback
       }
     }, 1000);

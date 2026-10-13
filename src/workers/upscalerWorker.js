@@ -1,4 +1,4 @@
-import { pipeline, env, RawImage } from '@huggingface/transformers';
+import { pipeline, env } from '@huggingface/transformers';
 
 // Configure environment
 env.allowLocalModels = false;

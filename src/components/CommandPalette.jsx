@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   MagnifyingGlassIcon, 
   XMarkIcon,
   SunIcon,
-  MoonIcon,
   WrenchScrewdriverIcon,
   ClockIcon,
   ArrowRightIcon
@@ -19,8 +18,15 @@ export default function CommandPalette({ isOpen, onClose, onOpen }) {
   const resultsRef = useRef(null);
   const navigate = useNavigate();
 
-  // Load recently visited tools from localStorage
+  const handleClose = useCallback(() => {
+    setQuery('');
+    setSelectedIndex(0);
+    onClose();
+  }, [onClose]);
+
+  // Load recently visited tools from localStorage when open
   const recentToolPaths = useMemo(() => {
+    if (!isOpen) return [];
     try {
       const saved = localStorage.getItem('webtools-recent');
       return saved ? JSON.parse(saved) : [];
@@ -100,35 +106,31 @@ export default function CommandPalette({ isOpen, onClose, onOpen }) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         if (isOpen) {
-          onClose();
+          handleClose();
         } else {
+          setQuery('');
+          setSelectedIndex(0);
           onOpen();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, onOpen]);
+  }, [isOpen, handleClose, onOpen]);
 
-  // Focus input and reset query on open
+  // Focus input on open
   useEffect(() => {
     if (isOpen) {
-      setQuery('');
-      setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      const timer = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
-
-  // Reset selected index when query changes
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
 
   // Keyboard navigation within the palette
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
-      onClose();
+      handleClose();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex(prev => (prev + 1) % Math.max(1, filteredItems.length));
@@ -154,7 +156,7 @@ export default function CommandPalette({ isOpen, onClose, onOpen }) {
   }, [selectedIndex]);
 
   const handleSelectItem = (item) => {
-    onClose();
+    handleClose();
     if (item.type === 'action' && item.action) {
       item.action();
     } else if (item.to) {
@@ -167,7 +169,7 @@ export default function CommandPalette({ isOpen, onClose, onOpen }) {
   let currentGroup = null;
 
   return (
-    <div className="command-palette-backdrop animate-fade-in" onClick={onClose}>
+    <div className="command-palette-backdrop animate-fade-in" onClick={handleClose}>
       <div 
         className="command-palette-modal animate-pop-in" 
         onClick={e => e.stopPropagation()}
@@ -181,11 +183,17 @@ export default function CommandPalette({ isOpen, onClose, onOpen }) {
             className="command-palette-input"
             placeholder="Search tools, actions, or type keywords (e.g. crop, 50mb, pdf, svg)..."
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => {
+              setQuery(e.target.value);
+              setSelectedIndex(0);
+            }}
           />
           {query ? (
             <button 
-              onClick={() => setQuery('')}
+              onClick={() => {
+                setQuery('');
+                setSelectedIndex(0);
+              }}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 2 }}
             >
               <XMarkIcon style={{ width: 18, height: 18 }} />

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 
 /**
  * Modal to preview and save a pasted/dropped image or GIF with a customized filename.
