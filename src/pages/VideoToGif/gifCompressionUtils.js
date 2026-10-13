@@ -53,18 +53,29 @@ export function computeAutoBudgetParameters({
   naturalHeight = 360,
   cropBounds,
   requestedFps = 15,
-  requestedQuality = 80
+  requestedQuality = 100
 }) {
+  const baseW = Math.max(2, cropBounds ? cropBounds.w : naturalWidth);
+  const baseH = Math.max(2, cropBounds ? cropBounds.h : naturalHeight);
+  const aspect = baseH / (baseW || 1);
+
+  // Compute user-requested resolution scale relative to the original (or cropped) width
+  const minAllowedScale = Math.min(baseW, 32);
+  let requestedScale = Math.round((baseW * (requestedQuality / 100)) / 2) * 2;
+  requestedScale = Math.max(minAllowedScale, Math.min(baseW, requestedScale));
+  if (requestedScale % 2 !== 0 && requestedScale > 2) requestedScale -= 1;
+
   if (!targetMb || targetMb <= 0) {
-    // Normal estimation without cap
-    const baseW = cropBounds ? cropBounds.w : naturalWidth;
-    const baseH = cropBounds ? cropBounds.h : naturalHeight;
-    const aspect = baseH / (baseW || 1);
-    const targetScale = Math.floor(240 + ((requestedQuality - 1) / 99) * 560);
-    const targetH = Math.round(targetScale * aspect);
-    const estimatedBytes = (targetScale * targetH * requestedFps * duration) / 3.5;
+    // Manual estimation without MB cap
+    const targetScale = requestedScale;
+    const targetHeight = Math.max(2, Math.round((targetScale * aspect) / 2) * 2);
+    const estimatedBytes = (targetScale * targetHeight * requestedFps * duration) / 3.5;
     return {
       targetScale,
+      targetHeight,
+      baseW,
+      baseH,
+      isAutoScaled: false,
       fps: requestedFps,
       estimatedBytes,
       maxColors: 256,
@@ -76,14 +87,10 @@ export function computeAutoBudgetParameters({
   const targetBytes = targetMb * 1024 * 1024;
   const safeTargetBytes = targetBytes * 0.85; // 15% safety buffer
 
-  const baseW = cropBounds ? cropBounds.w : naturalWidth;
-  const baseH = cropBounds ? cropBounds.h : naturalHeight;
-  const aspect = baseH / (baseW || 1);
-
   let fps = requestedFps;
-  let targetScale = Math.floor(240 + ((requestedQuality - 1) / 99) * 560);
+  let targetScale = requestedScale;
 
-  // Check baseline raw bytes
+  // Check baseline raw bytes at the user's requested scale
   let estH = targetScale * aspect;
   let estimatedBytes = (targetScale * estH * fps * duration) / 3.8;
 
@@ -95,15 +102,18 @@ export function computeAutoBudgetParameters({
     estimatedBytes = (targetScale * estH * fps * duration) / 3.8;
   }
 
-  // Step 2: If still over budget, calculate scale reduction
+  // Step 2: If still over budget, calculate scale reduction without ever exceeding baseW
   if (estimatedBytes > safeTargetBytes) {
     const scaleFactor = Math.sqrt(safeTargetBytes / estimatedBytes);
-    targetScale = Math.max(180, Math.floor(targetScale * scaleFactor));
+    const minAutoScale = Math.min(baseW, 120);
+    targetScale = Math.max(minAutoScale, Math.min(baseW, Math.floor(targetScale * scaleFactor)));
     // Ensure even scale
-    if (targetScale % 2 !== 0) targetScale -= 1;
+    if (targetScale % 2 !== 0 && targetScale > 2) targetScale -= 1;
     estH = targetScale * aspect;
     estimatedBytes = (targetScale * estH * fps * duration) / 4.2;
   }
+
+  const targetHeight = Math.max(2, Math.round((targetScale * aspect) / 2) * 2);
 
   // Optimized palette settings when target size is enabled
   const maxColors = targetMb <= 10 ? 128 : targetMb <= 25 ? 192 : 224;
@@ -111,6 +121,10 @@ export function computeAutoBudgetParameters({
 
   return {
     targetScale,
+    targetHeight,
+    baseW,
+    baseH,
+    isAutoScaled: targetScale < requestedScale,
     fps,
     estimatedBytes: Math.min(estimatedBytes, targetBytes * 0.95),
     maxColors,

@@ -25,6 +25,7 @@ export async function routeDroppedFiles(files, action, dragType, {
       id: crypto.randomUUID(),
       videoFile: file,
       previewUrl: URL.createObjectURL(file),
+      quality: 100,
       targetSizeLimit: '50',
       enableSpatialCrop: false
     });

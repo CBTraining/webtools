@@ -67,7 +67,8 @@ export async function executeGifConversion({
       if (onProgress) onProgress(92);
 
       const precisionOutputName = `output_${slotId}_compressed.gif`;
-      const precisionScale = Math.max(160, Math.floor(budgetParams.targetScale * 0.78));
+      const minPrecisionScale = Math.min(budgetParams.targetScale, 64);
+      const precisionScale = Math.max(minPrecisionScale, Math.floor((budgetParams.targetScale * 0.78) / 2) * 2);
       const precisionArgs = buildFfmpegGifArgs({
         inputName,
         outputName: precisionOutputName,

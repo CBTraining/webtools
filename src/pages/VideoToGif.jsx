@@ -29,7 +29,7 @@ export default function VideoToGif() {
           previewUrl: URL.createObjectURL(file),
           originalFps: null,
           isProbing: false,
-          quality: 80,
+          quality: 100,
           enableCrop: false,
           startTime: 0,
           endTime: 5,

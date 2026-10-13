@@ -26,7 +26,7 @@ export default function VideoToGifSlot({ slot }) {
     videoFile, 
     previewUrl, 
     originalFps = null, 
-    quality = 80, 
+    quality = 100, 
     enableCrop = false, 
     startTime = 0, 
     endTime = 5, 
@@ -37,6 +37,10 @@ export default function VideoToGifSlot({ slot }) {
     targetSizeLimit = '50',
     customTargetMb = 50
   } = slot;
+
+  const isGif = Boolean(
+    videoFile && (videoFile.type === 'image/gif' || videoFile.name?.toLowerCase().endsWith('.gif'))
+  );
 
   const [isPlayingLoop, setIsPlayingLoop] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -69,6 +73,25 @@ export default function VideoToGifSlot({ slot }) {
 
   const estimatedBytes = budgetParams.estimatedBytes;
 
+  // Immediately read native GIF dimensions via browser Image decoder so Resolution Scale has exact original size right away
+  useEffect(() => {
+    if (!isGif || !previewUrl || (slot.videoWidth && slot.videoHeight)) return;
+    let active = true;
+    const img = new Image();
+    img.onload = () => {
+      if (active && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        updateSlot(TOOL_ID, slot.id, {
+          videoWidth: img.naturalWidth,
+          videoHeight: img.naturalHeight
+        });
+      }
+    };
+    img.src = previewUrl;
+    return () => {
+      active = false;
+    };
+  }, [isGif, previewUrl, slot.id, slot.videoWidth, slot.videoHeight, updateSlot]);
+
   // Initial Probe for FPS, Duration, Dimensions, and AVI MP4 Preview
   useEffect(() => {
     if (isFfmpegLoaded && videoFile && originalFps === null && !slot.isProbing) {
@@ -76,7 +99,7 @@ export default function VideoToGifSlot({ slot }) {
       const probe = async () => {
         const metadata = await probeVideoMetadata(createFfmpegInstance, slot.id, videoFile);
         const detectedFps = metadata?.fps;
-        const roundedFps = detectedFps ? Math.round(detectedFps) : 30;
+        const roundedFps = detectedFps ? Math.round(detectedFps) : (isGif ? 15 : 30);
         let newFps = fps;
         if (fps !== 'original' && parseInt(fps) > roundedFps) {
           if (roundedFps >= 15) newFps = '15';
@@ -99,31 +122,49 @@ export default function VideoToGifSlot({ slot }) {
 
         if (metadata?.width) updates.videoWidth = metadata.width;
         if (metadata?.height) updates.videoHeight = metadata.height;
-        if (metadata?.previewUrl) updates.previewUrl = metadata.previewUrl;
+        if (metadata?.previewUrl) {
+          updates.previewUrl = metadata.previewUrl;
+          updates.isTranscodedPreview = true;
+        }
 
         updateSlot(TOOL_ID, slot.id, updates);
       };
       probe();
     }
-  }, [isFfmpegLoaded, videoFile, originalFps, slot.isProbing, slot.id, updateSlot, createFfmpegInstance, fps, endTime]);
+  }, [isFfmpegLoaded, videoFile, isGif, originalFps, slot.isProbing, slot.id, updateSlot, createFfmpegInstance, fps, endTime]);
 
   const handleVideoLoadedMetadata = () => {
     if (videoRef.current) {
       const dur = videoRef.current.duration;
       const initialEnd = (endTime === 5 && dur > 0) ? Math.min(dur, Math.floor(dur * 10) / 10) : endTime;
       const updates = {};
-      if (dur > 0) {
+      if (dur > 0 && Number.isFinite(dur)) {
         updates.videoDuration = dur;
         updates.endTime = Math.min(dur, initialEnd);
       }
-      if (videoRef.current.videoWidth) {
-        updates.videoWidth = videoRef.current.videoWidth;
-      }
-      if (videoRef.current.videoHeight) {
-        updates.videoHeight = videoRef.current.videoHeight;
+      // Do not overwrite original probed dimensions with a downscaled 720p transcoded preview
+      if (!slot.isTranscodedPreview) {
+        if (videoRef.current.videoWidth) {
+          updates.videoWidth = videoRef.current.videoWidth;
+        }
+        if (videoRef.current.videoHeight) {
+          updates.videoHeight = videoRef.current.videoHeight;
+        }
       }
       if (Object.keys(updates).length > 0) {
         updateSlot(TOOL_ID, slot.id, updates);
+      }
+    }
+  };
+
+  const handleGifImageLoad = (e) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+      if (slot.videoWidth !== img.naturalWidth || slot.videoHeight !== img.naturalHeight) {
+        updateSlot(TOOL_ID, slot.id, {
+          videoWidth: img.naturalWidth,
+          videoHeight: img.naturalHeight
+        });
       }
     }
   };
@@ -248,16 +289,25 @@ export default function VideoToGifSlot({ slot }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         
-        {/* Video Player Container with Spatial Cropper Overlay */}
+        {/* Video / GIF Preview Container with Spatial Cropper Overlay */}
         <div style={{ position: 'relative', width: '100%', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', background: '#000' }}>
-          <video 
-            ref={videoRef}
-            src={previewUrl} 
-            controls 
-            onLoadedMetadata={handleVideoLoadedMetadata}
-            onTimeUpdate={handleTimeUpdate}
-            style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', display: 'block' }} 
-          />
+          {isGif && !slot.isTranscodedPreview ? (
+            <img
+              src={previewUrl}
+              alt={videoFile?.name || 'GIF Preview'}
+              onLoad={handleGifImageLoad}
+              style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', display: 'block' }}
+            />
+          ) : (
+            <video 
+              ref={videoRef}
+              src={previewUrl} 
+              controls 
+              onLoadedMetadata={handleVideoLoadedMetadata}
+              onTimeUpdate={handleTimeUpdate}
+              style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', display: 'block' }} 
+            />
+          )}
 
           {slot.isProbing && isAviFile(videoFile) && (
             <div style={{
@@ -287,6 +337,8 @@ export default function VideoToGifSlot({ slot }) {
           {enableSpatialCrop && (
             <GifSpatialCropper
               videoRef={videoRef}
+              naturalWidth={naturalWidth}
+              naturalHeight={naturalHeight}
               cropRect={cropRect}
               onChangeCrop={(newRect) => updateSlot(TOOL_ID, slot.id, { cropRect: newRect })}
               aspectRatio={cropAspectRatio}

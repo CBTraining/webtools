@@ -11,6 +11,8 @@ const ASPECT_RATIOS = [
 
 export default function GifSpatialCropper({
   videoRef,
+  naturalWidth = 0,
+  naturalHeight = 0,
   cropRect = { x: 0, y: 0, width: 100, height: 100 },
   onChangeCrop,
   aspectRatio = 'free',
@@ -20,15 +22,15 @@ export default function GifSpatialCropper({
   const isDraggingRef = useRef(null); // 'move' | 'nw' | 'ne' | 'se' | 'sw' | 'n' | 's' | 'e' | 'w'
   const dragStartRef = useRef({ mouseX: 0, mouseY: 0, startRect: null });
 
-  const [naturalDimensions, setNaturalDimensions] = useState({ width: 0, height: 0 });
+  const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    const video = videoRef.current;
+    const video = videoRef?.current;
     if (!video) return;
 
     const updateDims = () => {
       if (video.videoWidth && video.videoHeight) {
-        setNaturalDimensions({ width: video.videoWidth, height: video.videoHeight });
+        setVideoDimensions({ width: video.videoWidth, height: video.videoHeight });
       }
     };
 
@@ -36,6 +38,11 @@ export default function GifSpatialCropper({
     video.addEventListener('loadedmetadata', updateDims);
     return () => video.removeEventListener('loadedmetadata', updateDims);
   }, [videoRef]);
+
+  const naturalDimensions = {
+    width: naturalWidth || videoDimensions.width,
+    height: naturalHeight || videoDimensions.height
+  };
 
   const applyAspectRatio = useCallback((rect, targetRatio) => {
     if (!targetRatio || targetRatio === 'free' || !naturalDimensions.width || !naturalDimensions.height) {
@@ -68,7 +75,7 @@ export default function GifSpatialCropper({
       width: Math.round(newWidth * 10) / 10,
       height: Math.round(newHeight * 10) / 10
     };
-  }, [naturalDimensions]);
+  }, [naturalDimensions.width, naturalDimensions.height]);
 
   const handleSetRatio = (ratioValue) => {
     onChangeAspectRatio(ratioValue);

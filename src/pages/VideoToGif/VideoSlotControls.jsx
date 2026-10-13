@@ -24,7 +24,7 @@ export default function VideoSlotControls({
 }) {
   const {
     originalFps = null,
-    quality = 80,
+    quality = 100,
     enableCrop = false,
     startTime = 0,
     endTime = 5,
@@ -34,6 +34,10 @@ export default function VideoSlotControls({
     targetSizeLimit = '50',
     customTargetMb = 50
   } = slot;
+
+  const hasKnownDimensions = Boolean(slot.videoWidth && slot.videoHeight);
+  const outW = budgetParams.targetScale;
+  const outH = budgetParams.targetHeight;
 
   return (
     <div>
@@ -109,12 +113,14 @@ export default function VideoSlotControls({
         )}
       </div>
 
-      {/* Quality Slider (Resolution base) */}
+      {/* Quality Slider (Resolution Scale relative to original/cropped size) */}
       <div className="input-group" style={{ marginBottom: '1rem' }}>
-        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', gap: '0.5rem', flexWrap: 'wrap' }}>
           <span>Quality (Resolution Scale)</span>
-          <span style={{ color: 'var(--accent-color)' }}>
-            {effectiveTargetMb ? `Auto-adjusted (~${budgetParams.targetScale}px)` : `${quality}% (~${budgetParams.targetScale}px)`}
+          <span style={{ color: 'var(--accent-color)', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+            {budgetParams.isAutoScaled
+              ? `${quality}% → Auto-fitted (${outW}×${outH}px)`
+              : `${quality}% (${outW}×${outH}px)`}
           </span>
         </label>
         <input 
@@ -125,6 +131,14 @@ export default function VideoSlotControls({
           onChange={(e) => onUpdate({ quality: Number(e.target.value) })}
           style={{ width: '100%', cursor: 'pointer' }}
         />
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          <span>
+            {hasKnownDimensions
+              ? `Original size: ${slot.videoWidth} × ${slot.videoHeight} px${enableSpatialCrop && cropBounds ? ` (Cropped: ${cropBounds.w} × ${cropBounds.h} px)` : ''}`
+              : 'Detecting original dimensions...'}
+          </span>
+          <span>100% = Full Original Width</span>
+        </div>
       </div>
 
       {/* Framerate Selection */}
