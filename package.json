@@ -1,7 +1,7 @@
 {
   "name": "webtools",
   "private": true,
-  "version": "3.26.0",
+  "version": "3.27.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist -u \"cgammelloultra <cgammelloultra@gmail.com>\""
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.6",

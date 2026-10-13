@@ -75,7 +75,7 @@ export default function Sidebar({ isOpen, onClose, onOpenSearch, onManualPaste, 
           <div className="logo-container" style={{ alignItems: 'center' }}>
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="WebTools Logo" width="28" height="28" style={{ marginLeft: '6px', marginRight: '-2px' }} />
             <h2>Web<span className="text-gradient">Tools</span></h2>
-            <span className="version">v3.26</span>
+            <span className="version">v3.27</span>
           </div>
 
           <button 
