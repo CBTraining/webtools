@@ -124,7 +124,6 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
     dragCounter.current = 0;
     setIsDragging(false);
     setDragType('none');
-    window.dispatchEvent(new CustomEvent('burst', { detail: { type: 'radial', x: e.clientX, y: e.clientY } }));
 
     // Extract real File objects (handles Desktop files + Google Chat / Slack web image drag)
     const files = await extractDroppedFiles(e);

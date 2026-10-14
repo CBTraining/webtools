@@ -2,7 +2,6 @@ import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Bars3Icon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import Sidebar from './components/Sidebar';
-import BackgroundDots from './components/BackgroundDots';
 import RightPanel from './components/RightPanel/RightPanel';
 import { ProcessingProvider } from './contexts/ProcessingContext';
 import BackgroundJobsWidget from './components/BackgroundJobsWidget';
@@ -176,8 +175,6 @@ function App() {
 
   const handleDownload = async () => {
     if (pendingBlob && filename) {
-      window.dispatchEvent(new CustomEvent('burst', { detail: { type: 'vertical', x: 0 } }));
-
       const isGif = blobType === 'gif' || pendingBlob.type === 'image/gif' || filename.toLowerCase().endsWith('.gif');
       const cleanName = filename.replace(/\.(png|gif|jpe?g|webp|bmp|svg)$/i, '');
       const ext = isGif ? '.gif' : '.png';
@@ -210,7 +207,6 @@ function App() {
   return (
     <ProcessingProvider>
       <Router>
-        <BackgroundDots />
         <svg width="0" height="0" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
           <defs>
             <linearGradient id="accent-grad" x1="0%" y1="0%" x2="100%" y2="100%">
