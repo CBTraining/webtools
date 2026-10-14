@@ -8,7 +8,7 @@ const getAudioContext = () => {
     }
   }
   if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
-    sharedAudioCtx.resume();
+    sharedAudioCtx.resume().catch(() => {});
   }
   return sharedAudioCtx;
 };

@@ -27,6 +27,14 @@ export default function Sidebar({ isOpen, onClose, onManualPaste, onClockClick, 
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    const handleExternalThemeChange = (e) => {
+      if (e.detail) setTheme(e.detail);
+    };
+    window.addEventListener('webtools-theme-change', handleExternalThemeChange);
+    return () => window.removeEventListener('webtools-theme-change', handleExternalThemeChange);
+  }, []);
+
   const checkScroll = () => {
     if (navRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = navRef.current;

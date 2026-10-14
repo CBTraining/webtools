@@ -1,22 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+
+const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
 
 export default function AspectRatioCalc() {
   const [origW, setOrigW] = useState(1920);
   const [origH, setOrigH] = useState(1080);
   const [newW, setNewW] = useState(1280);
   const [newH, setNewH] = useState(720);
-  const [ratioStr, setRatioStr] = useState('16:9');
 
-  useEffect(() => {
-    // Calculate aspect ratio string
-    const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-    const divisor = gcd(origW, origH);
-    if (divisor > 0) {
-      setRatioStr(`${origW / divisor}:${origH / divisor}`);
-    } else {
-      setRatioStr('?:?');
-    }
-  }, [origW, origH]);
+  const divisor = gcd(origW, origH);
+  const ratioStr = divisor > 0 ? `${origW / divisor}:${origH / divisor}` : '?:?';
 
   const handleOrigW = (val) => {
     const w = parseInt(val) || 0;

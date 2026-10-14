@@ -373,6 +373,7 @@ export default function VideoToGifSlot({ slot }) {
         {resultUrl && (
           <VideoSlotResult 
             resultUrl={resultUrl}
+            downloadName={myJob?.downloadName}
             isResultMp4={isResultMp4}
             resultBytes={resultBytes}
             effectiveTargetMb={effectiveTargetMb}

@@ -1,4 +1,5 @@
 import { downloadBlob } from './downloadUtils';
+import { loadImageFallback } from './clipboardExtract';
 
 export function isAviFile(file) {
   if (!file) return false;
@@ -89,27 +90,14 @@ export async function extractDroppedFiles(e) {
       return [new File([blob], filename, { type: isGif ? 'image/gif' : (blob.type || 'image/png') })];
     } catch {
       // Fallback via Image object to handle CORS images
-      const file = await new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth || img.width;
-          canvas.height = img.naturalHeight || img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          canvas.toBlob((b) => {
-            if (b) {
-              resolve(new File([b], `image-${Date.now()}.png`, { type: 'image/png' }));
-            } else {
-              resolve(null);
-            }
-          }, 'image/png');
-        };
-        img.onerror = () => resolve(null);
-        img.src = src;
-      });
-      if (file) return [file];
+      try {
+        const b = await loadImageFallback(src);
+        if (b) {
+          return [new File([b], `image-${Date.now()}.png`, { type: 'image/png' })];
+        }
+      } catch {
+        // Ignore fallback failure
+      }
     }
   }
 

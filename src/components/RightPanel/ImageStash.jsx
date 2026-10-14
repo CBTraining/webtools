@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { get, set } from 'idb-keyval';
 import { TrashIcon, PhotoIcon } from '@heroicons/react/24/outline';
 
@@ -6,18 +6,30 @@ const STASH_KEY = 'webtools-image-stash';
 
 export default function ImageStash() {
   const [images, setImages] = useState([]);
+  const imagesRef = useRef([]);
 
   useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+
+  useEffect(() => {
+    let isMounted = true;
     get(STASH_KEY).then(val => {
-      if (val && Array.isArray(val)) {
+      if (isMounted && val && Array.isArray(val)) {
         const loaded = val.map(file => ({
-          id: Math.random().toString(36).substr(2, 9),
+          id: Math.random().toString(36).slice(2, 11),
           file,
           url: URL.createObjectURL(file)
         }));
         setImages(loaded);
       }
     });
+    return () => {
+      isMounted = false;
+      imagesRef.current.forEach(img => {
+        if (img.url) URL.revokeObjectURL(img.url);
+      });
+    };
   }, []);
 
   const saveToIDB = async (newImages) => {
@@ -31,7 +43,7 @@ export default function ImageStash() {
     if (files.length === 0) return;
     
     const newImgs = files.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).slice(2, 11),
       file,
       url: URL.createObjectURL(file)
     }));
@@ -46,6 +58,8 @@ export default function ImageStash() {
   };
 
   const removeImage = (id) => {
+    const target = images.find(img => img.id === id);
+    if (target?.url) URL.revokeObjectURL(target.url);
     const updated = images.filter(img => img.id !== id);
     setImages(updated);
     saveToIDB(updated);

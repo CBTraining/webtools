@@ -29,9 +29,7 @@ export default function Alarms() {
 
   // Save to local storage on change
   useEffect(() => {
-    if (alarms.length > 0) {
-      localStorage.setItem(ALARMS_KEY, JSON.stringify(alarms));
-    }
+    localStorage.setItem(ALARMS_KEY, JSON.stringify(alarms));
   }, [alarms]);
 
   // Tick logic

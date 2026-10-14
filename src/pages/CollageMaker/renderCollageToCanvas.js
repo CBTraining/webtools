@@ -35,8 +35,11 @@ export function renderCollageToCanvas(canvas, {
     const cell = cells[idx];
     if (!cell) return;
 
-    const img = new Image();
-    img.src = photo.url;
+    const img = photo.img || (() => {
+      const fallbackImg = new Image();
+      fallbackImg.src = photo.url;
+      return fallbackImg;
+    })();
     if (!img.complete) return;
 
     ctx.save();

@@ -3,6 +3,7 @@ import { formatBytes } from '../../utils/formatters';
 
 export default function VideoSlotResult({
   resultUrl,
+  downloadName,
   isResultMp4,
   resultBytes,
   effectiveTargetMb,
@@ -32,7 +33,7 @@ export default function VideoSlotResult({
         )}
       </div>
       <div className="button-group" style={{ marginTop: '1rem' }}>
-        <a className="btn btn-primary" href={resultUrl} download={isResultMp4 ? 'trimmed-video.mp4' : 'animation.gif'}>
+        <a className="btn btn-primary" href={resultUrl} download={downloadName || (isResultMp4 ? 'trimmed-video.mp4' : 'animation.gif')}>
           <Download style={{ width: "18px", height: "18px" }} /> Download {isResultMp4 ? 'Video (MP4)' : 'GIF'}
         </a>
         <button className="btn" onClick={onDiscard}>

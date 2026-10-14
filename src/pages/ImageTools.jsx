@@ -59,50 +59,50 @@ export default function ImageTools() {
     };
   }, [imageSrc]);
 
-  // Load a file into memory and cache the image element
-  const loadFile = (file) => {
-    if (!file) return;
-    setImageFile(file);
-    const url = URL.createObjectURL(file);
-    setImageSrc(url);
-
+  // Load an image URL or File into memory and cache the image element
+  const loadImageSource = useCallback((url, file = null) => {
+    if (!url) return;
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       loadedImgRef.current = img;
       const nw = img.naturalWidth || img.width;
       const nh = img.naturalHeight || img.height;
+      setImageFile(file);
+      setImageSrc(url);
       setNaturalWidth(nw);
       setNaturalHeight(nh);
       setWidth(nw);
       setHeight(nh);
     };
+    img.onerror = () => {
+      if (file && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    };
     img.src = url;
-  };
+  }, []);
+
+  const loadFile = useCallback((file) => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    loadImageSource(url, file);
+  }, [loadImageSource]);
 
   // Load from location.state if navigated via drag or Send To
   useEffect(() => {
     if (location.state?.imageFile) {
+      if (location.state.previewUrl && location.state.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(location.state.previewUrl);
+      }
       loadFile(location.state.imageFile);
       window.history.replaceState({}, document.title);
     } else if (location.state?.previewUrl || location.state?.imageUrl) {
       const url = location.state.previewUrl || location.state.imageUrl;
-      setImageSrc(url);
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        loadedImgRef.current = img;
-        const nw = img.naturalWidth || img.width;
-        const nh = img.naturalHeight || img.height;
-        setNaturalWidth(nw);
-        setNaturalHeight(nh);
-        setWidth(nw);
-        setHeight(nh);
-      };
-      img.src = url;
+      loadImageSource(url, null);
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, loadFile, loadImageSource]);
 
   const handleWidthChange = (newWidth) => {
     setWidth(newWidth);

@@ -46,10 +46,15 @@ export default function QrGenerator() {
   const qrCodeInstance = useRef(null);
   const logoInputRef = useRef(null);
 
+  const [prevNavLogo, setPrevNavLogo] = useState(location.state?.logoUrl);
+  if (location.state?.logoUrl && location.state.logoUrl !== prevNavLogo) {
+    setPrevNavLogo(location.state.logoUrl);
+    setRawLogoUrl(location.state.logoUrl);
+    if (location.state.logoFileName) setLogoFileName(location.state.logoFileName);
+  }
+
   useEffect(() => {
     if (location.state?.logoUrl) {
-      setRawLogoUrl(location.state.logoUrl);
-      if (location.state.logoFileName) setLogoFileName(location.state.logoFileName);
       window.history.replaceState({}, document.title);
     }
   }, [location.state?.logoUrl]);
@@ -73,7 +78,7 @@ export default function QrGenerator() {
     return () => {
       isCurrent = false;
     };
-  }, [rawLogoUrl, logoShape, logoBgColor, logoBgPadding, dotType, isRounded]);
+  }, [rawLogoUrl, logoShape, logoBgColor, logoBgPadding, dotType]);
 
   // Standard options generator
   const qrOptions = useMemo(() => buildQrStylingOptions({

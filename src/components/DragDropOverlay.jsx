@@ -80,7 +80,7 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
 
     const handleDragLeave = (e) => {
       e.preventDefault();
-      dragCounter.current--;
+      dragCounter.current = Math.max(0, dragCounter.current - 1);
       if (dragCounter.current === 0) {
         setIsDragging(false);
         setDragType('none');
@@ -138,7 +138,7 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
   };
 
   return (
-    <div style={overlayStyle} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setIsDragging(false); }}>
+    <div style={overlayStyle} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); dragCounter.current = 0; setIsDragging(false); setDragType('none'); }}>
       <div style={{ width: '100%', maxWidth: '950px', display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         {dragType === 'gif' && (
           <>

@@ -199,6 +199,7 @@ export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDisca
     const ctx = canvas.getContext('2d');
     const imgData = computeColorKeyImageData(baseImageData, colors, currentTolerance, currentFeather, ctx);
     ctx.putImageData(imgData, 0, 0);
+    setRawCutoutData(imgData);
   }, [baseImageData]);
 
   const drawBrush = (e) => {
@@ -310,8 +311,14 @@ export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDisca
     } else if (editorTab === 'brush') {
       setIsDrawing(false);
       if (canvasRef.current) {
-        const ctx = canvasRef.current.getContext('2d');
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
         ctx.beginPath();
+        if (backdropType === 'transparent') {
+          const updatedData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          setRawCutoutData(updatedData);
+          setBaseImageData(updatedData);
+        }
       }
     }
   };
@@ -331,12 +338,20 @@ export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDisca
     setDefringe(30);
     setBackdropType('transparent');
     setSampledColors([]);
-    if (editorTab === 'refine' || editorTab === 'backdrop') {
-      renderComposite();
-    } else if (rawCutoutImage && canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      ctx.drawImage(rawCutoutImage, 0, 0);
+    if (rawCutoutImage) {
+      const c = document.createElement('canvas');
+      c.width = rawCutoutImage.width;
+      c.height = rawCutoutImage.height;
+      const cx = c.getContext('2d');
+      cx.drawImage(rawCutoutImage, 0, 0);
+      const freshData = cx.getImageData(0, 0, rawCutoutImage.width, rawCutoutImage.height);
+      setRawCutoutData(freshData);
+      setBaseImageData(freshData);
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        ctx.drawImage(rawCutoutImage, 0, 0);
+      }
     }
   };
 

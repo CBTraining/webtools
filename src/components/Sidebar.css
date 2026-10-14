@@ -78,13 +78,11 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 .sidebar-nav::-webkit-scrollbar {
   display: none;
-}
-.sidebar-nav {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
 
 .nav-category {

@@ -25,7 +25,6 @@
     "js-beautify": "^1.15.4",
     "jszip": "^3.10.1",
     "lottie-web": "^5.13.0",
-    "lucide-react": "^1.21.0",
     "pdfjs-dist": "^6.0.227",
     "onnxruntime-web": "^1.21.0",
     "qr-code-styling": "^1.9.2",

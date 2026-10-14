@@ -2,25 +2,6 @@ import { toBlob, toCanvas } from 'html-to-image';
 import { downloadBlob, copyBlobToClipboard } from '../../utils/downloadUtils';
 
 /**
- * Downloads a DOM element as a high-resolution PNG.
- */
-export async function downloadComponentPng(element, filename = 'component.png') {
-  if (!element) return;
-  const rect = element.getBoundingClientRect();
-  const targetWidth = Math.max(1000, rect.width * 2);
-  const scale = targetWidth / rect.width;
-
-  const blob = await toBlob(element, {
-    pixelRatio: scale,
-    backgroundColor: 'transparent'
-  });
-
-  if (blob) {
-    downloadBlob(blob, filename);
-  }
-}
-
-/**
  * Copies the DOM element as PNG to the user's system clipboard.
  */
 export async function copyComponentImage(element) {
@@ -60,12 +41,15 @@ export async function downloadComponentPdf(element, filename = 'component.pdf') 
   const originalTransform = element.style.transform;
   element.style.transform = 'none';
 
-  const canvas = await toCanvas(element, {
-    pixelRatio: 4, // 300+ DPI high resolution vector quality
-    backgroundColor: 'transparent'
-  });
-
-  element.style.transform = originalTransform;
+  let canvas;
+  try {
+    canvas = await toCanvas(element, {
+      pixelRatio: 4, // 300+ DPI high resolution vector quality
+      backgroundColor: 'transparent'
+    });
+  } finally {
+    element.style.transform = originalTransform;
+  }
 
   const jpegUrl = canvas.toDataURL('image/jpeg', 0.95);
   const base64Data = jpegUrl.split(',')[1];

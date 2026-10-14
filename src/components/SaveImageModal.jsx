@@ -86,7 +86,7 @@ export default function SaveImageModal({
           }}
           style={{ width: '100%' }}
         />
-        <div className="button-group" style={{ justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+        <div className="button-group" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
           <button className="btn" onClick={onCancel}>Cancel</button>
           <button className="btn btn-primary" onClick={onSave}>
             Save {isGif ? 'as GIF' : 'as PNG'}

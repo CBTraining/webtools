@@ -83,6 +83,7 @@ export default function LottieToGif() {
       {/* Mode 1: Code Input & Instant Live Preview */}
       {creationMode === 'code' && (
         <LottieCodeEditorMode 
+          key={editorSample?.id || 'default'}
           onAddSlot={handleAddSlot} 
           initialSample={editorSample} 
         />

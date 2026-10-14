@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   ScissorsIcon as Scissors, 
   ArrowDownTrayIcon as Download, 
@@ -41,10 +41,6 @@ export default function LottieToGifSlot({ slot }) {
   // In-slot code editor state
   const [rawCode, setRawCode] = useState(() => JSON.stringify(lottieData, null, 2));
   const [codeError, setCodeError] = useState(null);
-
-  useEffect(() => {
-    setRawCode(JSON.stringify(lottieData, null, 2));
-  }, [lottieData]);
 
   // GIF conversion settings
   const [showGifSettings, setShowGifSettings] = useState(false);
@@ -198,7 +194,11 @@ export default function LottieToGifSlot({ slot }) {
         <button 
           type="button"
           className={`btn ${activeTab === 'code' ? 'btn-primary' : ''}`}
-          onClick={() => setActiveTab('code')}
+          onClick={() => {
+            setRawCode(JSON.stringify(lottieData, null, 2));
+            setCodeError(null);
+            setActiveTab('code');
+          }}
           style={{ flex: 1, padding: '0.35rem 0.5rem', fontSize: '0.8rem', justifyContent: 'center' }}
         >
           Edit JSON Code

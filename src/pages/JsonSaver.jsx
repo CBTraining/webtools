@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CodeBracketSquareIcon as FileJson } from '@heroicons/react/24/solid';
-import { downloadBlob } from '../utils/downloadUtils';
+import { isValidLottie, downloadJsonFile } from '../utils/lottieSamples';
 import LottiePreview from './JsonSaver/LottiePreview';
 import LottieGifExportCard from './JsonSaver/LottieGifExportCard';
 import JsonEditorPanel from './JsonSaver/JsonEditorPanel';
@@ -20,18 +20,7 @@ export default function JsonSaver() {
     if (!jsonText.trim()) return null;
     try {
       const parsed = JSON.parse(jsonText);
-      if (
-        parsed &&
-        typeof parsed === 'object' &&
-        typeof parsed.v === 'string' &&
-        typeof parsed.fr === 'number' &&
-        typeof parsed.ip === 'number' &&
-        typeof parsed.op === 'number' &&
-        Array.isArray(parsed.layers)
-      ) {
-        return parsed;
-      }
-      return null;
+      return isValidLottie(parsed) ? parsed : null;
     } catch {
       return null;
     }
@@ -56,8 +45,7 @@ export default function JsonSaver() {
       JSON.parse(jsonText); // Validate before saving
       setError(null);
       
-      const blob = new Blob([jsonText], { type: 'application/json' });
-      downloadBlob(blob, `data-${Date.now()}.json`);
+      downloadJsonFile(jsonText, `data-${Date.now()}.json`);
       
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);

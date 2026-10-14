@@ -126,10 +126,19 @@ export async function generateNativeSvg({
            throw new Error('Icon fetch failed');
          }
        } catch {
-         svgStr += `<text x="${dx}" y="${dy}" dominant-baseline="hanging" font-family="Material Symbols Rounded" font-size="${iconSize}px" fill="white" font-weight="400">${iconName}</text>`;
+         const escapedIcon = String(iconName || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+         svgStr += `<text x="${dx}" y="${dy}" dominant-baseline="hanging" font-family="Material Symbols Rounded" font-size="${iconSize}px" fill="white" font-weight="400">${escapedIcon}</text>`;
        }
     }
   }
+
+  const escapeXml = (str) =>
+    String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
 
   const titleNode = targetEl.querySelector('.glow-card-title');
   if (titleNode && showText) {
@@ -139,7 +148,7 @@ export async function generateNativeSvg({
     const computedStyle = window.getComputedStyle(titleNode);
     const fontSize = computedStyle.fontSize;
     const fontWeight = computedStyle.fontWeight;
-    svgStr += `<text x="${dx}" y="${dy + parseFloat(fontSize) * 0.1}" dominant-baseline="hanging" font-family="${fontFamily.replace(/"/g, "'")}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${cardTitleColor}">${cardTitle}</text>`;
+    svgStr += `<text x="${dx}" y="${dy + parseFloat(fontSize) * 0.1}" dominant-baseline="hanging" font-family="${fontFamily.replace(/"/g, "'")}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${cardTitleColor}">${escapeXml(cardTitle)}</text>`;
   }
 
   const subNode = targetEl.querySelector('.glow-card-subtitle');
@@ -150,7 +159,7 @@ export async function generateNativeSvg({
     const computedStyle = window.getComputedStyle(subNode);
     const fontSize = computedStyle.fontSize;
     const fontWeight = computedStyle.fontWeight;
-    svgStr += `<text x="${dx}" y="${dy + parseFloat(fontSize) * 0.1}" dominant-baseline="hanging" font-family="${fontFamily.replace(/"/g, "'")}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${cardSubtitleColor}" opacity="0.8">${cardSubtitle}</text>`;
+    svgStr += `<text x="${dx}" y="${dy + parseFloat(fontSize) * 0.1}" dominant-baseline="hanging" font-family="${fontFamily.replace(/"/g, "'")}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${cardSubtitleColor}" opacity="0.8">${escapeXml(cardSubtitle)}</text>`;
   }
 
   svgStr += `</svg>`;

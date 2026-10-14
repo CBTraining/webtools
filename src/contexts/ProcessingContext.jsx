@@ -124,9 +124,11 @@ export function ProcessingProvider({ children }) {
       ...prev,
       [toolId]: (prev[toolId] || []).map(slot => {
         if (slot.id === slotId) {
-          // Revoke old previewUrl if it's being replaced or cleared
-          if ('previewUrl' in updates && slot.previewUrl && updates.previewUrl !== slot.previewUrl) {
-            URL.revokeObjectURL(slot.previewUrl);
+          // Revoke old object URLs if they are being replaced or cleared
+          for (const urlKey of ['previewUrl', 'resultUrl', 'aviPreviewUrl']) {
+            if (urlKey in updates && slot[urlKey] && updates[urlKey] !== slot[urlKey]) {
+              URL.revokeObjectURL(slot[urlKey]);
+            }
           }
           return { ...slot, ...updates };
         }
@@ -139,8 +141,12 @@ export function ProcessingProvider({ children }) {
     setWorkspaces(prev => {
       const toolSlots = prev[toolId] || [];
       const slot = toolSlots.find(s => s.id === slotId);
-      if (slot && slot.previewUrl) {
-        URL.revokeObjectURL(slot.previewUrl);
+      if (slot) {
+        for (const urlKey of ['previewUrl', 'resultUrl', 'aviPreviewUrl']) {
+          if (slot[urlKey]) {
+            URL.revokeObjectURL(slot[urlKey]);
+          }
+        }
       }
       return {
         ...prev,
@@ -162,6 +168,7 @@ export function ProcessingProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useProcessing() {
   return useContext(ProcessingContext);
 }

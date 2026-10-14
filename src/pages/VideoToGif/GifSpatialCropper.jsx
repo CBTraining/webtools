@@ -152,6 +152,13 @@ export default function GifSpatialCropper({
     window.removeEventListener('mouseup', onMouseUp);
   }, [handleMouseMove]);
 
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
+
   const handleMouseDown = (e, handleType) => {
     e.preventDefault();
     e.stopPropagation();

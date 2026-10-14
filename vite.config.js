@@ -9,7 +9,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: null,
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'favicon.svg'],
+      includeAssets: ['favicon.svg'],
       manifest: {
         name: 'WebTools',
         short_name: 'WebTools',

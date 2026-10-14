@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FilmIcon, CloudArrowUpIcon as UploadCloud, XMarkIcon as XMark } from '@heroicons/react/24/solid';
 import { fetchFile } from '@ffmpeg/util';
@@ -26,25 +26,23 @@ export default function VideoFrameExtractor() {
   const location = useLocation();
   const initFromState = useRef(false);
 
-  const loadVideoFile = async (file) => {
+  const loadVideoFile = useCallback(async (file) => {
     if (!file || !isVideoFile(file)) return;
+    await Promise.resolve();
     setVideoFile(file);
     setExternalUrl('');
-    if (videoUrl && !videoUrl.startsWith('http')) {
-      URL.revokeObjectURL(videoUrl);
-    }
 
     if (isAviFile(file)) {
       setIsLoading(true);
       setLoadingProgress(20);
       setYtLoadingText('Decoding AVI video for frame extraction...');
       let localFfmpeg = null;
+      const ext = (file.name || '').split('.').pop() || 'avi';
+      const inputName = `extractor_${Date.now()}.${ext}`;
+      const outputName = `extractor_${Date.now()}.mp4`;
       try {
         localFfmpeg = await createFfmpegInstance();
         setLoadingProgress(40);
-        const ext = (file.name || '').split('.').pop() || 'avi';
-        const inputName = `extractor_${Date.now()}.${ext}`;
-        const outputName = `extractor_${Date.now()}.mp4`;
         await localFfmpeg.writeFile(inputName, await fetchFile(file));
         setLoadingProgress(60);
 
@@ -75,7 +73,9 @@ export default function VideoFrameExtractor() {
         setIsLoading(false);
       } finally {
         if (localFfmpeg) {
-          try { localFfmpeg.terminate(); } catch (e) { void e; }
+          try { await localFfmpeg.deleteFile(inputName); } catch { /* ignore */ }
+          try { await localFfmpeg.deleteFile(outputName); } catch { /* ignore */ }
+          try { localFfmpeg.terminate(); } catch { /* ignore */ }
         }
         setYtLoadingText('');
       }
@@ -84,7 +84,7 @@ export default function VideoFrameExtractor() {
       setIsLoading(true);
       setLoadingProgress(0);
     }
-  };
+  }, [createFfmpegInstance]);
 
   // Handle incoming file from drag-drop overlay
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function VideoFrameExtractor() {
       // Clear state so it doesn't trigger again on refresh
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, loadVideoFile]);
 
   // Clean up object URL when unmounting or changing file
   useEffect(() => {

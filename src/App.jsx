@@ -350,6 +350,7 @@ function App() {
             isOpen={isCommandPaletteOpen}
             onClose={() => setIsCommandPaletteOpen(false)}
             onOpen={() => setIsCommandPaletteOpen(true)}
+            onEnterClockMode={() => setIsClockMode(true)}
           />
         </div>
       </Router>

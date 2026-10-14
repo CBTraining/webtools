@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   ScissorsIcon as Scissors, 
   ArrowDownTrayIcon as Download, 
@@ -10,16 +10,13 @@ import LottieInteractivePlayer from './LottieInteractivePlayer';
 
 export default function LottieCodeEditorMode({ onAddSlot, initialSample }) {
   // Direct Code Input State
-  const [inputCode, setInputCode] = useState(() => JSON.stringify(SAMPLE_LOTTIE_ANIMATIONS[0].data, null, 2));
-  const [inputName, setInputName] = useState('custom-animation.json');
+  const [inputCode, setInputCode] = useState(() =>
+    JSON.stringify((initialSample || SAMPLE_LOTTIE_ANIMATIONS[0]).data, null, 2)
+  );
+  const [inputName, setInputName] = useState(() =>
+    initialSample ? `${initialSample.id}.json` : 'custom-animation.json'
+  );
   const [copiedInput, setCopiedInput] = useState(false);
-
-  useEffect(() => {
-    if (initialSample) {
-      setInputCode(JSON.stringify(initialSample.data, null, 2));
-      setInputName(`${initialSample.id}.json`);
-    }
-  }, [initialSample]);
 
   // Compute parsed Lottie data and validation error via useMemo
   const { parsedLottie, inputError } = useMemo(() => {

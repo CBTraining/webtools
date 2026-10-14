@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowDownTrayIcon as Download, ExclamationCircleIcon as AlertCircle } from '@heroicons/react/24/solid';
 import { renderLottieToGif } from '../../utils/lottieGifRenderer';
+import { saveToHistory } from '../../utils/historyStorage';
 
 export default function LottieGifExportCard({ parsedLottieData }) {
   const [gifJob, setGifJob] = useState({ status: 'idle', progress: 0, log: '', resultUrl: '', error: '' });
@@ -30,7 +31,9 @@ export default function LottieGifExportCard({ parsedLottieData }) {
       });
 
       const rUrl = URL.createObjectURL(blob);
-      setGifJob({ status: 'success', progress: 100, log: 'Ready!', resultUrl: rUrl, downloadName: `lottie-export-${Date.now()}.gif`, error: '' });
+      const downloadName = `lottie-export-${Date.now()}.gif`;
+      saveToHistory(blob, downloadName);
+      setGifJob({ status: 'success', progress: 100, log: 'Ready!', resultUrl: rUrl, downloadName, error: '' });
     } catch (err) {
       console.error(err);
       setGifJob({ status: 'error', progress: 0, log: '', resultUrl: '', error: err?.message || 'Failed to render GIF.' });

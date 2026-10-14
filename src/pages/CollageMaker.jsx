@@ -21,13 +21,25 @@ export default function CollageMaker() {
   const canvasRef = useRef(null);
   const previewContainerRef = useRef(null);
 
-  // Theme Detection State
-  const [, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
   const [userHasCustomBg, setUserHasCustomBg] = useState(false);
 
-  // Photos State: array of { id, file, url, width, height, panX, panY, zoom }
+  // Photos State: array of { id, file, url, img, width, height, panX, panY, zoom }
   const [photos, setPhotos] = useState([]);
+  const photosRef = useRef([]);
   const [selectedPhotoId, setSelectedPhotoId] = useState(null);
+
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
+
+  // Revoke all photo Object URLs on unmount
+  useEffect(() => {
+    return () => {
+      photosRef.current.forEach(p => {
+        if (p.url) URL.revokeObjectURL(p.url);
+      });
+    };
+  }, []);
 
   // Resolution State
   const [preset, setPreset] = useState('landscape-1080p');
@@ -61,7 +73,6 @@ export default function CollageMaker() {
   useEffect(() => {
     const observer = new MutationObserver(() => {
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      setTheme(currentTheme);
       if (!userHasCustomBg) {
         setBgColor(currentTheme === 'light' ? '#ffffff' : '#0f172a');
       }
@@ -82,16 +93,20 @@ export default function CollageMaker() {
         setPhotos(prev => [
           ...prev,
           {
-            id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
             file,
             url,
-            width: img.width,
-            height: img.height,
+            img,
+            width: img.naturalWidth || img.width,
+            height: img.naturalHeight || img.height,
             panX: 0,
             panY: 0,
             zoom: 1.0
           }
         ]);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
       };
       img.src = url;
     });

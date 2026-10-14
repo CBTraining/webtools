@@ -29,6 +29,27 @@ export function useGlobalClipboard({ onImageExtracted, onToast }) {
     }
   }, [onImageExtracted]);
 
+  const tryProcessImageText = useCallback(async (text, onBeforeProcess) => {
+    if (!text) return false;
+    const trimmed = text.trim();
+    if (trimmed.startsWith('data:image/')) {
+      onBeforeProcess?.();
+      try {
+        const resp = await fetch(trimmed);
+        const b = await resp.blob();
+        processImageBlob(b, 'pasted_data_uri');
+        return true;
+      } catch (err) {
+        console.warn("Failed to parse data URI:", err);
+      }
+    } else if (/^https?:\/\/.*\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(trimmed)) {
+      onBeforeProcess?.();
+      const res = await processHtmlPaste(`<img src="${trimmed}" />`, processImageBlob);
+      if (res?.success) return true;
+    }
+    return false;
+  }, [processImageBlob]);
+
   // Global paste event listener
   useEffect(() => {
     const handlePaste = async (e) => {
@@ -114,25 +135,10 @@ export function useGlobalClipboard({ onImageExtracted, onToast }) {
       // 5. Plain text fallback: data URI or direct image URL
       if (textItem) {
         textItem.getAsString(async (text) => {
-          if (text) {
-            const trimmed = text.trim();
-            if (trimmed.startsWith('data:image/')) {
-              e.preventDefault();
-              try {
-                const resp = await fetch(trimmed);
-                const b = await resp.blob();
-                processImageBlob(b, 'pasted_data_uri');
-                return;
-              } catch (err) {
-                console.warn("Failed to parse data URI:", err);
-              }
-            } else if (/^https?:\/\/.*\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(trimmed)) {
-              e.preventDefault();
-              const res = await processHtmlPaste(`<img src="${trimmed}" />`, processImageBlob);
-              if (res?.success) return;
-            }
+          const handled = await tryProcessImageText(text, () => e.preventDefault());
+          if (!handled) {
+            window.dispatchEvent(new Event('paste-error'));
           }
-          window.dispatchEvent(new Event('paste-error'));
         });
         return;
       }
@@ -142,7 +148,7 @@ export function useGlobalClipboard({ onImageExtracted, onToast }) {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [processImageBlob, onToast]);
+  }, [processImageBlob, tryProcessImageText, onToast]);
 
   // Explicit manual paste trigger (e.g. from Sidebar button)
   const handleManualPaste = useCallback(async () => {
@@ -190,19 +196,8 @@ export function useGlobalClipboard({ onImageExtracted, onToast }) {
 
       if (navigator.clipboard && navigator.clipboard.readText) {
         const text = await navigator.clipboard.readText();
-        if (text) {
-          const trimmed = text.trim();
-          if (trimmed.startsWith('data:image/')) {
-            const resp = await fetch(trimmed);
-            const b = await resp.blob();
-            processImageBlob(b, 'pasted_data_uri');
-            return;
-          }
-          if (/^https?:\/\/.*\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(trimmed)) {
-            const res = await processHtmlPaste(`<img src="${trimmed}" />`, processImageBlob);
-            if (res?.success) return;
-          }
-        }
+        const handled = await tryProcessImageText(text);
+        if (handled) return;
       }
 
       onToast?.("No image found on clipboard. Copy an image or screenshot first!");
@@ -212,7 +207,7 @@ export function useGlobalClipboard({ onImageExtracted, onToast }) {
       onToast?.("Clipboard access blocked by browser. Please use Ctrl+V instead!");
       window.dispatchEvent(new Event('paste-error'));
     }
-  }, [processImageBlob, onToast]);
+  }, [processImageBlob, tryProcessImageText, onToast]);
 
   return {
     processImageBlob,

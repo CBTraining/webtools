@@ -11,7 +11,7 @@ import {
 import { getAllTools, searchTools } from '../config/navigation';
 import './CommandPalette.css';
 
-export default function CommandPalette({ isOpen, onClose, onOpen }) {
+export default function CommandPalette({ isOpen, onClose, onOpen, onEnterClockMode }) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
@@ -56,6 +56,7 @@ export default function CommandPalette({ isOpen, onClose, onOpen }) {
         const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', nextTheme);
         localStorage.setItem('theme', nextTheme);
+        window.dispatchEvent(new CustomEvent('webtools-theme-change', { detail: nextTheme }));
       }
     },
     {
@@ -75,11 +76,14 @@ export default function CommandPalette({ isOpen, onClose, onOpen }) {
       icon: ClockIcon,
       type: 'action',
       action: () => {
-        localStorage.setItem('isClockMode', 'true');
-        window.location.reload();
+        if (onEnterClockMode) {
+          onEnterClockMode();
+        } else {
+          localStorage.setItem('isClockMode', 'true');
+        }
       }
     }
-  ], []);
+  ], [onEnterClockMode]);
 
   // Filtered results
   const filteredItems = useMemo(() => {

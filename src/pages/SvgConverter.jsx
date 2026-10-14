@@ -15,12 +15,19 @@ import ColorTintControls from './SvgConverter/ColorTintControls';
 
 export default function SvgConverter() {
   const location = useLocation();
-  const [svgText, setSvgText] = useState(location.state?.svgText || '');
+  const initialSvg = location.state?.svgText || '';
+  const initialDims = parseSvgDimensions(initialSvg);
+  const [svgText, setSvgText] = useState(initialSvg);
+  const [aspectRatio, setAspectRatio] = useState(() => initialDims.aspectRatio || 1);
   const [width, setWidth] = useState(512);
-  const [height, setHeight] = useState(512);
-  const [aspectRatio, setAspectRatio] = useState(1);
+  const [height, setHeight] = useState(() =>
+    initialDims.width && initialDims.height && initialDims.aspectRatio
+      ? Math.round(512 / initialDims.aspectRatio)
+      : 512
+  );
   const [keepProportions, setKeepProportions] = useState(true);
   const canvasRef = useRef(null);
+  const previewBlobRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [applyTint, setApplyTint] = useState(false);
@@ -31,16 +38,9 @@ export default function SvgConverter() {
   const [gradDirection, setGradDirection] = useState('to-bottom-right');
   const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    if (location.state?.svgText) {
-      setSvgText(location.state.svgText);
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state?.svgText]);
-
-  // Robust SVG Dimension & Native Aspect Ratio Parser
-  useEffect(() => {
-    const dims = parseSvgDimensions(svgText);
+  const updateSvgWithDimensions = useCallback((newSvg) => {
+    setSvgText(newSvg);
+    const dims = parseSvgDimensions(newSvg);
     if (dims.width && dims.height && dims.aspectRatio) {
       setAspectRatio(dims.aspectRatio);
       const targetW = 512;
@@ -48,7 +48,19 @@ export default function SvgConverter() {
       setWidth(targetW);
       setHeight(targetH);
     }
-  }, [svgText]);
+  }, []);
+
+  const [prevNavSvg, setPrevNavSvg] = useState(location.state?.svgText);
+  if (location.state?.svgText && location.state.svgText !== prevNavSvg) {
+    setPrevNavSvg(location.state.svgText);
+    updateSvgWithDimensions(location.state.svgText);
+  }
+
+  useEffect(() => {
+    if (location.state?.svgText) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state?.svgText]);
 
   useEffect(() => {
     return () => {
@@ -71,6 +83,7 @@ export default function SvgConverter() {
       gradDirection
     }).then((pngBlob) => {
       if (!pngBlob) return;
+      previewBlobRef.current = pngBlob;
       setPreviewUrl(prev => {
         if (prev) URL.revokeObjectURL(prev);
         return URL.createObjectURL(pngBlob);
@@ -93,8 +106,7 @@ export default function SvgConverter() {
   const handleCopy = async () => {
     if (!previewUrl) return;
     try {
-      const response = await fetch(previewUrl);
-      const blob = await response.blob();
+      const blob = previewBlobRef.current || await (await fetch(previewUrl)).blob();
       const success = await copyBlobToClipboard(blob);
       if (success) {
         setCopySuccess(true);
@@ -112,7 +124,7 @@ export default function SvgConverter() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      setSvgText(event.target.result);
+      updateSvgWithDimensions(event.target.result);
     };
     reader.readAsText(file);
   };
@@ -157,7 +169,7 @@ export default function SvgConverter() {
     
     const textData = e.dataTransfer.getData('text');
     if (textData) {
-      setSvgText(textData);
+      updateSvgWithDimensions(textData);
     }
   };
 
@@ -177,7 +189,7 @@ export default function SvgConverter() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           style={{ 
-            border: isDragging ? '2px dashed var(--primary-color)' : '',
+            border: isDragging ? '2px dashed var(--accent-color)' : '',
             backgroundColor: isDragging ? 'var(--bg-tertiary)' : ''
           }}
         >
@@ -201,7 +213,7 @@ export default function SvgConverter() {
                 fontFamily: 'monospace'
               }}
               value={svgText}
-              onChange={(e) => setSvgText(e.target.value)}
+              onChange={(e) => updateSvgWithDimensions(e.target.value)}
               placeholder="<svg>...</svg> or drag & drop a .svg file anywhere in this panel"
             />
           </div>

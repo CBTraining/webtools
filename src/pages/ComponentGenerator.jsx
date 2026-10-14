@@ -178,16 +178,13 @@ export default function ComponentGenerator() {
 
   const getComponentSvg = async () => {
     if (!previewRef.current) return '';
-    const originalTransform = previewRef.current.style.transform;
-    previewRef.current.style.transform = 'none';
+    const el = previewRef.current;
+    const originalTransform = el.style.transform;
+    el.style.transform = 'none';
 
     try {
-      const svgStr = await generateNativeSvg({
-        previewEl: previewRef.current,
-        maxWidth,
-        maxWidthUnit,
-        minHeight,
-        minHeightUnit,
+      return await generateNativeSvg({
+        previewEl: el,
         gradStops,
         glowBlur,
         glowHeight,
@@ -212,12 +209,11 @@ export default function ComponentGenerator() {
         cardSubtitleColor,
         fontFamily
       });
-
-      previewRef.current.style.transform = originalTransform;
-      return svgStr;
     } catch (err) {
       console.warn("generateNativeSvg failed", err);
       return '';
+    } finally {
+      el.style.transform = originalTransform;
     }
   };
 

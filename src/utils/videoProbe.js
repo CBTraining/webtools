@@ -121,15 +121,3 @@ export async function probeVideoMetadata(createFfmpegInstance, slotId, videoFile
     }
   }
 }
-
-/**
- * Probe a video file using a dedicated ffmpeg instance to detect frame rate.
- * @param {Function} createFfmpegInstance 
- * @param {string|number} slotId 
- * @param {File} videoFile 
- * @returns {Promise<number|null>} Detected FPS or null
- */
-export async function probeVideoFps(createFfmpegInstance, slotId, videoFile) {
-  const metadata = await probeVideoMetadata(createFfmpegInstance, slotId, videoFile);
-  return metadata?.fps || null;
-}

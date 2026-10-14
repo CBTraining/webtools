@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
   DocumentArrowDownIcon as DocumentIcon, 
   ArrowDownTrayIcon as DownloadIcon, 
@@ -27,14 +27,16 @@ export default function ContentExtractor() {
   const [statusText, setStatusText] = useState('');
   const [fileName, setFileName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const initFromStateRef = useRef(false);
   
   // Filter & Search States
   const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'gif', 'png', 'jpg', 'svg', 'video', 'audio', 'other'
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
 
-  const extractContent = async (file) => {
+  const extractContent = useCallback(async (file) => {
     if (!file) return;
+    await Promise.resolve();
     setIsProcessing(true);
     setProgress(0);
     setItems([]);
@@ -76,16 +78,17 @@ export default function ContentExtractor() {
       setProgress(0);
       setStatusText('');
     }
-  };
+  }, []);
 
   // Handle incoming file from drag and drop or router state
   useEffect(() => {
     const file = location.state?.file || location.state?.pdfFile;
-    if (file && !isProcessing && items.length === 0) {
+    if (file && !initFromStateRef.current) {
+      initFromStateRef.current = true;
       extractContent(file);
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, extractContent]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {

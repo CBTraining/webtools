@@ -1,37 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import beautify from 'js-beautify';
+import ErrorBoundary from '../components/ErrorBoundary';
 import HtmlPreviewToolbar from './HtmlPreview/HtmlPreviewToolbar';
 import HtmlPreviewFrame from './HtmlPreview/HtmlPreviewFrame';
 import { DEFAULT_HTML, preparePreviewHtml } from './HtmlPreview/htmlPreviewUtils';
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ padding: '2rem', color: 'red', backgroundColor: '#111' }}>
-          <h1>Something went wrong.</h1>
-          <pre>{this.state.error.toString()}</pre>
-          <pre>{this.state.error.stack}</pre>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 export default function HtmlPreviewWrapper() {
   return (
-    <ErrorBoundary>
+    <ErrorBoundary name="HTML Preview">
       <HtmlPreview />
     </ErrorBoundary>
   );

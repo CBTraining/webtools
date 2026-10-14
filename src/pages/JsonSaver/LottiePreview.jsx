@@ -12,7 +12,7 @@ export default function LottiePreview({ animationData, isPlaying, onTogglePlay }
         container: containerRef.current,
         renderer: 'svg',
         loop: true,
-        autoplay: isPlaying,
+        autoplay: false,
         animationData: animationData,
       });
     }
@@ -31,7 +31,7 @@ export default function LottiePreview({ animationData, isPlaying, onTogglePlay }
         animRef.current.pause();
       }
     }
-  }, [isPlaying]);
+  }, [animationData, isPlaying]);
 
   return (
     <div className="glass-panel" style={{ background: 'var(--bg-tertiary)', display: 'flex', justifyContent: 'center', position: 'relative', minHeight: '300px', alignItems: 'center' }}>
