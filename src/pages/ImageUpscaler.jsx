@@ -15,7 +15,7 @@ export default function ImageUpscaler() {
         <SparklesIcon style={{ width: 32, height: 32, color: 'var(--accent-color)' }} />
         <h1>Upscaler</h1>
       </div>
-      <p style={{ marginBottom: '2rem' }}>Enhance and upscale images 2x directly in your browser using local AI (Free & Offline).</p>
+      <p style={{ marginBottom: '2rem' }}>Enhance and upscale images 2x or 4x of any size directly in your browser using tiled local AI (Free & Offline).</p>
 
       <div className="grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 350px), 1fr))', gap: '2rem', alignItems: 'start' }}>
         {slots.map(slot => (
@@ -32,14 +32,16 @@ export default function ImageUpscaler() {
                   addSlot(TOOL_ID, {
                     id: slotId,
                     imageFile: file,
-                    previewUrl: URL.createObjectURL(file)
+                    previewUrl: URL.createObjectURL(file),
+                    modelKey: 'realworld',
+                    targetScale: 2
                   });
                 }
               });
             }} 
             accept="image/*" 
             title={slots.length > 0 ? "Add another image" : "Upload Image"}
-            subtitle="Drop a JPG or PNG here"
+            subtitle="Drop a JPG, PNG, or WebP of any resolution"
             icon={<UploadCloud style={{ width: 48, height: 48, color: 'var(--text-secondary)' }} />}
           />
         </div>
