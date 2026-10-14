@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { get, set } from 'idb-keyval';
 import { initializeFfmpeg } from '../utils/ffmpegConfig';
+import { saveToHistory } from '../utils/historyStorage';
 
 const ProcessingContext = createContext();
 
@@ -38,7 +39,20 @@ export function ProcessingProvider({ children }) {
         if ('resultUrl' in updates && job.resultUrl && updates.resultUrl !== job.resultUrl) {
           URL.revokeObjectURL(job.resultUrl);
         }
-        return { ...job, ...updates };
+        const merged = { ...job, ...updates };
+        if (updates.status === 'success') {
+          const fname = merged.downloadName || 'processed-output';
+          const jobUniqueKey = `${id}-${Date.now()}`;
+          if (merged.resultBlob instanceof Blob) {
+            saveToHistory(merged.resultBlob, fname, { jobId: jobUniqueKey });
+          } else if (merged.resultUrl) {
+            fetch(merged.resultUrl)
+              .then(r => r.blob())
+              .then(b => saveToHistory(b, fname, { jobId: jobUniqueKey }))
+              .catch(() => {});
+          }
+        }
+        return merged;
       }
       return job;
     }));

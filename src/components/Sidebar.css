@@ -24,44 +24,22 @@
   position: relative;
 }
 
-.sidebar-search-btn {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0.55rem 0.75rem;
+.sidebar-history-btn {
   margin-top: 0.5rem;
   margin-bottom: 0.75rem;
+  padding: 0.55rem 0.8rem;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
 }
 
-.sidebar-search-btn:hover {
+.sidebar-history-btn:hover {
   background: var(--bg-secondary);
   border-color: var(--accent-color);
-  color: var(--text-primary);
 }
 
-.sidebar-search-btn-left {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.sidebar-search-kbd {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--text-secondary);
+.sidebar-history-btn.active {
+  border-color: transparent;
 }
 
 .logo-container {
@@ -328,10 +306,40 @@
     transform: scale(0.95);
   }
 
-  /* Search bar inside App Drawer */
-  .sidebar-search-btn {
+  /* History button inside App Drawer */
+  .sidebar-history-btn {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
     margin: 0.65rem 1rem 0.5rem 1rem;
+    padding: 0.55rem 0.85rem;
     width: calc(100% - 2rem);
+    max-width: none;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    gap: 0.75rem;
+  }
+
+  .sidebar-history-btn .nav-icon-box {
+    width: auto;
+    height: auto;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .sidebar-history-btn .nav-icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .sidebar-history-btn .nav-label {
+    font-size: 0.9rem;
+    text-align: left;
+    max-width: none;
+    min-height: 0;
+    margin-top: 0;
   }
 
   /* Scrollable App Drawer Area */

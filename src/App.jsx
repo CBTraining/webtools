@@ -37,6 +37,7 @@ const ComponentGenerator = lazy(() => import('./pages/ComponentGenerator'));
 const VideoFrameExtractor = lazy(() => import('./pages/VideoFrameExtractor'));
 const CollageMaker = lazy(() => import('./pages/CollageMaker'));
 const AssetExtractor = lazy(() => import('./pages/AssetExtractor'));
+const History = lazy(() => import('./pages/History'));
 
 function MainContentWrapper({ children }) {
   const location = useLocation();
@@ -60,6 +61,8 @@ function MainContentWrapper({ children }) {
       } catch {
         // Ignore storage errors in private browsing
       }
+    } else if (location.pathname === '/history') {
+      document.title = 'History | WebTools';
     } else if (location.pathname === '/') {
       document.title = 'WebTools - Offline Client-Side Utilities';
     } else {
@@ -273,6 +276,7 @@ function App() {
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Home onOpenSearch={() => setIsCommandPaletteOpen(true)} />} />
+                <Route path="/history" element={<History />} />
                 <Route path="/image-tools" element={<ImageTools />} />
                 <Route path="/bg-remover" element={<BackgroundRemover />} />
                 <Route path="/video-compressor" element={<VideoCompressor />} />

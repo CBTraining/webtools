@@ -150,9 +150,19 @@ export default function QrGenerator() {
     if (logoInputRef.current) logoInputRef.current.value = null;
   };
 
-  const downloadQR = (ext) => {
+  const downloadQR = async (ext) => {
     if (qrCodeInstance.current) {
-      qrCodeInstance.current.download({ name: `qrcode-${Date.now()}`, extension: ext });
+      const name = `qrcode-${Date.now()}`;
+      qrCodeInstance.current.download({ name, extension: ext });
+      try {
+        const blob = await qrCodeInstance.current.getRawData(ext);
+        if (blob) {
+          const { saveToHistory } = await import('../utils/historyStorage');
+          saveToHistory(blob, `${name}.${ext}`, { categoryLabel: 'Generated QR Code' });
+        }
+      } catch {
+        // ignore if getRawData unsupported
+      }
     }
   };
 

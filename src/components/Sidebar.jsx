@@ -5,7 +5,7 @@ import {
   HomeIcon, 
   ChartBarIcon, 
   ClipboardDocumentIcon,
-  MagnifyingGlassIcon,
+  ClockIcon,
   XMarkIcon
 } from '@heroicons/react/24/solid';
 import { 
@@ -16,7 +16,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FEATURE_CATEGORIES } from '../config/navigation';
 import './Sidebar.css';
 
-export default function Sidebar({ isOpen, onClose, onOpenSearch, onManualPaste, onClockClick, showDiagnostics, onToggleDiagnostics }) {
+export default function Sidebar({ isOpen, onClose, onManualPaste, onClockClick, showDiagnostics, onToggleDiagnostics }) {
   const [isShaking, setIsShaking] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const navRef = useRef(null);
@@ -75,7 +75,7 @@ export default function Sidebar({ isOpen, onClose, onOpenSearch, onManualPaste, 
           <div className="logo-container" style={{ alignItems: 'center' }}>
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="WebTools Logo" width="28" height="28" style={{ marginLeft: '6px', marginRight: '-2px' }} />
             <h2>Web<span className="text-gradient">Tools</span></h2>
-            <span className="version">v3.29</span>
+            <span className="version">v3.30</span>
           </div>
 
           <button 
@@ -90,22 +90,18 @@ export default function Sidebar({ isOpen, onClose, onOpenSearch, onManualPaste, 
         
         <SidebarClock onClick={onClockClick} />
 
-        <div style={{ padding: '0 0.25rem' }}>
-          <button 
-            type="button"
-            className="sidebar-search-btn"
-            onClick={() => {
-              if (onClose) onClose();
-              if (onOpenSearch) onOpenSearch();
-            }}
-            title="Quick Search Tools (Ctrl+K)"
+        <div className="sidebar-history-container" style={{ padding: '0 0.25rem' }}>
+          <NavLink 
+            to="/history"
+            className={({ isActive }) => `nav-link sidebar-history-btn ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+            title="View Full File History"
           >
-            <div className="sidebar-search-btn-left">
-              <MagnifyingGlassIcon style={{ width: 16, height: 16, color: 'var(--accent-color)' }} />
-              <span>Search tools...</span>
+            <div className="nav-icon-box">
+              <ClockIcon className="nav-icon" />
             </div>
-            <kbd className="sidebar-search-kbd">Ctrl K</kbd>
-          </button>
+            <span className="nav-label">History</span>
+          </NavLink>
         </div>
 
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
