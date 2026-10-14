@@ -294,99 +294,107 @@ export default function History() {
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
-      {/* Header & Top Action Bar */}
+      {/* Standard Page Header */}
+      <div className="page-header" style={{ marginBottom: '0.5rem' }}>
+        <ClockIcon style={{ width: 32, height: 32, fill: 'url(#accent-grad)' }} />
+        <h1>History</h1>
+      </div>
+
+      {/* Subtitle & Global Action Buttons Bar (outside .page-header so button SVGs keep their own color) */}
       <div
-        className="page-header"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '1rem',
-          marginBottom: '0.75rem'
+          marginBottom: '1.5rem'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <ClockIcon style={{ width: 32, height: 32, fill: 'url(#accent-grad)' }} />
-          <div>
-            <h1 style={{ margin: 0 }}>History</h1>
-            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              Every image edited, saved as PNG, converted, compressed, or extracted is cached locally in your browser.
-            </p>
-          </div>
-        </div>
+        <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
+          Every image edited, saved as PNG, converted, compressed, or extracted is cached locally in your browser.
+        </p>
 
-        {/* Global History Actions: Save as ZIP & Delete History */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
           {items.length > 0 && (
             <span
               style={{
-                fontSize: '0.8rem',
+                fontSize: '0.82rem',
                 color: 'var(--text-secondary)',
                 background: 'var(--bg-tertiary)',
                 border: '1px solid var(--border-color)',
-                padding: '0.4rem 0.75rem',
+                padding: '0.5rem 0.85rem',
                 borderRadius: 'var(--border-radius-sm)'
               }}
             >
-              <strong>{items.length}</strong> {items.length === 1 ? 'item' : 'items'} •{' '}
-              <strong>{formatBytes(totalStorageBytes)}</strong> cached
+              <strong style={{ color: 'var(--text-primary)' }}>{items.length}</strong>{' '}
+              {items.length === 1 ? 'item' : 'items'} •{' '}
+              <strong style={{ color: 'var(--text-primary)' }}>{formatBytes(totalStorageBytes)}</strong>
             </span>
           )}
 
           <button
             type="button"
             className="btn btn-primary"
-            disabled={filteredItems.length === 0 || isZipping}
-            onClick={() => handleSaveAsZip(filteredItems)}
+            onClick={() => {
+              if (filteredItems.length > 0 && !isZipping) {
+                handleSaveAsZip(filteredItems);
+              }
+            }}
             style={{
-              padding: '0.55rem 1rem',
-              fontSize: '0.85rem',
-              opacity: filteredItems.length === 0 ? 0.5 : 1
+              padding: '0.6rem 1.15rem',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              color: '#ffffff'
             }}
             title="Download history items as a ZIP archive grouped by date"
           >
-            <ArchiveBoxArrowDownIcon style={{ width: 18, height: 18 }} />
-            {isZipping
-              ? `Zipping (${zipProgress}%)...`
-              : selectedDate || searchQuery
-              ? `Save Filtered as ZIP (${filteredItems.length})`
-              : 'Save History as ZIP'}
+            <ArchiveBoxArrowDownIcon style={{ width: 18, height: 18, color: '#ffffff', fill: 'currentColor' }} />
+            <span>
+              {isZipping
+                ? `Zipping (${zipProgress}%)...`
+                : selectedDate || searchQuery
+                ? `Save Filtered as ZIP (${filteredItems.length})`
+                : 'Save History as ZIP'}
+            </span>
           </button>
 
           {!confirmClearAll ? (
             <button
               type="button"
               className="btn"
-              disabled={items.length === 0}
-              onClick={() => setConfirmClearAll(true)}
+              onClick={() => {
+                if (items.length > 0) {
+                  setConfirmClearAll(true);
+                }
+              }}
               style={{
-                padding: '0.55rem 0.9rem',
-                fontSize: '0.85rem',
-                border: '1px solid rgba(255, 77, 79, 0.4)',
-                color: 'var(--danger-color)',
-                background: 'rgba(255, 77, 79, 0.08)',
-                opacity: items.length === 0 ? 0.45 : 1
+                padding: '0.6rem 1.15rem',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                background: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)'
               }}
               title="Clear all cached history files"
             >
-              <TrashIcon style={{ width: 17, height: 17 }} />
-              Delete History
+              <TrashIcon style={{ width: 18, height: 18, color: 'var(--accent-color)', fill: 'currentColor' }} />
+              <span>Delete History</span>
             </button>
           ) : (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                background: 'rgba(255, 77, 79, 0.12)',
+                gap: '0.5rem',
+                background: 'var(--bg-tertiary)',
                 border: '1px solid var(--danger-color)',
-                padding: '0.3rem 0.5rem',
+                padding: '0.35rem 0.65rem',
                 borderRadius: 'var(--border-radius-sm)'
               }}
             >
-              <ExclamationTriangleIcon style={{ width: 16, height: 16, color: 'var(--danger-color)' }} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+              <ExclamationTriangleIcon style={{ width: 18, height: 18, color: 'var(--danger-color)' }} />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                 Delete all {items.length} files?
               </span>
               <button
@@ -394,10 +402,10 @@ export default function History() {
                 className="btn"
                 onClick={handleDeleteAll}
                 style={{
-                  padding: '0.25rem 0.6rem',
-                  fontSize: '0.78rem',
+                  padding: '0.35rem 0.75rem',
+                  fontSize: '0.82rem',
                   background: 'var(--danger-color)',
-                  color: '#fff',
+                  color: '#ffffff',
                   fontWeight: 600
                 }}
               >
@@ -407,7 +415,11 @@ export default function History() {
                 type="button"
                 className="btn"
                 onClick={() => setConfirmClearAll(false)}
-                style={{ padding: '0.25rem 0.5rem', fontSize: '0.78rem' }}
+                style={{
+                  padding: '0.35rem 0.65rem',
+                  fontSize: '0.82rem',
+                  border: '1px solid var(--border-color)'
+                }}
               >
                 Cancel
               </button>

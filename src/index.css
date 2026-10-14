@@ -199,6 +199,20 @@ input[type="radio"] {
   box-shadow: 0 0 20px var(--accent-glow);
 }
 
+.btn:disabled {
+  color: var(--text-primary);
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary:disabled {
+  color: #ffffff;
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Inputs */
 .input-field {
   width: 100%;
@@ -396,7 +410,7 @@ p {
   padding-bottom: 0.1em;
 }
 
-.page-header svg {
+.page-header > svg {
   color: var(--accent-color); /* Fallback */
   fill: url(#accent-grad);
   width: 32px;
