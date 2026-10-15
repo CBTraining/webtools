@@ -9,14 +9,20 @@ import SendToDropdown from '../../components/SendToDropdown';
 import { downloadBlob } from '../../utils/downloadUtils';
 import {
   sampleColorsAlongLine,
-  applyEdgeInset,
-  applyDefringe,
-  computeColorKeyImageData
+  computeColorKeyImageData,
+  renderCutoutComposite
 } from './utils/imageMath';
 import RefineTab from './tabs/RefineTab';
 import BackdropTab from './tabs/BackdropTab';
 import BrushTab from './tabs/BrushTab';
 import ColorKeyTab from './tabs/ColorKeyTab';
+
+const EDITOR_TABS = [
+  { id: 'refine', label: 'Edge Refine (Anti-Halo)', Icon: AdjustmentsHorizontalIcon },
+  { id: 'backdrop', label: 'Studio Backdrop & Blur', Icon: SwatchIcon },
+  { id: 'brush', label: 'Manual Brush', Icon: PaintBrushIcon },
+  { id: 'colorkey', label: '🎯 3D Color Keyer', Icon: null }
+];
 
 export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDiscard }) {
   const canvasRef = useRef(null);
@@ -93,83 +99,19 @@ export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDisca
 
   // Render edge refinement and backdrops onto canvas
   const renderComposite = useCallback(() => {
-    if (!rawCutoutImage || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const w = rawCutoutImage.width;
-    const h = rawCutoutImage.height;
-
-    canvas.width = w;
-    canvas.height = h;
-    ctx.clearRect(0, 0, w, h);
-
-    // 1. Draw Backdrop if not transparent
-    if (backdropType === 'solid') {
-      ctx.fillStyle = solidColor;
-      ctx.fillRect(0, 0, w, h);
-    } else if (backdropType === 'gradient') {
-      const grad = ctx.createLinearGradient(0, 0, w, h);
-      if (gradientPreset === 'studio') {
-        grad.addColorStop(0, '#f8fafc');
-        grad.addColorStop(1, '#cbd5e1');
-      } else if (gradientPreset === 'tech') {
-        grad.addColorStop(0, '#0f172a');
-        grad.addColorStop(1, '#1e3a8a');
-      } else if (gradientPreset === 'sunset') {
-        grad.addColorStop(0, '#ff7e5f');
-        grad.addColorStop(1, '#feb47b');
-      } else if (gradientPreset === 'dark') {
-        grad.addColorStop(0, '#18181b');
-        grad.addColorStop(1, '#09090b');
-      }
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
-    } else if (backdropType === 'bokeh' && originalImage) {
-      ctx.save();
-      if (bokehBlur > 0) {
-        ctx.filter = `blur(${bokehBlur}px)`;
-      }
-      ctx.drawImage(originalImage, 0, 0, w, h);
-      ctx.restore();
-    }
-
-    // 2. Prepare Cutout with Edge Refinement (Erode & De-fringe)
-    if (!rawCutoutData) {
-      ctx.drawImage(rawCutoutImage, 0, 0);
-      return;
-    }
-
-    const cutCanvas = document.createElement('canvas');
-    cutCanvas.width = w;
-    cutCanvas.height = h;
-    const cutCtx = cutCanvas.getContext('2d', { willReadFrequently: true });
-    
-    // Copy base raw cutout data
-    const outputData = cutCtx.createImageData(w, h);
-    const src = rawCutoutData.data;
-    const orig = originalData ? originalData.data : null;
-    const dst = outputData.data;
-
-    for (let i = 0; i < src.length; i++) dst[i] = src[i];
-
-    // Morphological Erode / Inset (-5px to +5px)
-    applyEdgeInset(src, dst, w, h, edgeInset);
-
-    // De-fringe / Anti-Halo (Remove background color bleed on edge pixels)
-    applyDefringe(dst, w, h, defringe, orig);
-
-    cutCtx.putImageData(outputData, 0, 0);
-
-    // Apply Edge Feather
-    if (edgeFeather > 0) {
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.2)';
-      ctx.shadowBlur = edgeFeather;
-      ctx.drawImage(cutCanvas, 0, 0);
-      ctx.restore();
-    } else {
-      ctx.drawImage(cutCanvas, 0, 0);
-    }
+    renderCutoutComposite(canvasRef.current, {
+      rawCutoutImage,
+      rawCutoutData,
+      originalImage,
+      originalData,
+      backdropType,
+      solidColor,
+      gradientPreset,
+      bokehBlur,
+      edgeInset,
+      edgeFeather,
+      defringe
+    });
   }, [rawCutoutImage, rawCutoutData, originalImage, originalData, backdropType, solidColor, gradientPreset, bokehBlur, edgeInset, edgeFeather, defringe]);
 
   useEffect(() => {
@@ -359,54 +301,21 @@ export default function CanvasEditor({ originalUrl, resultUrl, fileName, onDisca
     <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
        {/* Tab Switcher */}
        <div style={{display: 'flex', gap: '0.4rem', background: 'var(--bg-primary)', padding: '0.3rem', borderRadius: 'var(--border-radius-sm)', flexWrap: 'wrap'}}>
-          <button 
-             className="btn"
-             onClick={() => setEditorTab('refine')}
-             style={{
-               flex: 1, padding: '0.4rem 0.6rem', fontSize: '0.8rem',
-               background: editorTab === 'refine' ? 'var(--accent-color)' : 'transparent',
-               color: editorTab === 'refine' ? 'white' : 'var(--text-secondary)',
-               border: 'none', fontWeight: editorTab === 'refine' ? 'bold' : 'normal'
-             }}
-          >
-             <AdjustmentsHorizontalIcon style={{ width: 14, height: 14 }} /> Edge Refine (Anti-Halo)
-          </button>
-          <button 
-             className="btn"
-             onClick={() => setEditorTab('backdrop')}
-             style={{
-               flex: 1, padding: '0.4rem 0.6rem', fontSize: '0.8rem',
-               background: editorTab === 'backdrop' ? 'var(--accent-color)' : 'transparent',
-               color: editorTab === 'backdrop' ? 'white' : 'var(--text-secondary)',
-               border: 'none', fontWeight: editorTab === 'backdrop' ? 'bold' : 'normal'
-             }}
-          >
-             <SwatchIcon style={{ width: 14, height: 14 }} /> Studio Backdrop & Blur
-          </button>
-          <button 
-             className="btn"
-             onClick={() => setEditorTab('brush')}
-             style={{
-               flex: 1, padding: '0.4rem 0.6rem', fontSize: '0.8rem',
-               background: editorTab === 'brush' ? 'var(--accent-color)' : 'transparent',
-               color: editorTab === 'brush' ? 'white' : 'var(--text-secondary)',
-               border: 'none', fontWeight: editorTab === 'brush' ? 'bold' : 'normal'
-             }}
-          >
-             <PaintBrushIcon style={{ width: 14, height: 14 }} /> Manual Brush
-          </button>
-          <button 
-             className="btn"
-             onClick={() => setEditorTab('colorkey')}
-             style={{
-               flex: 1, padding: '0.4rem 0.6rem', fontSize: '0.8rem',
-               background: editorTab === 'colorkey' ? 'var(--accent-color)' : 'transparent',
-               color: editorTab === 'colorkey' ? 'white' : 'var(--text-secondary)',
-               border: 'none', fontWeight: editorTab === 'colorkey' ? 'bold' : 'normal'
-             }}
-          >
-             🎯 3D Color Keyer
-          </button>
+          {EDITOR_TABS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              className="btn"
+              onClick={() => setEditorTab(id)}
+              style={{
+                flex: 1, padding: '0.4rem 0.6rem', fontSize: '0.8rem',
+                background: editorTab === id ? 'var(--accent-color)' : 'transparent',
+                color: editorTab === id ? 'white' : 'var(--text-secondary)',
+                border: 'none', fontWeight: editorTab === id ? 'bold' : 'normal'
+              }}
+            >
+              {Icon && <Icon style={{ width: 14, height: 14 }} />} {label}
+            </button>
+          ))}
        </div>
 
        {/* Tab 1: Edge Refinement */}

@@ -156,3 +156,92 @@ export function computeColorKeyImageData(baseImageData, colors, currentTolerance
   
   return imgData;
 }
+
+/**
+ * Renders the full background-remover composite (backdrop + edge inset + defringe + feather) onto a target canvas.
+ */
+export function renderCutoutComposite(canvas, {
+  rawCutoutImage,
+  rawCutoutData,
+  originalImage,
+  originalData,
+  backdropType,
+  solidColor,
+  gradientPreset,
+  bokehBlur,
+  edgeInset,
+  edgeFeather,
+  defringe
+}) {
+  if (!rawCutoutImage || !canvas) return;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const w = rawCutoutImage.width;
+  const h = rawCutoutImage.height;
+
+  canvas.width = w;
+  canvas.height = h;
+  ctx.clearRect(0, 0, w, h);
+
+  // 1. Draw Backdrop if not transparent
+  if (backdropType === 'solid') {
+    ctx.fillStyle = solidColor;
+    ctx.fillRect(0, 0, w, h);
+  } else if (backdropType === 'gradient') {
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    if (gradientPreset === 'studio') {
+      grad.addColorStop(0, '#f8fafc');
+      grad.addColorStop(1, '#cbd5e1');
+    } else if (gradientPreset === 'tech') {
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(1, '#1e3a8a');
+    } else if (gradientPreset === 'sunset') {
+      grad.addColorStop(0, '#ff7e5f');
+      grad.addColorStop(1, '#feb47b');
+    } else if (gradientPreset === 'dark') {
+      grad.addColorStop(0, '#18181b');
+      grad.addColorStop(1, '#09090b');
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  } else if (backdropType === 'bokeh' && originalImage) {
+    ctx.save();
+    if (bokehBlur > 0) {
+      ctx.filter = `blur(${bokehBlur}px)`;
+    }
+    ctx.drawImage(originalImage, 0, 0, w, h);
+    ctx.restore();
+  }
+
+  // 2. Prepare Cutout with Edge Refinement (Erode & De-fringe)
+  if (!rawCutoutData) {
+    ctx.drawImage(rawCutoutImage, 0, 0);
+    return;
+  }
+
+  const cutCanvas = document.createElement('canvas');
+  cutCanvas.width = w;
+  cutCanvas.height = h;
+  const cutCtx = cutCanvas.getContext('2d', { willReadFrequently: true });
+
+  const outputData = cutCtx.createImageData(w, h);
+  const src = rawCutoutData.data;
+  const orig = originalData ? originalData.data : null;
+  const dst = outputData.data;
+
+  for (let i = 0; i < src.length; i++) dst[i] = src[i];
+
+  applyEdgeInset(src, dst, w, h, edgeInset);
+  applyDefringe(dst, w, h, defringe, orig);
+
+  cutCtx.putImageData(outputData, 0, 0);
+
+  if (edgeFeather > 0) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.shadowBlur = edgeFeather;
+    ctx.drawImage(cutCanvas, 0, 0);
+    ctx.restore();
+  } else {
+    ctx.drawImage(cutCanvas, 0, 0);
+  }
+}

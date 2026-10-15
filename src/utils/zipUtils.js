@@ -9,7 +9,7 @@ import { downloadBlob } from './downloadUtils';
  * @param {Function} [onProgress] - Optional progress callback (percent: number)
  * @returns {Promise<Blob>}
  */
-export async function createAndDownloadZip(zipFilename, files, folderName = '', onProgress = null) {
+export async function createAndDownloadZip(zipFilename, files, folderName = '', onProgress = null, downloadOptions = {}) {
   if (!files || files.length === 0) return null;
   const zip = new JSZip();
   const target = folderName ? zip.folder(folderName) : zip;
@@ -26,6 +26,6 @@ export async function createAndDownloadZip(zipFilename, files, folderName = '', 
   );
 
   const safeZipName = zipFilename.endsWith('.zip') ? zipFilename : `${zipFilename}.zip`;
-  downloadBlob(content, safeZipName);
+  downloadBlob(content, safeZipName, downloadOptions);
   return content;
 }

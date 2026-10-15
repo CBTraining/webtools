@@ -7,9 +7,9 @@ import {
   MagnifyingGlassIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/solid';
-import JSZip from 'jszip';
 import { playDing } from '../utils/audio';
 import { downloadBlob } from '../utils/downloadUtils';
+import { createAndDownloadZip } from '../utils/zipUtils';
 import { 
   SAMPLE_SITES, 
   fetchHtmlWithProxies, 
@@ -125,37 +125,34 @@ export default function AssetExtractor() {
     setZipping(true);
 
     try {
-      const zip = new JSZip();
-      const svgFolder = zip.folder("svg_vectors");
-      const imgFolder = zip.folder("images");
-      const videoFolder = zip.folder("videos");
-      const iconFolder = zip.folder("icons");
-      const lottieFolder = zip.folder("lottie_animations");
+      const zipEntries = [];
+      const folderMap = {
+        svg: 'svg_vectors',
+        video: 'videos',
+        icon: 'icons',
+        lottie: 'lottie_animations'
+      };
 
       for (let i = 0; i < assets.length; i++) {
         const asset = assets[i];
         try {
-          let folder = imgFolder;
-          if (asset.type === 'svg') folder = svgFolder;
-          else if (asset.type === 'video') folder = videoFolder;
-          else if (asset.type === 'icon') folder = iconFolder;
-          else if (asset.type === 'lottie') folder = lottieFolder;
-
+          const folder = folderMap[asset.type] || 'images';
           if (asset.rawSvg) {
-            folder.file(asset.name, asset.rawSvg);
+            zipEntries.push({ name: `${folder}/${asset.name}`, data: asset.rawSvg });
           } else {
             const res = await fetch(asset.url);
             const blob = await res.blob();
-            folder.file(asset.name, blob);
+            zipEntries.push({ name: `${folder}/${asset.name}`, data: blob });
           }
         } catch (e) {
           console.warn(`Could not add ${asset.name} to zip:`, e);
         }
       }
 
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      downloadBlob(zipBlob, `extracted_website_assets_${Date.now()}.zip`);
-      playDing();
+      if (zipEntries.length > 0) {
+        await createAndDownloadZip(`extracted_website_assets_${Date.now()}.zip`, zipEntries);
+        playDing();
+      }
     } catch (err) {
       console.error("Zip generation error:", err);
     } finally {

@@ -3,20 +3,18 @@ import {
   ScissorsIcon as Scissors, 
   ArrowDownTrayIcon as Download, 
   XMarkIcon as XMark,
-  CheckIcon,
   CodeBracketIcon,
   DocumentArrowDownIcon,
   ClipboardDocumentIcon,
-  ClipboardDocumentCheckIcon,
-  AdjustmentsHorizontalIcon,
-  ChevronDownIcon,
-  ChevronUpIcon
+  ClipboardDocumentCheckIcon
 } from '@heroicons/react/24/solid';
 import SendToDropdown from '../../components/SendToDropdown';
 import { useProcessing } from '../../contexts/ProcessingContext';
 import { isValidLottie, downloadJsonFile } from '../../utils/lottieSamples';
 import { renderLottieToGif } from '../../utils/lottieGifRenderer';
 import LottieInteractivePlayer from './LottieInteractivePlayer';
+import LottieSlotGifSettings from './LottieSlotGifSettings';
+import LottieSlotCodeTab from './LottieSlotCodeTab';
 
 const TOOL_ID = 'lottie-to-gif';
 
@@ -116,7 +114,7 @@ export default function LottieToGifSlot({ slot }) {
         downloadName: downloadName 
       });
     } catch (err) {
-      console.error("Lottie convert error:", err);
+      console.error("Lottie convert error:", e => e);
       updateJob(myJobId, { status: 'error', error: err?.message || 'Failed to convert Lottie.' });
     }
   };
@@ -227,97 +225,19 @@ export default function LottieToGifSlot({ slot }) {
           <LottieInteractivePlayer animationData={lottieData} height="220px" />
 
           {/* GIF Settings Expander */}
-          <div style={{ background: 'var(--bg-tertiary)', borderRadius: 'var(--border-radius-sm)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-            <button 
-              type="button"
-              onClick={() => setShowGifSettings(!showGifSettings)}
-              style={{
-                width: '100%',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                fontSize: '0.78rem',
-                padding: '0.45rem 0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer'
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <AdjustmentsHorizontalIcon style={{ width: 14, height: 14 }} />
-                GIF Output Settings
-              </span>
-              {showGifSettings ? <ChevronUpIcon style={{ width: 14, height: 14 }} /> : <ChevronDownIcon style={{ width: 14, height: 14 }} />}
-            </button>
-
-            {showGifSettings && (
-              <div style={{ padding: '0.75rem', borderTop: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.75rem' }}>
-                {/* Scale */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Resolution Scale:</label>
-                  <select 
-                    className="input-field" 
-                    value={gifScale} 
-                    onChange={(e) => setGifScale(Number(e.target.value))}
-                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', width: '100%' }}
-                  >
-                    <option value={0.5}>0.5x ({Math.round((stats?.w || 300)*0.5)}×{Math.round((stats?.h || 300)*0.5)})</option>
-                    <option value={1}>1.0x (Original {stats?.w || 300}×{stats?.h || 300})</option>
-                    <option value={1.5}>1.5x ({Math.round((stats?.w || 300)*1.5)}×{Math.round((stats?.h || 300)*1.5)})</option>
-                    <option value={2}>2.0x ({Math.round((stats?.w || 300)*2)}×{Math.round((stats?.h || 300)*2)})</option>
-                  </select>
-                </div>
-
-                {/* Frame Rate */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Frame Rate (FPS):</label>
-                  <select 
-                    className="input-field" 
-                    value={gifFps} 
-                    onChange={(e) => setGifFps(e.target.value)}
-                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', width: '100%' }}
-                  >
-                    <option value="auto">Native ({stats?.fr || 30} FPS)</option>
-                    <option value={30}>30 FPS</option>
-                    <option value={20}>20 FPS (Optimized)</option>
-                    <option value={15}>15 FPS (Small Size)</option>
-                  </select>
-                </div>
-
-                {/* Background */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Background:</label>
-                  <select 
-                    className="input-field" 
-                    value={gifBg} 
-                    onChange={(e) => setGifBg(e.target.value)}
-                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', width: '100%' }}
-                  >
-                    <option value="transparent">Transparent</option>
-                    <option value="#ffffff">White (#ffffff)</option>
-                    <option value="#000000">Black (#000000)</option>
-                    <option value="#1e293b">Dark Slate (#1e293b)</option>
-                  </select>
-                </div>
-
-                {/* Quality */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Encoding Quality:</label>
-                  <select 
-                    className="input-field" 
-                    value={gifQuality} 
-                    onChange={(e) => setGifQuality(Number(e.target.value))}
-                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', width: '100%' }}
-                  >
-                    <option value={10}>Fast (Quality 10)</option>
-                    <option value={5}>Balanced (Quality 5)</option>
-                    <option value={1}>Highest (Quality 1)</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
+          <LottieSlotGifSettings
+            showGifSettings={showGifSettings}
+            setShowGifSettings={setShowGifSettings}
+            stats={stats}
+            gifScale={gifScale}
+            setGifScale={setGifScale}
+            gifFps={gifFps}
+            setGifFps={setGifFps}
+            gifBg={gifBg}
+            setGifBg={setGifBg}
+            gifQuality={gifQuality}
+            setGifQuality={setGifQuality}
+          />
 
           {/* Convert to GIF Action */}
           {!isProcessing && !resultUrl && (
@@ -358,65 +278,15 @@ export default function LottieToGifSlot({ slot }) {
 
       {/* Tab 2: Code Editor */}
       {activeTab === 'code' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              Edit Lottie JSON and apply to update preview:
-            </span>
-            <button 
-              type="button" 
-              className="btn" 
-              onClick={handleFormatCode} 
-              style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-            >
-              Format JSON
-            </button>
-          </div>
-
-          <textarea 
-            className="input-field" 
-            style={{ 
-              minHeight: '220px', 
-              fontFamily: '"Fira Code", monospace, Consolas', 
-              fontSize: '0.78rem',
-              resize: 'vertical',
-              lineHeight: 1.4,
-              tabSize: 2
-            }}
-            value={rawCode}
-            onChange={(e) => {
-              setRawCode(e.target.value);
-              setCodeError(null);
-            }}
-            spellCheck="false"
-          />
-
-          {codeError && (
-            <div style={{ color: 'var(--danger-color)', fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--danger-color)' }}>
-              ⚠️ {codeError}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button 
-              type="button" 
-              className="btn btn-primary" 
-              onClick={handleApplyCode}
-              style={{ flex: 1, padding: '0.4rem 0.75rem', fontSize: '0.8rem', justifyContent: 'center' }}
-            >
-              <CheckIcon style={{ width: 14, height: 14, marginRight: 4 }} />
-              Apply to Preview
-            </button>
-            <button 
-              type="button" 
-              className="btn" 
-              onClick={() => downloadJsonFile(rawCode, fileName || 'edited-lottie.json')}
-              style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}
-            >
-              Save as JSON
-            </button>
-          </div>
-        </div>
+        <LottieSlotCodeTab
+          rawCode={rawCode}
+          setRawCode={setRawCode}
+          codeError={codeError}
+          setCodeError={setCodeError}
+          onFormatCode={handleFormatCode}
+          onApplyCode={handleApplyCode}
+          fileName={fileName}
+        />
       )}
 
       {/* Result Section (When GIF has been generated) */}
