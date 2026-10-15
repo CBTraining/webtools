@@ -618,7 +618,7 @@ export default function JsonSaver() {
       {/* Page Header */}
       <div className="page-header" style={{ marginBottom: '0.35rem' }}>
         <DocumentTextIcon style={{ width: 32, height: 32, color: 'var(--accent-color)' }} />
-        <h1>WordPad & Text Studio</h1>
+        <h1>Text Editor</h1>
       </div>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.92rem' }}>
         All-in-one rich & plain text pad, JSON formatter, and script writer. Export directly to <code>.txt</code>, <code>.json</code>, <code>.bat</code>, <code>.ps1</code>, <code>.md</code>, <code>.rtf</code>, and any custom file format.

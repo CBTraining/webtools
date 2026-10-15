@@ -319,7 +319,7 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
         )}
         {(dragType === 'json' || dragType === 'text') && (
           <>
-            <DropZoneCard title="Open in WordPad & Text Studio" subtitle="Edit, format & export .txt, .json, .bat, etc." icon={<CodeBracketIcon style={iconStyle} />} action="json-editor" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Open in Text Editor" subtitle="Edit, format & export .txt, .json, .bat, etc." icon={<CodeBracketIcon style={iconStyle} />} action="json-editor" onDropAction={handleZoneDrop} />
             {dragType === 'json' && (
               <DropZoneCard title="Convert Lottie to GIF" subtitle="Render Lottie JSON to GIF" icon={<GifIcon style={iconStyle} />} action="lottie-convert" onDropAction={handleZoneDrop} />
             )}

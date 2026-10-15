@@ -132,9 +132,9 @@ export const FEATURE_CATEGORIES = [
       {
         to: '/json-saver',
         icon: DocumentTextIcon,
-        title: 'WordPad & Text Studio',
+        title: 'Text Editor',
         desc: 'All-in-one rich & plain text editor, JSON formatter, and script writer. Export to .txt, .json, .bat, .ps1, .md, .rtf, and more.',
-        keywords: ['wordpad', 'notepad', 'text', 'editor', 'json', 'bat', 'batch', 'txt', 'script', 'powershell', 'markdown', 'rtf', 'format', 'prettify', 'beautify', 'validate', 'lottie preview']
+        keywords: ['text editor', 'wordpad', 'notepad', 'text', 'editor', 'json', 'bat', 'batch', 'txt', 'script', 'powershell', 'markdown', 'rtf', 'format', 'prettify', 'beautify', 'validate', 'lottie preview']
       },
       {
         to: '/timezone-converter',

@@ -82,7 +82,7 @@ export function inferCategoryLabel(filename = '', mimeType = '', options = {}) {
   }
   if (hash.includes('/json-saver') || hash.includes('/wordpad') || hash.includes('/text-studio')) {
     const ext = lowerName.includes('.') ? lowerName.split('.').pop().toUpperCase() : 'TXT';
-    return `WordPad Export (.${ext})`;
+    return `Text Editor Export (.${ext})`;
   }
   if (hash.includes('/component-generator')) {
     return 'Exported UI Component';
