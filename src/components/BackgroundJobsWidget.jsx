@@ -1,11 +1,25 @@
+import { useState } from 'react';
 import { useProcessing } from '../contexts/ProcessingContext';
 import { XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { downloadUrl } from '../utils/downloadUtils';
 
 export default function BackgroundJobsWidget() {
   const { jobs, removeJob } = useProcessing();
+  const [closingIds, setClosingIds] = useState({});
 
   if (jobs.length === 0) return null;
+
+  const handleDismiss = (jobId) => {
+    setClosingIds(prev => ({ ...prev, [jobId]: true }));
+    setTimeout(() => {
+      removeJob(jobId);
+      setClosingIds(prev => {
+        const next = { ...prev };
+        delete next[jobId];
+        return next;
+      });
+    }, 150);
+  };
 
   const handleDownload = (job) => {
     if (job.resultUrl) {
@@ -27,9 +41,13 @@ export default function BackgroundJobsWidget() {
       gap: '10px'
     }}>
       {jobs.map(job => (
-        <div key={job.id} className="glass-panel animate-fade-in" style={{ padding: '15px', position: 'relative' }}>
+        <div
+          key={job.id}
+          className={`glass-panel ${closingIds[job.id] ? 'animate-pop-out' : 'animate-pop-in'}`}
+          style={{ padding: '15px', position: 'relative' }}
+        >
           <button 
-            onClick={() => removeJob(job.id)}
+            onClick={() => handleDismiss(job.id)}
             style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
           >
             <XMarkIcon style={{ width: 16, height: 16 }} />

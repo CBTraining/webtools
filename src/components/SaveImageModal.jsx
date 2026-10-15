@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 /**
  * Modal to preview and save a pasted/dropped image or GIF with a customized filename.
@@ -13,6 +13,7 @@ export default function SaveImageModal({
   onCancel
 }) {
   const inputRef = useRef(null);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -24,9 +25,25 @@ export default function SaveImageModal({
 
   const isGif = blobType === 'gif';
 
+  const handleAnimatedClose = (callback) => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      callback();
+    }, 150);
+  };
+
   return (
-    <div className="modal-overlay">
-      <div className="modal glass-panel animate-fade-in" style={{ maxWidth: '420px', width: '90%' }}>
+    <div
+      className={`modal-overlay ${isClosing ? 'animate-backdrop-out' : 'animate-backdrop-in'}`}
+      onClick={() => handleAnimatedClose(onCancel)}
+    >
+      <div
+        className={`modal glass-panel ${isClosing ? 'animate-pop-out' : 'animate-pop-in'}`}
+        style={{ maxWidth: '420px', width: '90%' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
           <h3 style={{ margin: 0 }}>Save {isGif ? 'Animated GIF' : 'Image'}</h3>
           {isGif && (
@@ -81,14 +98,14 @@ export default function SaveImageModal({
           value={filename}
           onChange={(e) => onFilenameChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') onSave();
-            if (e.key === 'Escape') onCancel();
+            if (e.key === 'Enter') handleAnimatedClose(onSave);
+            if (e.key === 'Escape') handleAnimatedClose(onCancel);
           }}
           style={{ width: '100%' }}
         />
         <div className="button-group" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-          <button className="btn" onClick={onCancel}>Cancel</button>
-          <button className="btn btn-primary" onClick={onSave}>
+          <button className="btn" onClick={() => handleAnimatedClose(onCancel)}>Cancel</button>
+          <button className="btn btn-primary" onClick={() => handleAnimatedClose(onSave)}>
             Save {isGif ? 'as GIF' : 'as PNG'}
           </button>
         </div>

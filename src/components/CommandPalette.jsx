@@ -14,14 +14,20 @@ import './CommandPalette.css';
 export default function CommandPalette({ isOpen, onClose, onOpen, onEnterClockMode }) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isClosing, setIsClosing] = useState(false);
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
   const navigate = useNavigate();
 
-  const handleClose = useCallback(() => {
-    setQuery('');
-    setSelectedIndex(0);
-    onClose();
+  const handleClose = useCallback((afterClose) => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      setQuery('');
+      setSelectedIndex(0);
+      onClose();
+      if (typeof afterClose === 'function') afterClose();
+    }, 150);
   }, [onClose]);
 
   // Load recently visited tools from localStorage when open
@@ -160,12 +166,13 @@ export default function CommandPalette({ isOpen, onClose, onOpen, onEnterClockMo
   }, [selectedIndex]);
 
   const handleSelectItem = (item) => {
-    handleClose();
-    if (item.type === 'action' && item.action) {
-      item.action();
-    } else if (item.to) {
-      navigate(item.to);
-    }
+    handleClose(() => {
+      if (item.type === 'action' && item.action) {
+        item.action();
+      } else if (item.to) {
+        navigate(item.to);
+      }
+    });
   };
 
   if (!isOpen) return null;
@@ -173,9 +180,12 @@ export default function CommandPalette({ isOpen, onClose, onOpen, onEnterClockMo
   let currentGroup = null;
 
   return (
-    <div className="command-palette-backdrop animate-fade-in" onClick={handleClose}>
+    <div
+      className={`command-palette-backdrop ${isClosing ? 'animate-backdrop-out' : 'animate-backdrop-in'}`}
+      onClick={() => handleClose()}
+    >
       <div 
-        className="command-palette-modal animate-pop-in" 
+        className={`command-palette-modal ${isClosing ? 'animate-pop-out' : 'animate-pop-in'}`}
         onClick={e => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >

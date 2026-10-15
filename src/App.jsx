@@ -72,7 +72,9 @@ function MainContentWrapper({ children }) {
 
   return (
     <div ref={wrapperRef} className="main-content">
-      {children}
+      <div key={location.pathname} className="page-transition-stage" style={{ display: 'contents' }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -87,18 +89,40 @@ function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isClockMode, setIsClockMode] = useState(() => localStorage.getItem('isClockMode') === 'true');
   const [globalToast, setGlobalToast] = useState(null);
+  const [isToastClosing, setIsToastClosing] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [isDiagnosticsClosing, setIsDiagnosticsClosing] = useState(false);
+
+  const handleToggleDiagnostics = () => {
+    if (showDiagnostics) {
+      setIsDiagnosticsClosing(true);
+      setTimeout(() => {
+        setShowDiagnostics(false);
+        setIsDiagnosticsClosing(false);
+      }, 150);
+    } else {
+      setIsDiagnosticsClosing(false);
+      setShowDiagnostics(true);
+    }
+  };
 
   // Persist clock mode
   useEffect(() => {
     localStorage.setItem('isClockMode', String(isClockMode));
   }, [isClockMode]);
 
-  // Clear global toast after 3 seconds
+  // Clear global toast after 3 seconds with exit animation
   useEffect(() => {
     if (globalToast) {
-      const timer = setTimeout(() => setGlobalToast(null), 3000);
-      return () => clearTimeout(timer);
+      const fadeOutTimer = setTimeout(() => setIsToastClosing(true), 2800);
+      const clearTimer = setTimeout(() => {
+        setGlobalToast(null);
+        setIsToastClosing(false);
+      }, 2960);
+      return () => {
+        clearTimeout(fadeOutTimer);
+        clearTimeout(clearTimer);
+      };
     }
   }, [globalToast]);
 
@@ -237,8 +261,20 @@ function App() {
           </div>
           
           {globalToast && (
-            <div className="toast animate-fade-in" style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, background: typeof globalToast === 'object' && globalToast.type === 'success' ? 'var(--success-color, #52c41a)' : '#ff4444', color: 'white', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
-              {typeof globalToast === 'object' ? globalToast.text : globalToast}
+            <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, pointerEvents: 'none' }}>
+              <div
+                className={`toast ${isToastClosing ? 'animate-pop-out' : 'animate-pop-in'}`}
+                style={{
+                  background: typeof globalToast === 'object' && globalToast.type === 'success' ? 'var(--success-color, #52c41a)' : '#ff4444',
+                  color: 'white',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                }}
+              >
+                {typeof globalToast === 'object' ? globalToast.text : globalToast}
+              </div>
             </div>
           )}
 
@@ -269,7 +305,7 @@ function App() {
             onManualPaste={handleManualPaste} 
             onClockClick={() => setIsClockMode(true)} 
             showDiagnostics={showDiagnostics} 
-            onToggleDiagnostics={() => setShowDiagnostics(!showDiagnostics)} 
+            onToggleDiagnostics={handleToggleDiagnostics} 
           />
           
           <MainContentWrapper>
@@ -326,11 +362,9 @@ function App() {
             }}
           />
 
-          {showDiagnostics && (
-            <ErrorBoundary name="Diagnostics">
-              <DiagnosticsOverlay />
-            </ErrorBoundary>
-          )}
+          <ErrorBoundary name="Diagnostics">
+            <DiagnosticsOverlay isVisible={showDiagnostics} isClosing={isDiagnosticsClosing} />
+          </ErrorBoundary>
 
           <RightPanel />
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-export default function DiagnosticsOverlay() {
+export default function DiagnosticsOverlay({ isVisible = true, isClosing = false }) {
   const [fps, setFps] = useState(0);
   const [memory, setMemory] = useState(null);
   const requestRef = useRef();
@@ -8,6 +8,7 @@ export default function DiagnosticsOverlay() {
   const lastFpsUpdateTimeRef = useRef(0);
 
   useEffect(() => {
+    if (!isVisible) return;
     lastFpsUpdateTimeRef.current = window.performance && window.performance.now ? window.performance.now() : Date.now();
     const loop = (time) => {
       frameCountRef.current += 1;
@@ -28,9 +29,10 @@ export default function DiagnosticsOverlay() {
 
     requestRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(requestRef.current);
-  }, []);
+  }, [isVisible]);
 
   useEffect(() => {
+    if (!isVisible) return;
     const memInterval = setInterval(() => {
       try {
         if (window.performance && window.performance.memory) {
@@ -45,7 +47,7 @@ export default function DiagnosticsOverlay() {
       }
     }, 1000);
     return () => clearInterval(memInterval);
-  }, []);
+  }, [isVisible]);
 
   // Desktop only check
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 800);
@@ -55,7 +57,7 @@ export default function DiagnosticsOverlay() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  if (!isDesktop) return null;
+  if (!isDesktop || !isVisible) return null;
 
   const cores = navigator.hardwareConcurrency || 'Unknown';
   const ram = navigator.deviceMemory ? `${navigator.deviceMemory}GB+` : 'Unknown';
@@ -69,20 +71,22 @@ export default function DiagnosticsOverlay() {
       zIndex: 9999,
       pointerEvents: 'none'
     }}>
-      <div style={{
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--border-radius)',
-        padding: '0.75rem 1.5rem',
-        display: 'flex',
-        gap: '2rem',
-        color: '#fff',
-        fontSize: '0.85rem',
-        fontFamily: 'monospace',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-        animation: 'slide-up-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-      }}>
+      <div
+        className={isClosing ? 'animate-slide-down' : 'animate-slide-up'}
+        style={{
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--border-radius)',
+          padding: '0.75rem 1.5rem',
+          display: 'flex',
+          gap: '2rem',
+          color: '#fff',
+          fontSize: '0.85rem',
+          fontFamily: 'monospace',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+        }}
+      >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <span style={{ color: '#aaaaaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>FPS</span>
         <span style={{ fontWeight: 'bold', color: fps > 30 ? '#52c41a' : '#ff4d4f' }}>{fps}</span>

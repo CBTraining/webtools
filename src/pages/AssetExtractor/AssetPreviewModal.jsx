@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { 
   XMarkIcon, 
   EyeIcon, 
@@ -11,14 +12,49 @@ export default function AssetPreviewModal({
   onOpenInSvgConverter,
   onDownload
 }) {
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleAnimatedClose = (afterClose) => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+      if (typeof afterClose === 'function') afterClose();
+    }, 150);
+  };
+
+  useEffect(() => {
+    if (!asset) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsClosing(true);
+        setTimeout(() => {
+          setIsClosing(false);
+          onClose();
+        }, 150);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [asset, onClose]);
+
   if (!asset) return null;
 
   return (
-    <div className="modal-overlay animate-fade-in" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '700px', padding: '1.5rem', position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#0b0f19', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+    <div
+      className={`modal-overlay ${isClosing ? 'animate-backdrop-out' : 'animate-backdrop-in'}`}
+      onClick={() => handleAnimatedClose()}
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}
+    >
+      <div
+        className={`glass-panel ${isClosing ? 'animate-pop-out' : 'animate-pop-in'}`}
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: '100%', maxWidth: '700px', padding: '1.5rem', position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#0b0f19', border: '1px solid var(--border-color)', borderRadius: '12px' }}
+      >
         <button 
           type="button"
-          onClick={onClose}
+          onClick={() => handleAnimatedClose()}
           style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <XMarkIcon style={{ width: 20, height: 20 }} />
@@ -62,7 +98,7 @@ export default function AssetPreviewModal({
               <button 
                 type="button"
                 className="btn btn-primary" 
-                onClick={() => { onClose(); onOpenInSvgConverter(asset); }}
+                onClick={() => handleAnimatedClose(() => onOpenInSvgConverter(asset))}
               >
                 <CommandLineIcon style={{ width: 16, height: 16 }} /> Open in SVG Converter
               </button>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   TrashIcon,
   ArrowDownTrayIcon,
@@ -18,6 +19,7 @@ export default function HistoryItemCard({
   onCopy,
   onDelete
 }) {
+  const [isDeleting, setIsDeleting] = useState(false);
   const { dateStr, timeStr } = formatItemDateAndTime(item.timestamp);
   const isImage =
     (item.mimeType && item.mimeType.startsWith('image/')) ||
@@ -37,9 +39,15 @@ export default function HistoryItemCard({
         })
       : null;
 
+  const handleDeleteClick = () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    setTimeout(() => onDelete(item.id), 150);
+  };
+
   return (
     <div
-      className="glass-panel"
+      className={`glass-panel animate-pop-in ${isDeleting ? 'animate-pop-out' : ''}`}
       style={{
         padding: '0.9rem',
         display: 'flex',
@@ -132,7 +140,7 @@ export default function HistoryItemCard({
         {/* Delete Single Item Button in Top-Right */}
         <button
           type="button"
-          onClick={() => onDelete(item.id)}
+          onClick={handleDeleteClick}
           style={{
             position: 'absolute',
             top: '8px',

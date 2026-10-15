@@ -68,11 +68,13 @@ const iconStyle = { width: 22, height: 22, color: 'var(--primary-color)', flexSh
 
 export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, onCompressImage }) {
   const [isDragging, setIsDragging] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [dragType, setDragType] = useState('none');
   const [dockSide, setDockSide] = useState(() => localStorage.getItem('webtools-dropdock-side') || 'left');
   const navigate = useNavigate();
   const { addSlot } = useProcessing();
   const dragCounter = useRef(0);
+  const closeTimeoutRef = useRef(null);
 
   const toggleDockSide = () => {
     setDockSide(prev => {
@@ -85,14 +87,26 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
   useEffect(() => {
     const resetDragState = () => {
       dragCounter.current = 0;
-      setIsDragging(false);
-      setDragType('none');
+      setIsClosing(true);
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = setTimeout(() => {
+        if (dragCounter.current === 0) {
+          setIsDragging(false);
+          setIsClosing(false);
+          setDragType('none');
+        }
+      }, 140);
     };
 
     const handleDragEnter = (e) => {
       e.preventDefault();
       dragCounter.current++;
       if (dragCounter.current === 1) {
+        if (closeTimeoutRef.current) {
+          clearTimeout(closeTimeoutRef.current);
+          closeTimeoutRef.current = null;
+        }
+        setIsClosing(false);
         setIsDragging(true);
         const detected = detectDragType(e.dataTransfer);
         setDragType(detected);
@@ -128,6 +142,7 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
     window.addEventListener('dragend', handleDragEnd, true);
 
     return () => {
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
       window.removeEventListener('dragenter', handleDragEnter, true);
       window.removeEventListener('dragleave', handleDragLeave, true);
       window.removeEventListener('dragover', handleDragOver, true);
@@ -137,18 +152,27 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
   }, []);
 
   useEffect(() => {
-    document.body.classList.toggle('global-drag-active', isDragging);
+    document.body.classList.toggle('global-drag-active', isDragging && !isClosing);
     return () => document.body.classList.remove('global-drag-active');
-  }, [isDragging]);
+  }, [isDragging, isClosing]);
 
   if (!isDragging || dragType === 'none') return null;
+
+  const closeDockGracefully = () => {
+    dragCounter.current = 0;
+    setIsClosing(true);
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsDragging(false);
+      setIsClosing(false);
+      setDragType('none');
+    }, 140);
+  };
 
   const handleZoneDrop = async (e, action) => {
     e.preventDefault();
     e.stopPropagation();
-    dragCounter.current = 0;
-    setIsDragging(false);
-    setDragType('none');
+    closeDockGracefully();
 
     // Extract real File objects (handles Desktop files + folders + Google Chat / Slack web image drag)
     const files = await extractDroppedFiles(e);
@@ -161,6 +185,10 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
       onDropImageToModal
     });
   };
+
+  const dockAnimClass = dockSide === 'left'
+    ? (isClosing ? 'animate-dock-left-out' : 'animate-dock-left-in')
+    : (isClosing ? 'animate-dock-right-out' : 'animate-dock-right-in');
 
   const dockStyle = {
     position: 'fixed',
@@ -180,18 +208,17 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
     flexDirection: 'column',
     padding: '1rem 0.85rem',
     gap: '0.75rem',
-    pointerEvents: 'auto'
+    pointerEvents: isClosing ? 'none' : 'auto'
   };
 
   return (
     <aside
+      className={dockAnimClass}
       style={dockStyle}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
-        dragCounter.current = 0;
-        setIsDragging(false);
-        setDragType('none');
+        closeDockGracefully();
       }}
     >
       <div style={{

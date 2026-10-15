@@ -69,26 +69,111 @@ html {
 }
 
 @keyframes pop-in {
-  0% { opacity: 0; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1); }
+  0% { opacity: 0; transform: translateY(5px) scale(0.96); }
+  100% { opacity: 1; transform: none; }
 }
 
 @keyframes pop-out {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.9); }
+  0% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(4px) scale(0.96); }
 }
 
 .animate-pop-in {
-  animation: pop-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pop-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .animate-pop-out {
-  animation: pop-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pop-out 0.15s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes menu-pop-in {
+  0% { opacity: 0; transform: translateY(4px) scale(0.97); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes menu-pop-out {
+  0% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(4px) scale(0.97); }
+}
+
+.animate-menu-in {
+  animation: menu-pop-in 0.16s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-menu-out {
+  animation: menu-pop-out 0.13s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes backdrop-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes backdrop-out {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.animate-backdrop-in {
+  animation: backdrop-in 0.18s ease-out forwards;
+}
+
+.animate-backdrop-out {
+  animation: backdrop-out 0.15s ease-in forwards;
+}
+
+@keyframes dock-left-in {
+  0% { opacity: 0; transform: translateX(-18px); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes dock-left-out {
+  0% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateX(-18px); }
+}
+
+@keyframes dock-right-in {
+  0% { opacity: 0; transform: translateX(18px); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes dock-right-out {
+  0% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateX(18px); }
+}
+
+.animate-dock-left-in {
+  animation: dock-left-in 0.17s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-dock-left-out {
+  animation: dock-left-out 0.14s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.animate-dock-right-in {
+  animation: dock-right-in 0.17s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-dock-right-out {
+  animation: dock-right-out 0.14s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 @keyframes slide-up-fade {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes slide-down-fade {
+  0% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+.animate-slide-up {
+  animation: slide-up-fade 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-slide-down {
+  animation: slide-down-fade 0.15s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 * {
@@ -417,12 +502,45 @@ p {
 
 /* Utility Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px) scale(0.996); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(4px) scale(0.996); }
 }
 
 .animate-fade-in {
-  animation: fadeIn var(--transition-normal) forwards;
+  animation: fadeIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.15s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.page-transition-stage > * {
+  animation: fadeIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-out,
+  .animate-pop-in,
+  .animate-pop-out,
+  .animate-menu-in,
+  .animate-menu-out,
+  .animate-backdrop-in,
+  .animate-backdrop-out,
+  .animate-dock-left-in,
+  .animate-dock-left-out,
+  .animate-dock-right-in,
+  .animate-dock-right-out,
+  .animate-slide-up,
+  .animate-slide-down,
+  .page-transition-stage > * {
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* Loader */

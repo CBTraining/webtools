@@ -23,22 +23,32 @@ export default function SendToDropdown({
   style = {}
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const { addSlot } = useProcessing();
 
+  const closeMenu = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 130);
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setIsOpen(false);
+      if (isOpen && dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        closeMenu();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   const handleAction = async (target) => {
     setIsOpen(false);
+    setIsClosing(false);
 
     const resolvedImageUrl = typeof imageUrl === 'function' ? imageUrl() : imageUrl;
 
@@ -108,7 +118,14 @@ export default function SendToDropdown({
       <button 
         type="button" 
         className="btn" 
-        onClick={() => setIsOpen(prev => !prev)}
+        onClick={() => {
+          if (isOpen) {
+            closeMenu();
+          } else {
+            setIsClosing(false);
+            setIsOpen(true);
+          }
+        }}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -122,12 +139,12 @@ export default function SendToDropdown({
       >
         <PaperAirplaneIcon style={{ width: 16, height: 16, color: 'var(--accent-color)', transform: 'rotate(-45deg)' }} />
         Send To...
-        <ChevronDownIcon style={{ width: 14, height: 14, opacity: 0.7 }} />
+        <ChevronDownIcon style={{ width: 14, height: 14, opacity: 0.7, transition: 'transform 0.16s ease', transform: isOpen && !isClosing ? 'rotate(180deg)' : 'none' }} />
       </button>
 
       {isOpen && (
         <div 
-          className="animate-pop-in"
+          className={isClosing ? 'animate-menu-out' : 'animate-menu-in'}
           style={{
             position: 'absolute',
             bottom: 'calc(100% + 6px)',

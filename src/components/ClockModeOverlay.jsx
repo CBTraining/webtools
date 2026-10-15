@@ -3,6 +3,16 @@ import { useState, useEffect } from 'react';
 export default function ClockModeOverlay({ onClose, onDropFile }) {
   const [time, setTime] = useState(new Date());
   const [isDragging, setIsDragging] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 150);
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -59,8 +69,8 @@ export default function ClockModeOverlay({ onClose, onDropFile }) {
 
   return (
     <div 
-      className={`clock-mode-overlay animate-fade-in hidden-on-mobile ${isDragging ? 'dragging' : ''}`}
-      onClick={onClose}
+      className={`clock-mode-overlay ${isClosing ? 'animate-fade-out' : 'animate-fade-in'} hidden-on-mobile ${isDragging ? 'dragging' : ''}`}
+      onClick={handleClose}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
