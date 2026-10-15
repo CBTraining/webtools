@@ -62,47 +62,53 @@ function inferExtFromFilename(name = '') {
 export default function JsonSaver() {
   const location = useLocation();
 
-  // Load persisted tabs from localStorage and merge any incoming location.state document
+  // Load persisted tabs from localStorage
   const [docs, setDocs] = useState(() => {
-    let baseDocs = [];
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          baseDocs = parsed;
+          return parsed;
         }
       }
     } catch {
       // ignore storage errors
     }
-    if (baseDocs.length === 0) {
-      baseDocs = [createNewDoc(1)];
-    }
-
-    const incomingText = location.state?.jsonText ?? location.state?.text;
-    const incomingFileName = location.state?.fileName;
-    if (typeof incomingText === 'string' && incomingText.length > 0) {
-      const inferred = incomingFileName ? inferExtFromFilename(incomingFileName) : null;
-      const isJsonLikely = incomingText.trim().startsWith('{') || incomingText.trim().startsWith('[');
-      const newDoc = createNewDoc(baseDocs.length + 1, {
-        fileName: inferred?.baseName || (isJsonLikely ? 'data' : 'imported-text'),
-        ext: inferred?.ext || (isJsonLikely ? 'json' : 'txt'),
-        customExt: inferred?.customExt || '',
-        lineEnding: inferred?.defaultEol || (isJsonLikely ? 'LF' : 'CRLF'),
-        text: incomingText,
-        editorMode: 'plain'
-      });
-      if (baseDocs.length === 1 && !baseDocs[0].text.trim()) {
-        return [newDoc];
-      }
-      return [...baseDocs, newDoc];
-    }
-
-    return baseDocs;
+    return [createNewDoc(1)];
   });
 
   const [activeDocId, setActiveDocId] = useState(() => docs[docs.length - 1]?.id);
+  const lastConsumedStateRef = useRef(null);
+
+  // Handle incoming text/files from navigation state (e.g. Global Drag & Drop or Send To Text Editor)
+  useEffect(() => {
+    const incomingText = location.state?.jsonText ?? location.state?.text;
+    const incomingFileName = location.state?.fileName;
+    if (typeof incomingText === 'string' && incomingText.length > 0) {
+      const stateSignature = `${incomingFileName || ''}::${incomingText.length}::${incomingText.slice(0, 64)}`;
+      if (lastConsumedStateRef.current === stateSignature) return;
+      lastConsumedStateRef.current = stateSignature;
+
+      const inferred = incomingFileName ? inferExtFromFilename(incomingFileName) : null;
+      const isJsonLikely = incomingText.trim().startsWith('{') || incomingText.trim().startsWith('[');
+      setDocs(prev => {
+        const newDoc = createNewDoc(prev.length + 1, {
+          fileName: inferred?.baseName || (isJsonLikely ? 'data' : 'imported-text'),
+          ext: inferred?.ext || (isJsonLikely ? 'json' : 'txt'),
+          customExt: inferred?.customExt || '',
+          lineEnding: inferred?.defaultEol || (isJsonLikely ? 'LF' : 'CRLF'),
+          text: incomingText,
+          editorMode: 'plain'
+        });
+        setActiveDocId(newDoc.id);
+        if (prev.length === 1 && !prev[0].text.trim()) {
+          return [newDoc];
+        }
+        return [...prev, newDoc];
+      });
+    }
+  }, [location.state]);
 
   // Editor appearance settings
   const [fontFamily, setFontFamily] = useState(FONT_FAMILIES[1].value); // Default monospace/clean
@@ -138,13 +144,16 @@ export default function JsonSaver() {
     return docs.find(d => d.id === activeDocId) || docs[0];
   }, [docs, activeDocId]);
 
-  // Persist docs to localStorage
+  // Persist docs to localStorage (debounced to keep typing fast on large documents)
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
-    } catch {
-      // ignore quota errors
-    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+      } catch {
+        // ignore quota errors
+      }
+    }, 250);
+    return () => clearTimeout(timer);
   }, [docs]);
 
   const updateActiveDoc = useCallback((patch) => {
@@ -204,11 +213,12 @@ export default function JsonSaver() {
   const lineCount = stats.lines;
 
   // Handle cursor position in plain textarea
-  const updateCursorMetrics = () => {
-    const el = textareaRef.current;
+  const updateCursorMetrics = (targetEl) => {
+    const el = targetEl?.selectionStart !== undefined ? targetEl : textareaRef.current;
     if (!el) return;
     const pos = el.selectionStart || 0;
-    const before = (activeDoc?.text || '').slice(0, pos);
+    const sourceText = typeof el.value === 'string' ? el.value : (activeDoc?.text || '');
+    const before = sourceText.slice(0, pos);
     const linesBefore = before.split(/\r?\n/);
     setCursorPos({
       ln: linesBefore.length,
@@ -536,13 +546,27 @@ export default function JsonSaver() {
     return matches ? matches.length : 0;
   }, [activeDoc.text, findQuery, matchCase]);
 
+  const applyReplacedText = (next) => {
+    if (activeDoc.editorMode === 'rich' && richEditorRef.current) {
+      const html = next
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br/>');
+      richEditorRef.current.innerHTML = html;
+      updateActiveDoc({ text: next, richHtml: html });
+    } else {
+      updateActiveDoc({ text: next });
+    }
+  };
+
   const handleReplaceOne = () => {
     if (!findQuery) return;
     const text = activeDoc.text || '';
     const flags = matchCase ? '' : 'i';
     const escaped = findQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const next = text.replace(new RegExp(escaped, flags), replaceQuery);
-    updateActiveDoc({ text: next });
+    applyReplacedText(next);
   };
 
   const handleReplaceAll = () => {
@@ -551,7 +575,7 @@ export default function JsonSaver() {
     const flags = matchCase ? 'g' : 'gi';
     const escaped = findQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const next = text.replace(new RegExp(escaped, flags), replaceQuery);
-    updateActiveDoc({ text: next });
+    applyReplacedText(next);
     showSuccessMessage(`Replaced ${matchCount} occurrence(s)`);
   };
 
@@ -1080,10 +1104,10 @@ export default function JsonSaver() {
                   onChange={(e) => {
                     updateActiveDoc({ text: e.target.value });
                     setError(null);
-                    updateCursorMetrics();
+                    updateCursorMetrics(e.currentTarget);
                   }}
-                  onClick={updateCursorMetrics}
-                  onKeyUp={updateCursorMetrics}
+                  onClick={(e) => updateCursorMetrics(e.currentTarget)}
+                  onKeyUp={(e) => updateCursorMetrics(e.currentTarget)}
                   onKeyDown={handleTextareaKeyDown}
                   onScroll={(e) => {
                     if (gutterRef.current) {

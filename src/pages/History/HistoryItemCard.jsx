@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   TrashIcon,
   ArrowDownTrayIcon,
@@ -6,7 +7,8 @@ import {
   ClipboardDocumentCheckIcon,
   PhotoIcon,
   FilmIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  PencilSquareIcon
 } from '@heroicons/react/24/solid';
 import { formatBytes } from '../../utils/formatters';
 import { formatItemDateAndTime } from './historyUtils';
@@ -20,6 +22,7 @@ export default function HistoryItemCard({
   onDelete
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
   const { dateStr, timeStr } = formatItemDateAndTime(item.timestamp);
   const isImage =
     (item.mimeType && item.mimeType.startsWith('image/')) ||
@@ -29,6 +32,7 @@ export default function HistoryItemCard({
     ['MP4', 'MOV', 'WEBM', 'AVI'].includes(item.formatBadge);
   const isSvg =
     item.mimeType === 'image/svg+xml' || item.formatBadge === 'SVG';
+  const isTextDoc = !isImage && !isVideo && item.blob instanceof Blob;
 
   const fileObject =
     item.blob instanceof File
@@ -38,6 +42,21 @@ export default function HistoryItemCard({
           type: item.mimeType || item.blob.type
         })
       : null;
+
+  const handleOpenInTextEditor = async () => {
+    if (!item.blob) return;
+    try {
+      const text = await item.blob.text();
+      navigate('/json-saver', {
+        state: {
+          text,
+          fileName: item.filename || 'document.txt'
+        }
+      });
+    } catch (err) {
+      console.error('Failed to read history text file:', err);
+    }
+  };
 
   const handleDeleteClick = () => {
     if (isDeleting) return;
@@ -233,7 +252,7 @@ export default function HistoryItemCard({
           Download
         </button>
 
-        {isImage && !isSvg && (
+        {((isImage && !isSvg) || isTextDoc) && (
           <button
             type="button"
             className="btn"
@@ -243,13 +262,31 @@ export default function HistoryItemCard({
               fontSize: '0.8rem',
               border: '1px solid var(--border-color)'
             }}
-            title="Copy image to clipboard"
+            title={isTextDoc ? 'Copy text content to clipboard' : 'Copy image to clipboard'}
           >
             {copiedId === item.id ? (
               <ClipboardDocumentCheckIcon style={{ width: 15, height: 15, color: 'var(--success-color)' }} />
             ) : (
               <ClipboardDocumentIcon style={{ width: 15, height: 15 }} />
             )}
+          </button>
+        )}
+
+        {isTextDoc && (
+          <button
+            type="button"
+            className="btn"
+            onClick={handleOpenInTextEditor}
+            style={{
+              padding: '0.4rem 0.65rem',
+              fontSize: '0.8rem',
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-color)'
+            }}
+            title="Open this file in Text Editor"
+          >
+            <PencilSquareIcon style={{ width: 15, height: 15, color: 'var(--accent-color)' }} />
+            Edit
           </button>
         )}
 

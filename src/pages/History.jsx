@@ -49,7 +49,10 @@ export default function History() {
 
       const hydrated = rawItems.map(item => {
         let previewUrl = null;
-        if (item.blob instanceof Blob) {
+        const isMedia =
+          (item.mimeType && (item.mimeType.startsWith('image/') || item.mimeType.startsWith('video/'))) ||
+          ['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'SVG', 'BMP', 'AVIF', 'MP4', 'MOV', 'WEBM', 'AVI'].includes(item.formatBadge);
+        if (isMedia && item.blob instanceof Blob) {
           previewUrl = URL.createObjectURL(item.blob);
           activeUrls.push(previewUrl);
         }
@@ -180,10 +183,26 @@ export default function History() {
 
   const handleCopySingle = async (item) => {
     if (!item.blob) return;
-    const ok = await copyBlobToClipboard(item.blob, item.filename, { skipHistory: true });
-    if (ok) {
+    const isImage =
+      (item.mimeType && item.mimeType.startsWith('image/')) ||
+      ['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'BMP', 'AVIF'].includes(item.formatBadge);
+
+    if (isImage) {
+      const ok = await copyBlobToClipboard(item.blob, item.filename, { skipHistory: true });
+      if (ok) {
+        setCopiedId(item.id);
+        setTimeout(() => setCopiedId(null), 2000);
+      }
+      return;
+    }
+
+    try {
+      const text = await item.blob.text();
+      await navigator.clipboard.writeText(text);
       setCopiedId(item.id);
       setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text from history:', err);
     }
   };
 

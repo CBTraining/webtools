@@ -158,6 +158,7 @@ export default function WordpadToolbar({
         {/* View Toggles */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           style={pillBtn(wordWrap)}
           onClick={() => setWordWrap(!wordWrap)}
           title="Toggle Word Wrap"
@@ -169,6 +170,7 @@ export default function WordpadToolbar({
         {editorMode === 'plain' && (
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             style={pillBtn(showLineNumbers)}
             onClick={() => setShowLineNumbers(!showLineNumbers)}
             title="Toggle Line Numbers"
@@ -180,6 +182,7 @@ export default function WordpadToolbar({
 
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           style={pillBtn(paperView)}
           onClick={() => setPaperView(!paperView)}
           title="Toggle Centered Document Sheet View"
@@ -194,6 +197,7 @@ export default function WordpadToolbar({
         <div style={{ position: 'relative', display: 'inline-flex' }}>
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             style={{
               ...pillBtn(false),
               borderTopRightRadius: 0,
@@ -208,6 +212,7 @@ export default function WordpadToolbar({
           </button>
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             style={{
               ...pillBtn(openMenu === 'beautify'),
               padding: '0.28rem 0.35rem',
@@ -248,6 +253,7 @@ export default function WordpadToolbar({
         <div style={{ position: 'relative' }}>
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             style={pillBtn(openMenu === 'transform')}
             onClick={() => toggleMenu('transform')}
           >
@@ -305,6 +311,7 @@ export default function WordpadToolbar({
         <div style={{ position: 'relative' }}>
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             style={pillBtn(openMenu === 'templates')}
             onClick={() => toggleMenu('templates')}
           >
@@ -336,6 +343,7 @@ export default function WordpadToolbar({
         {/* Find & Replace Toggle pushed to right */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           style={{ ...pillBtn(showFindReplace), marginLeft: 'auto' }}
           onClick={() => setShowFindReplace(!showFindReplace)}
           title="Find & Replace (Ctrl+F)"
@@ -372,16 +380,16 @@ export default function WordpadToolbar({
             <option value="PRE">Code Block</option>
           </select>
 
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('bold')} title="Bold (Ctrl+B)">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('bold')} title="Bold (Ctrl+B)">
             <strong>B</strong>
           </button>
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('italic')} title="Italic (Ctrl+I)">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('italic')} title="Italic (Ctrl+I)">
             <em>I</em>
           </button>
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('underline')} title="Underline (Ctrl+U)">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('underline')} title="Underline (Ctrl+U)">
             <u>U</u>
           </button>
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('strikeThrough')} title="Strikethrough">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('strikeThrough')} title="Strikethrough">
             <s>S</s>
           </button>
 
@@ -409,16 +417,16 @@ export default function WordpadToolbar({
 
           {divider}
 
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('justifyLeft')} title="Align Left">⇤</button>
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('justifyCenter')} title="Align Center">⇔</button>
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('justifyRight')} title="Align Right">⇥</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('justifyLeft')} title="Align Left">⇤</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('justifyCenter')} title="Align Center">⇔</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('justifyRight')} title="Align Right">⇥</button>
 
           {divider}
 
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('insertUnorderedList')} title="Bullet List">• List</button>
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('insertOrderedList')} title="Numbered List">1. List</button>
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('insertHorizontalRule')} title="Insert Divider">―</button>
-          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('removeFormat')} title="Clear Formatting">Clear</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('insertUnorderedList')} title="Bullet List">• List</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('insertOrderedList')} title="Numbered List">1. List</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('insertHorizontalRule')} title="Insert Divider">―</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} style={pillBtn()} onClick={() => onExecRichCommand('removeFormat')} title="Clear Formatting">Clear</button>
         </div>
       )}
     </div>
