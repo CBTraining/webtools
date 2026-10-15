@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { 
   PhotoIcon, 
   ArrowPathIcon, 
@@ -5,6 +6,7 @@ import {
   FolderPlusIcon, 
   XMarkIcon 
 } from '@heroicons/react/24/outline';
+import { extractDroppedFiles } from '../../utils/fileTypes';
 
 export default function PhotoPoolCard({
   photos,
@@ -17,8 +19,46 @@ export default function PhotoPoolCard({
   fileInputRef,
   folderInputRef
 }) {
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragActive) setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    const files = await extractDroppedFiles(e);
+    if (files.length > 0) {
+      onAddFiles(files);
+    }
+  };
+
   return (
-    <div className="glass-panel" style={{ padding: '1.25rem' }}>
+    <div 
+      className="glass-panel" 
+      onDragEnter={handleDragOver}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{ 
+        padding: '1.25rem',
+        border: isDragActive ? '2px dashed var(--accent-color)' : undefined,
+        backgroundColor: isDragActive ? 'var(--accent-transparent)' : undefined,
+        transition: 'border-color 0.2s, background-color 0.2s'
+      }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h3 style={{ margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <PhotoIcon style={{ width: 20, height: 20, color: 'var(--primary-color)' }} />
@@ -85,41 +125,46 @@ export default function PhotoPoolCard({
 
       {/* Thumbnail Grid Pool with X Delete buttons */}
       {photos.length > 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto', paddingRight: '0.2rem' }}>
-          {photos.map((photo, idx) => (
-            <div 
-              key={photo.id} 
-              onClick={() => setSelectedPhotoId(photo.id)}
-              style={{ 
-                position: 'relative', 
-                aspectRatio: '1', 
-                borderRadius: 'var(--border-radius-sm)', 
-                overflow: 'hidden', 
-                border: selectedPhotoId === photo.id ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
-                cursor: 'pointer'
-              }}
-            >
-              <img src={photo.url} alt={`Upload ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <button 
-                onClick={(e) => onRemovePhoto(photo.id, e)} 
-                style={{
-                  position: 'absolute',
-                  top: 2, right: 2,
-                  background: 'rgba(0,0,0,0.7)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  color: '#fff',
-                  width: 18, height: 18,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto', paddingRight: '0.2rem' }}>
+            {photos.map((photo, idx) => (
+              <div 
+                key={photo.id} 
+                onClick={() => setSelectedPhotoId(photo.id)}
+                style={{ 
+                  position: 'relative', 
+                  aspectRatio: '1', 
+                  borderRadius: 'var(--border-radius-sm)', 
+                  overflow: 'hidden', 
+                  border: selectedPhotoId === photo.id ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
                   cursor: 'pointer'
                 }}
-                title="Remove Photo"
               >
-                <XMarkIcon style={{ width: 12, height: 12 }} />
-              </button>
-            </div>
-          ))}
-        </div>
+                <img src={photo.url} alt={`Upload ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button 
+                  onClick={(e) => onRemovePhoto(photo.id, e)} 
+                  style={{
+                    position: 'absolute',
+                    top: 2, right: 2,
+                    background: 'rgba(0,0,0,0.7)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    color: '#fff',
+                    width: 18, height: 18,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                  title="Remove Photo"
+                >
+                  <XMarkIcon style={{ width: 12, height: 12 }} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: '0.65rem', padding: '0.5rem', border: '1px dashed var(--border-color)', borderRadius: 'var(--border-radius-sm)', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+            Drop more photos or folders here to add
+          </div>
+        </>
       ) : (
         <div style={{ padding: '1.5rem 1rem', border: '2px dashed var(--border-color)', borderRadius: 'var(--border-radius-sm)', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
           Drop photos or folders anywhere, or click Add Photos to begin.

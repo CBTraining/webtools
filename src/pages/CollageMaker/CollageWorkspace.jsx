@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { 
   ArrowDownTrayIcon, 
   PhotoIcon, 
@@ -6,12 +7,14 @@ import {
   ArrowPathIcon, 
   XMarkIcon 
 } from '@heroicons/react/24/outline';
+import { extractDroppedFiles } from '../../utils/fileTypes';
 
 export default function CollageWorkspace({
   canvasWidth,
   canvasHeight,
   photos,
   onDownload,
+  onAddFiles,
   canvasRef,
   previewContainerRef,
   previewBgStyle,
@@ -35,8 +38,49 @@ export default function CollageWorkspace({
   updatePhoto,
   onRemovePhoto
 }) {
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragActive) setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    if (!onAddFiles) return;
+    const files = await extractDroppedFiles(e);
+    if (files.length > 0) {
+      onAddFiles(files);
+    }
+  };
+
   return (
-    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div 
+      className="glass-panel" 
+      onDragEnter={handleDragOver}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{ 
+        padding: '1.5rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1.25rem',
+        border: isDragActive ? '2px dashed var(--accent-color)' : undefined,
+        transition: 'border-color 0.2s'
+      }}
+    >
       {/* Action Bar & Resolution Indicator */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
@@ -85,7 +129,7 @@ export default function CollageWorkspace({
           position: 'relative',
           overflow: 'hidden',
           boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-          border: '1px solid var(--border-color)',
+          border: isDragActive ? '2px dashed var(--accent-color)' : '1px solid var(--border-color)',
           margin: '0 auto',
           userSelect: 'none'
         }}

@@ -58,7 +58,56 @@ export function getOriginalGoogleAssetUrl(url) {
   return url;
 }
 
+async function readEntryFiles(entry) {
+  if (!entry) return [];
+  if (entry.isFile) {
+    return new Promise((resolve) => {
+      entry.file((file) => resolve([file]), () => resolve([]));
+    });
+  }
+  if (entry.isDirectory) {
+    const dirReader = entry.createReader();
+    const entries = await new Promise((resolve) => {
+      const allEntries = [];
+      const readBatch = () => {
+        dirReader.readEntries((batch) => {
+          if (!batch || batch.length === 0) {
+            resolve(allEntries);
+          } else {
+            allEntries.push(...batch);
+            readBatch();
+          }
+        }, () => resolve(allEntries));
+      };
+      readBatch();
+    });
+    const nested = await Promise.all(entries.map(readEntryFiles));
+    return nested.flat();
+  }
+  return [];
+}
+
 export async function extractDroppedFiles(e) {
+  if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+    const entries = [];
+    let hasDirectory = false;
+    for (let i = 0; i < e.dataTransfer.items.length; i++) {
+      const item = e.dataTransfer.items[i];
+      if (item.kind === 'file' && typeof item.webkitGetAsEntry === 'function') {
+        const entry = item.webkitGetAsEntry();
+        if (entry) {
+          if (entry.isDirectory) hasDirectory = true;
+          entries.push(entry);
+        }
+      }
+    }
+    if (hasDirectory && entries.length > 0) {
+      const nested = await Promise.all(entries.map(readEntryFiles));
+      const extracted = nested.flat();
+      if (extracted.length > 0) return extracted;
+    }
+  }
+
   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
     return Array.from(e.dataTransfer.files);
   }

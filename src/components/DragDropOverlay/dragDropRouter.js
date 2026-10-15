@@ -21,13 +21,15 @@ export async function routeDroppedFiles(files, action, dragType, {
   if (!file) return;
 
   if (action === 'compress-gif' || (action === 'convert-gif' && (dragType === 'gif' || file.name.endsWith('.gif')))) {
-    addSlot('video-to-gif', {
-      id: crypto.randomUUID(),
-      videoFile: file,
-      previewUrl: URL.createObjectURL(file),
-      quality: 100,
-      targetSizeLimit: '50',
-      enableSpatialCrop: false
+    files.forEach(f => {
+      addSlot('video-to-gif', {
+        id: crypto.randomUUID(),
+        videoFile: f,
+        previewUrl: URL.createObjectURL(f),
+        quality: 100,
+        targetSizeLimit: '50',
+        enableSpatialCrop: false
+      });
     });
     navigate('/video-to-gif');
     return;
@@ -39,19 +41,21 @@ export async function routeDroppedFiles(files, action, dragType, {
       navigate('/json-saver', { state: { jsonText: text } });
       return;
     } else if (action === 'lottie-convert') {
-      const text = await file.text();
-      try {
-        const json = JSON.parse(text);
-        const slotId = `lottie-to-gif-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        addSlot('lottie-to-gif', {
-          id: slotId,
-          lottieData: json,
-          fileName: file.name
-        });
-        navigate('/lottie-to-gif');
-      } catch (err) {
-        alert("Invalid JSON file: " + err.message);
+      for (const f of files) {
+        const text = await f.text();
+        try {
+          const json = JSON.parse(text);
+          const slotId = `lottie-to-gif-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+          addSlot('lottie-to-gif', {
+            id: slotId,
+            lottieData: json,
+            fileName: f.name
+          });
+        } catch (err) {
+          alert("Invalid JSON file: " + err.message);
+        }
       }
+      navigate('/lottie-to-gif');
       return;
     }
   }
@@ -71,10 +75,23 @@ export async function routeDroppedFiles(files, action, dragType, {
 
   if (dragType === 'video' || isVideoFile(file)) {
     if (action === 'convert-gif') {
-      addSlot('video-to-gif', { id: crypto.randomUUID(), videoFile: file, previewUrl: URL.createObjectURL(file), targetSizeLimit: '50' });
+      files.filter(f => isVideoFile(f) || f.name.endsWith('.gif')).forEach(f => {
+        addSlot('video-to-gif', { id: crypto.randomUUID(), videoFile: f, previewUrl: URL.createObjectURL(f), targetSizeLimit: '50' });
+      });
       navigate('/video-to-gif');
     } else if (action === 'compress-video') {
-      addSlot('video-compressor', { id: crypto.randomUUID(), videoFile: file, previewUrl: URL.createObjectURL(file) });
+      files.filter(isVideoFile).forEach(f => {
+        addSlot('video-compress', {
+          id: crypto.randomUUID(),
+          videoFile: f,
+          previewUrl: URL.createObjectURL(f),
+          originalFps: null,
+          isProbing: false,
+          quality: 50,
+          preset: 'fast',
+          fps: 'original'
+        });
+      });
       navigate('/video-compressor');
     } else if (action === 'extract-frame') {
       navigate('/video-frame-extractor', { state: { videoFile: file } });
@@ -83,23 +100,34 @@ export async function routeDroppedFiles(files, action, dragType, {
   }
 
   // Default: Image Actions
+  const imgFiles = files.filter(f => isImageFile(f) || f.type.startsWith('image/'));
+  const targetImages = imgFiles.length > 0 ? imgFiles : [file];
+
   if (action === 'compress-image') {
-    if (onCompressImage) {
-      onCompressImage(file);
-    } else {
-      compressImageUnder20MB(file);
+    for (const img of targetImages) {
+      if (onCompressImage) {
+        await onCompressImage(img);
+      } else {
+        await compressImageUnder20MB(img);
+      }
     }
   } else if (action === 'download-png') {
-    onDirectDownload(file, 'png');
+    for (const img of targetImages) {
+      await onDirectDownload(img, 'png');
+    }
   } else if (action === 'rename-png') {
     onDropImageToModal(file);
   } else if (action === 'edit-image') {
     navigate('/image-tools', { state: { imageFile: file, previewUrl: URL.createObjectURL(file) } });
   } else if (action === 'remove-bg') {
-    addSlot('bg-remove', { id: crypto.randomUUID(), imageFile: file, previewUrl: URL.createObjectURL(file) });
+    targetImages.forEach(img => {
+      addSlot('bg-remove', { id: crypto.randomUUID(), imageFile: img, previewUrl: URL.createObjectURL(img) });
+    });
     navigate('/bg-remover');
   } else if (action === 'upscale') {
-    addSlot('ai-upscaler', { id: crypto.randomUUID(), imageFile: file, previewUrl: URL.createObjectURL(file) });
+    targetImages.forEach(img => {
+      addSlot('ai-upscaler', { id: crypto.randomUUID(), imageFile: img, previewUrl: URL.createObjectURL(img), modelKey: 'realworld', targetScale: 2 });
+    });
     navigate('/image-upscaler');
   } else if (action === 'extract-frame') {
     navigate('/video-frame-extractor', { state: { videoFile: file } });

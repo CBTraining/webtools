@@ -311,6 +311,7 @@ export default function CollageMaker() {
           canvasHeight={canvasHeight}
           photos={photos}
           onDownload={handleDownload}
+          onAddFiles={addFiles}
           canvasRef={canvasRef}
           previewContainerRef={previewContainerRef}
           previewBgStyle={previewBgStyle}
