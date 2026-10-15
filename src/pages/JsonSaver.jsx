@@ -475,6 +475,14 @@ export default function JsonSaver() {
   // Open local file into editor
   const handleFileLoaded = async (file) => {
     if (!file) return;
+    if (
+      file.type.startsWith('image/') ||
+      file.type.startsWith('video/') ||
+      file.type.startsWith('audio/') ||
+      /\.(png|jpe?g|gif|webp|bmp|ico|mp4|mov|avi|webm|mkv|pdf|pptx|docx|xlsx|zip)$/i.test(file.name)
+    ) {
+      return;
+    }
     try {
       const text = await file.text();
       const inferred = inferExtFromFilename(file.name);
