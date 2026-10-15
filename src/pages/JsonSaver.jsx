@@ -827,18 +827,28 @@ export default function JsonSaver() {
                   background: 'var(--bg-primary)',
                   padding: '2px',
                   borderRadius: '6px',
-                  border: '1px solid var(--border-color)'
+                  border: '1px solid var(--border-color)',
+                  gap: '2px'
                 }}
               >
                 <button
                   type="button"
-                  className={`btn ${activeDoc.editorMode === 'plain' ? 'btn-primary' : ''}`}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleModeChange('plain')}
                   style={{
-                    padding: '0.22rem 0.5rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.22rem 0.55rem',
                     fontSize: '0.74rem',
+                    fontWeight: 500,
                     borderRadius: '4px',
-                    background: activeDoc.editorMode === 'plain' ? undefined : 'transparent'
+                    border: 'none',
+                    outline: 'none',
+                    boxShadow: 'none',
+                    cursor: 'pointer',
+                    background: activeDoc.editorMode === 'plain' ? 'var(--accent-gradient)' : 'transparent',
+                    color: activeDoc.editorMode === 'plain' ? '#fff' : 'var(--text-secondary)'
                   }}
                   title="Plain Text, JSON, Batch & Code Editor"
                 >
@@ -847,13 +857,22 @@ export default function JsonSaver() {
                 </button>
                 <button
                   type="button"
-                  className={`btn ${activeDoc.editorMode === 'rich' ? 'btn-primary' : ''}`}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleModeChange('rich')}
                   style={{
-                    padding: '0.22rem 0.5rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.22rem 0.55rem',
                     fontSize: '0.74rem',
+                    fontWeight: 500,
                     borderRadius: '4px',
-                    background: activeDoc.editorMode === 'rich' ? undefined : 'transparent'
+                    border: 'none',
+                    outline: 'none',
+                    boxShadow: 'none',
+                    cursor: 'pointer',
+                    background: activeDoc.editorMode === 'rich' ? 'var(--accent-gradient)' : 'transparent',
+                    color: activeDoc.editorMode === 'rich' ? '#fff' : 'var(--text-secondary)'
                   }}
                   title="WordPad Rich Text Document Mode"
                 >

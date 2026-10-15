@@ -62,9 +62,11 @@ export default function WordpadToolbar({
     alignItems: 'center',
     gap: '0.25rem',
     cursor: 'pointer',
-    fontWeight: active ? 600 : 500,
+    fontWeight: 500,
     lineHeight: 1.2,
-    whiteSpace: 'nowrap'
+    whiteSpace: 'nowrap',
+    outline: 'none',
+    boxShadow: 'none'
   });
 
   const dropdownPanelStyle = {

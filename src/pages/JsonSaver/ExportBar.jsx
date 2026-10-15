@@ -1,4 +1,4 @@
-import { ArrowDownTrayIcon as Download } from '@heroicons/react/24/solid';
+import { ArrowDownTrayIcon as Download, CheckIcon } from '@heroicons/react/24/solid';
 import { EXPORT_FORMATS, QUICK_EXPORT_EXTS } from './textStudioConstants';
 
 export default function ExportBar({
@@ -120,7 +120,8 @@ export default function ExportBar({
             fontSize: '0.84rem',
             fontWeight: 600,
             whiteSpace: 'nowrap',
-            flexShrink: 0
+            flexShrink: 0,
+            outline: 'none'
           }}
           title="Save / Export File (Ctrl+S)"
         >
@@ -138,7 +139,8 @@ export default function ExportBar({
               fontSize: '0.8rem',
               background: 'var(--accent-gradient)',
               color: 'white',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              outline: 'none'
             }}
           >
             🎬 Lottie to GIF
@@ -153,7 +155,8 @@ export default function ExportBar({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '0.4rem',
-          flexWrap: 'wrap'
+          flexWrap: 'wrap',
+          minHeight: '24px'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
@@ -166,16 +169,23 @@ export default function ExportBar({
               <button
                 key={ext}
                 type="button"
-                className={`btn ${isSelected ? 'btn-primary' : ''}`}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onQuickExportExt(ext)}
                 onDoubleClick={() => onQuickExportExt(ext, true)}
                 style={{
-                  padding: '0.15rem 0.48rem',
+                  padding: '0.16rem 0.5rem',
                   fontSize: '0.73rem',
+                  lineHeight: 1.25,
+                  fontWeight: 500,
                   borderRadius: '5px',
-                  background: isSelected ? undefined : 'var(--bg-primary)',
-                  border: isSelected ? undefined : '1px solid var(--border-color)',
-                  fontFamily: 'monospace'
+                  background: isSelected ? 'var(--accent-transparent)' : 'var(--bg-primary)',
+                  border: `1px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                  color: isSelected ? 'var(--accent-color)' : 'var(--text-secondary)',
+                  fontFamily: 'monospace',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  userSelect: 'none'
                 }}
                 title={`Click to select .${ext} • Double-click to immediately download`}
               >
@@ -186,28 +196,33 @@ export default function ExportBar({
         </div>
 
         {effectiveExt === 'json' ? (
-          <label
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setValidateJsonOnSave(!validateJsonOnSave)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.3rem',
-              fontSize: '0.74rem',
-              color: 'var(--text-secondary)',
+              padding: '0.16rem 0.5rem',
+              fontSize: '0.72rem',
+              lineHeight: 1.25,
+              borderRadius: '5px',
+              background: validateJsonOnSave ? 'var(--accent-transparent)' : 'var(--bg-primary)',
+              border: `1px solid ${validateJsonOnSave ? 'var(--accent-color)' : 'var(--border-color)'}`,
+              color: validateJsonOnSave ? 'var(--accent-color)' : 'var(--text-secondary)',
               cursor: 'pointer',
+              outline: 'none',
+              boxShadow: 'none',
               userSelect: 'none'
             }}
             title="Verify JSON syntax before downloading"
           >
-            <input
-              type="checkbox"
-              checked={validateJsonOnSave}
-              onChange={(e) => setValidateJsonOnSave(e.target.checked)}
-              style={{ width: 13, height: 13 }}
-            />
+            <CheckIcon style={{ width: 12, height: 12, opacity: validateJsonOnSave ? 1 : 0.35 }} />
             Validate JSON
-          </label>
+          </button>
         ) : (
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.75 }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.75, lineHeight: 1.25 }}>
             Tip: Ctrl+S to save • Double-click a format pill for instant download
           </span>
         )}
