@@ -3,11 +3,16 @@ import { useLocation } from 'react-router-dom';
 import beautify from 'js-beautify';
 import {
   DocumentTextIcon,
+  CodeBracketIcon,
   PlusIcon,
   XMarkIcon,
   CheckIcon,
   ExclamationCircleIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  FolderOpenIcon,
+  ClipboardDocumentIcon,
+  ClipboardDocumentCheckIcon,
+  TrashIcon
 } from '@heroicons/react/24/solid';
 import { isValidLottie } from '../utils/lottieSamples';
 import { downloadBlob } from '../utils/downloadUtils';
@@ -673,104 +678,195 @@ export default function JsonSaver() {
           <LottieGifExportCard parsedLottieData={parsedLottieData} />
         </div>
       ) : (
-        <div className="glass-panel" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {/* Document Tabs Bar */}
+        <div className="glass-panel" style={{ padding: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', overflow: 'visible' }}>
+          {/* Top Header Bar: Document Tabs on Left + File Actions & Mode Switcher on Right */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.35rem',
-              overflowX: 'auto',
-              paddingBottom: '0.35rem',
+              justifyContent: 'space-between',
+              gap: '0.5rem',
+              flexWrap: 'wrap',
+              paddingBottom: '0.45rem',
               borderBottom: '1px solid var(--border-color)'
             }}
           >
-            {docs.map((doc) => {
-              const isActive = doc.id === activeDoc.id;
-              const tabExt = doc.ext === 'custom' ? (doc.customExt.replace(/^\.+/, '') || 'txt') : doc.ext;
-              return (
-                <div
-                  key={doc.id}
-                  onClick={() => {
-                    setActiveDocId(doc.id);
-                    setError(null);
-                  }}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    padding: '0.38rem 0.7rem',
-                    borderRadius: '7px',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: isActive ? 600 : 500,
-                    background: isActive ? 'var(--accent-transparent)' : 'var(--bg-tertiary)',
-                    border: `1px solid ${isActive ? 'var(--accent-color)' : 'var(--border-color)'}`,
-                    color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <span>{doc.fileName || 'untitled'}.{tabExt}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => handleCloseTab(e, doc.id)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--text-secondary)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: 2,
-                      borderRadius: '4px'
+            {/* Left: Tabs + New Tab Button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', overflowX: 'auto', minWidth: 0 }}>
+              {docs.map((doc) => {
+                const isActive = doc.id === activeDoc.id;
+                const tabExt = doc.ext === 'custom' ? (doc.customExt.replace(/^\.+/, '') || 'txt') : doc.ext;
+                return (
+                  <div
+                    key={doc.id}
+                    onClick={() => {
+                      setActiveDocId(doc.id);
+                      setError(null);
                     }}
-                    title="Close Tab"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      padding: '0.3rem 0.65rem',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.78rem',
+                      fontWeight: isActive ? 600 : 500,
+                      background: isActive ? 'var(--accent-transparent)' : 'var(--bg-tertiary)',
+                      border: `1px solid ${isActive ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                      color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
-                    <XMarkIcon style={{ width: 13, height: 13 }} />
-                  </button>
-                </div>
-              );
-            })}
+                    <span>{doc.fileName || 'untitled'}.{tabExt}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCloseTab(e, doc.id)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 2,
+                        borderRadius: '4px'
+                      }}
+                      title="Close Tab"
+                    >
+                      <XMarkIcon style={{ width: 13, height: 13 }} />
+                    </button>
+                  </div>
+                );
+              })}
 
-            <button
-              type="button"
-              className="btn"
-              onClick={handleAddTab}
-              style={{
-                padding: '0.35rem 0.6rem',
-                fontSize: '0.78rem',
-                background: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-color)',
-                whiteSpace: 'nowrap'
-              }}
-              title="New Document Tab"
-            >
-              <PlusIcon style={{ width: 14, height: 14 }} />
-              New Tab
-            </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={handleAddTab}
+                style={{
+                  padding: '0.3rem 0.55rem',
+                  fontSize: '0.76rem',
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  whiteSpace: 'nowrap'
+                }}
+                title="New Document Tab"
+              >
+                <PlusIcon style={{ width: 13, height: 13 }} />
+                New
+              </button>
+            </div>
 
-            {/* Status / Error Feedback Pill on Right of Tabs */}
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Right: Feedback Pill + Open/Copy/Clear + Editor Mode Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginLeft: 'auto' }}>
               {error && (
-                <span style={{ color: 'var(--danger-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', fontWeight: 500 }}>
-                  <ExclamationCircleIcon style={{ width: 16, height: 16, flexShrink: 0 }} />
+                <span style={{ color: 'var(--danger-color)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 500 }}>
+                  <ExclamationCircleIcon style={{ width: 15, height: 15, flexShrink: 0 }} />
                   {error}
                 </span>
               )}
               {statusToast && !error && (
-                <span style={{ color: 'var(--success-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', fontWeight: 500 }}>
-                  <CheckIcon style={{ width: 16, height: 16, flexShrink: 0 }} />
+                <span style={{ color: 'var(--success-color)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 500 }}>
+                  <CheckIcon style={{ width: 15, height: 15, flexShrink: 0 }} />
                   {statusToast}
                 </span>
               )}
+
+              <button
+                type="button"
+                className="btn"
+                onClick={() => fileInputRef.current?.click()}
+                style={{ padding: '0.26rem 0.55rem', fontSize: '0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}
+                title="Open local text, JSON, batch, or script file"
+              >
+                <FolderOpenIcon style={{ width: 14, height: 14, color: 'var(--accent-color)' }} />
+                Open
+              </button>
+
+              <button
+                type="button"
+                className="btn"
+                onClick={handleCopy}
+                style={{ padding: '0.26rem 0.55rem', fontSize: '0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}
+                title="Copy document content to clipboard"
+              >
+                {copied ? (
+                  <>
+                    <ClipboardDocumentCheckIcon style={{ width: 14, height: 14, color: 'var(--success-color)' }} />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <ClipboardDocumentIcon style={{ width: 14, height: 14 }} />
+                    Copy
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  updateActiveDoc({ text: '', richHtml: '' });
+                  if (richEditorRef.current) richEditorRef.current.innerHTML = '';
+                  setError(null);
+                }}
+                style={{ padding: '0.26rem 0.55rem', fontSize: '0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--danger-color)' }}
+                title="Clear current document content"
+              >
+                <TrashIcon style={{ width: 13, height: 13 }} />
+                Clear
+              </button>
+
+              {/* Compact Mode Switcher Pill */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  background: 'var(--bg-primary)',
+                  padding: '2px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)'
+                }}
+              >
+                <button
+                  type="button"
+                  className={`btn ${activeDoc.editorMode === 'plain' ? 'btn-primary' : ''}`}
+                  onClick={() => handleModeChange('plain')}
+                  style={{
+                    padding: '0.22rem 0.5rem',
+                    fontSize: '0.74rem',
+                    borderRadius: '4px',
+                    background: activeDoc.editorMode === 'plain' ? undefined : 'transparent'
+                  }}
+                  title="Plain Text, JSON, Batch & Code Editor"
+                >
+                  <CodeBracketIcon style={{ width: 13, height: 13 }} />
+                  Code
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${activeDoc.editorMode === 'rich' ? 'btn-primary' : ''}`}
+                  onClick={() => handleModeChange('rich')}
+                  style={{
+                    padding: '0.22rem 0.5rem',
+                    fontSize: '0.74rem',
+                    borderRadius: '4px',
+                    background: activeDoc.editorMode === 'rich' ? undefined : 'transparent'
+                  }}
+                  title="WordPad Rich Text Document Mode"
+                >
+                  <DocumentTextIcon style={{ width: 13, height: 13 }} />
+                  Rich Text
+                </button>
+              </div>
             </div>
           </div>
 
           {/* WordPad Ribbon Toolbar */}
           <WordpadToolbar
             editorMode={activeDoc.editorMode}
-            onModeChange={handleModeChange}
             fontFamily={fontFamily}
             setFontFamily={setFontFamily}
             fontSize={fontSize}
@@ -805,19 +901,19 @@ export default function JsonSaver() {
                 gap: '0.5rem',
                 flexWrap: 'wrap',
                 background: 'var(--bg-tertiary)',
-                padding: '0.55rem 0.85rem',
+                padding: '0.5rem 0.75rem',
                 borderRadius: 'var(--border-radius-sm)',
                 border: '1px solid var(--accent-color)'
               }}
             >
-              <MagnifyingGlassIcon style={{ width: 16, height: 16, color: 'var(--accent-color)' }} />
+              <MagnifyingGlassIcon style={{ width: 15, height: 15, color: 'var(--accent-color)' }} />
               <input
                 type="text"
                 className="input-field"
                 placeholder="Find text..."
                 value={findQuery}
                 onChange={(e) => setFindQuery(e.target.value)}
-                style={{ padding: '0.3rem 0.55rem', fontSize: '0.82rem', width: '180px' }}
+                style={{ padding: '0.28rem 0.5rem', fontSize: '0.8rem', width: '165px' }}
               />
               <input
                 type="text"
@@ -825,18 +921,18 @@ export default function JsonSaver() {
                 placeholder="Replace with..."
                 value={replaceQuery}
                 onChange={(e) => setReplaceQuery(e.target.value)}
-                style={{ padding: '0.3rem 0.55rem', fontSize: '0.82rem', width: '180px' }}
+                style={{ padding: '0.28rem 0.5rem', fontSize: '0.8rem', width: '165px' }}
               />
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.78rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={matchCase}
                   onChange={(e) => setMatchCase(e.target.checked)}
-                  style={{ width: 14, height: 14 }}
+                  style={{ width: 13, height: 13 }}
                 />
                 Match case
               </label>
-              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                 {findQuery ? `${matchCount} match${matchCount === 1 ? '' : 'es'}` : ''}
               </span>
               <button
@@ -844,7 +940,7 @@ export default function JsonSaver() {
                 className="btn"
                 onClick={handleReplaceOne}
                 disabled={!findQuery || matchCount === 0}
-                style={{ padding: '0.28rem 0.65rem', fontSize: '0.78rem', background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}
+                style={{ padding: '0.25rem 0.6rem', fontSize: '0.76rem', background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}
               >
                 Replace
               </button>
@@ -853,7 +949,7 @@ export default function JsonSaver() {
                 className="btn btn-primary"
                 onClick={handleReplaceAll}
                 disabled={!findQuery || matchCount === 0}
-                style={{ padding: '0.28rem 0.65rem', fontSize: '0.78rem' }}
+                style={{ padding: '0.25rem 0.6rem', fontSize: '0.76rem' }}
               >
                 Replace All
               </button>
@@ -863,7 +959,7 @@ export default function JsonSaver() {
                 style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
                 title="Close Find & Replace"
               >
-                <XMarkIcon style={{ width: 18, height: 18 }} />
+                <XMarkIcon style={{ width: 17, height: 17 }} />
               </button>
             </div>
           )}
@@ -874,7 +970,7 @@ export default function JsonSaver() {
               display: 'flex',
               justifyContent: 'center',
               background: paperView ? 'var(--bg-tertiary)' : 'transparent',
-              padding: paperView ? '1.25rem' : 0,
+              padding: paperView ? '1.1rem' : 0,
               borderRadius: 'var(--border-radius-sm)',
               border: paperView ? '1px solid var(--border-color)' : 'none'
             }}
@@ -941,7 +1037,7 @@ export default function JsonSaver() {
                       lineHeight,
                       textAlign: 'right',
                       userSelect: 'none',
-                      minWidth: '44px',
+                      minWidth: '42px',
                       overflow: 'hidden'
                     }}
                   >
@@ -1005,14 +1101,6 @@ export default function JsonSaver() {
             setValidateJsonOnSave={setValidateJsonOnSave}
             onSave={() => handleSave()}
             onQuickExportExt={handleQuickExportExt}
-            onCopy={handleCopy}
-            copied={copied}
-            onOpenFileClick={() => fileInputRef.current?.click()}
-            onClear={() => {
-              updateActiveDoc({ text: '', richHtml: '' });
-              if (richEditorRef.current) richEditorRef.current.innerHTML = '';
-              setError(null);
-            }}
             parsedLottieData={parsedLottieData}
             onConvertToGifClick={() => setActiveTab('preview')}
           />
@@ -1024,16 +1112,16 @@ export default function JsonSaver() {
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: '0.75rem',
-              padding: '0.4rem 0.75rem',
+              gap: '0.6rem',
+              padding: '0.35rem 0.7rem',
               background: 'var(--bg-primary)',
               borderRadius: '6px',
               border: '1px solid var(--border-color)',
-              fontSize: '0.75rem',
+              fontSize: '0.73rem',
               color: 'var(--text-secondary)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
               <span><strong>Ln</strong> {cursorPos.ln}, <strong>Col</strong> {cursorPos.col}</span>
               <span><strong>Lines:</strong> {stats.lines.toLocaleString()}</span>
               <span><strong>Words:</strong> {stats.words.toLocaleString()}</span>
@@ -1041,13 +1129,13 @@ export default function JsonSaver() {
               <span><strong>Size:</strong> {formatBytes(stats.bytes)}</span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               {jsonValid && (
                 <span style={{ color: 'var(--success-color)', fontWeight: 600 }}>
                   ● Valid JSON {Array.isArray(parsedJson) ? `(${parsedJson.length} items)` : `(${Object.keys(parsedJson || {}).length} keys)`}
                 </span>
               )}
-              <span><strong>Mode:</strong> {activeDoc.editorMode === 'rich' ? 'Rich Text (WordPad)' : 'Plain Text / Code'}</span>
+              <span><strong>Mode:</strong> {activeDoc.editorMode === 'rich' ? 'Rich Text' : 'Code / Text'}</span>
               <span><strong>Target:</strong> .{effectiveExtLabel.toUpperCase()}</span>
               <span><strong>EOL:</strong> {activeDoc.lineEnding}</span>
               <span>UTF-8</span>

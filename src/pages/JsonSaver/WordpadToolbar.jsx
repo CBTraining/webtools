@@ -2,11 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   SparklesIcon,
   MagnifyingGlassIcon,
-  ClockIcon,
-  DocumentTextIcon,
-  CodeBracketIcon,
   ChevronDownIcon,
-  PrinterIcon,
   Bars3BottomLeftIcon,
   HashtagIcon,
   DocumentDuplicateIcon
@@ -15,7 +11,6 @@ import { FONT_FAMILIES, FONT_SIZES, STARTER_TEMPLATES } from './textStudioConsta
 
 export default function WordpadToolbar({
   editorMode,
-  onModeChange,
   fontFamily,
   setFontFamily,
   fontSize,
@@ -56,19 +51,20 @@ export default function WordpadToolbar({
     setOpenMenu(prev => (prev === name ? null : name));
   };
 
-  const ribbonBtnStyle = (active = false) => ({
-    padding: '0.32rem 0.55rem',
-    fontSize: '0.78rem',
+  const pillBtn = (active = false) => ({
+    padding: '0.28rem 0.5rem',
+    fontSize: '0.76rem',
     background: active ? 'var(--accent-transparent)' : 'var(--bg-primary)',
     border: `1px solid ${active ? 'var(--accent-color)' : 'var(--border-color)'}`,
     color: active ? 'var(--accent-color)' : 'var(--text-primary)',
     borderRadius: '6px',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '0.3rem',
+    gap: '0.25rem',
     cursor: 'pointer',
     fontWeight: active ? 600 : 500,
-    lineHeight: 1.2
+    lineHeight: 1.2,
+    whiteSpace: 'nowrap'
   });
 
   const dropdownPanelStyle = {
@@ -80,23 +76,25 @@ export default function WordpadToolbar({
     border: '1px solid var(--border-color)',
     borderRadius: 'var(--border-radius-sm)',
     boxShadow: '0 10px 28px rgba(0,0,0,0.65)',
-    minWidth: '215px',
-    padding: '0.4rem',
+    minWidth: '210px',
+    padding: '0.35rem',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.15rem'
+    gap: '0.12rem'
   };
 
   const dropdownItemStyle = {
     justifyContent: 'flex-start',
     border: 'none',
     background: 'transparent',
-    padding: '0.4rem 0.65rem',
-    fontSize: '0.8rem',
+    padding: '0.38rem 0.6rem',
+    fontSize: '0.79rem',
     textAlign: 'left',
     width: '100%',
     borderRadius: '5px'
   };
+
+  const divider = <div style={{ width: '1px', height: '18px', background: 'var(--border-color)', flexShrink: 0 }} />;
 
   return (
     <div
@@ -104,65 +102,21 @@ export default function WordpadToolbar({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.55rem',
+        gap: '0.45rem',
         background: 'var(--bg-tertiary)',
-        padding: '0.65rem 0.85rem',
+        padding: '0.5rem 0.65rem',
         borderRadius: 'var(--border-radius-sm)',
         border: '1px solid var(--border-color)'
       }}
     >
-      {/* Row 1: Mode Switcher, Font Family, Font Size, View Options, Utilities */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-        {/* Mode Switcher Pill */}
-        <div
-          style={{
-            display: 'inline-flex',
-            background: 'var(--bg-primary)',
-            padding: '2px',
-            borderRadius: '7px',
-            border: '1px solid var(--border-color)'
-          }}
-        >
-          <button
-            type="button"
-            className={`btn ${editorMode === 'plain' ? 'btn-primary' : ''}`}
-            onClick={() => onModeChange('plain')}
-            style={{
-              padding: '0.28rem 0.6rem',
-              fontSize: '0.76rem',
-              borderRadius: '5px',
-              background: editorMode === 'plain' ? undefined : 'transparent'
-            }}
-            title="Plain Text, JSON, Batch & Code Editor"
-          >
-            <CodeBracketIcon style={{ width: 14, height: 14 }} />
-            Text & Code
-          </button>
-          <button
-            type="button"
-            className={`btn ${editorMode === 'rich' ? 'btn-primary' : ''}`}
-            onClick={() => onModeChange('rich')}
-            style={{
-              padding: '0.28rem 0.6rem',
-              fontSize: '0.76rem',
-              borderRadius: '5px',
-              background: editorMode === 'rich' ? undefined : 'transparent'
-            }}
-            title="WordPad Rich Text Document Mode"
-          >
-            <DocumentTextIcon style={{ width: 14, height: 14 }} />
-            WordPad Rich Text
-          </button>
-        </div>
-
-        <div style={{ width: '1px', height: '22px', background: 'var(--border-color)' }} />
-
+      {/* Single Compact Main Ribbon Row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.38rem', flexWrap: 'wrap' }}>
         {/* Font Family */}
         <select
           className="input-field"
           value={fontFamily}
           onChange={(e) => setFontFamily(e.target.value)}
-          style={{ padding: '0.28rem 0.5rem', fontSize: '0.78rem', width: 'auto', minWidth: '155px' }}
+          style={{ padding: '0.24rem 0.4rem', fontSize: '0.76rem', width: '138px' }}
           title="Font Family"
         >
           {FONT_FAMILIES.map(f => (
@@ -175,11 +129,11 @@ export default function WordpadToolbar({
           className="input-field"
           value={fontSize}
           onChange={(e) => setFontSize(Number(e.target.value))}
-          style={{ padding: '0.28rem 0.45rem', fontSize: '0.78rem', width: '74px' }}
+          style={{ padding: '0.24rem 0.35rem', fontSize: '0.76rem', width: '64px' }}
           title="Font Size"
         >
           {FONT_SIZES.map(sz => (
-            <option key={sz} value={sz}>{sz} px</option>
+            <option key={sz} value={sz}>{sz}px</option>
           ))}
         </select>
 
@@ -188,247 +142,130 @@ export default function WordpadToolbar({
           className="input-field"
           value={lineHeight}
           onChange={(e) => setLineHeight(Number(e.target.value))}
-          style={{ padding: '0.28rem 0.45rem', fontSize: '0.78rem', width: '82px' }}
+          style={{ padding: '0.24rem 0.35rem', fontSize: '0.76rem', width: '62px' }}
           title="Line Spacing"
         >
-          <option value={1.25}>1.25x</option>
+          <option value={1.25}>1.2x</option>
           <option value={1.5}>1.5x</option>
-          <option value={1.75}>1.75x</option>
+          <option value={1.75}>1.8x</option>
           <option value={2.0}>2.0x</option>
         </select>
 
-        <div style={{ width: '1px', height: '22px', background: 'var(--border-color)' }} />
+        {divider}
 
         {/* View Toggles */}
         <button
           type="button"
-          style={ribbonBtnStyle(wordWrap)}
+          style={pillBtn(wordWrap)}
           onClick={() => setWordWrap(!wordWrap)}
           title="Toggle Word Wrap"
         >
-          <Bars3BottomLeftIcon style={{ width: 14, height: 14 }} />
+          <Bars3BottomLeftIcon style={{ width: 13, height: 13 }} />
           Wrap
         </button>
 
         {editorMode === 'plain' && (
           <button
             type="button"
-            style={ribbonBtnStyle(showLineNumbers)}
+            style={pillBtn(showLineNumbers)}
             onClick={() => setShowLineNumbers(!showLineNumbers)}
-            title="Toggle Line Numbers Gutter"
+            title="Toggle Line Numbers"
           >
-            <HashtagIcon style={{ width: 14, height: 14 }} />
+            <HashtagIcon style={{ width: 13, height: 13 }} />
             Lines
           </button>
         )}
 
         <button
           type="button"
-          style={ribbonBtnStyle(paperView)}
+          style={pillBtn(paperView)}
           onClick={() => setPaperView(!paperView)}
-          title="Toggle Centered WordPad Document Sheet View"
+          title="Toggle Centered Document Sheet View"
         >
-          <DocumentDuplicateIcon style={{ width: 14, height: 14 }} />
-          Page View
+          <DocumentDuplicateIcon style={{ width: 13, height: 13 }} />
+          Sheet
         </button>
 
-        {/* Right-aligned Find & Timestamp & Print */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+        {divider}
+
+        {/* Format & Beautify Menu */}
+        <div style={{ position: 'relative', display: 'inline-flex' }}>
           <button
             type="button"
-            style={ribbonBtnStyle(showFindReplace)}
-            onClick={() => setShowFindReplace(!showFindReplace)}
-            title="Find & Replace (Ctrl+F)"
+            style={{
+              ...pillBtn(false),
+              borderTopRightRadius: 0,
+              borderBottomRightRadius: 0,
+              borderRight: 'none'
+            }}
+            onClick={() => onFormatJson(2)}
+            title="Format / Prettify JSON (2 spaces)"
           >
-            <MagnifyingGlassIcon style={{ width: 14, height: 14 }} />
-            Find / Replace
+            <SparklesIcon style={{ width: 13, height: 13, color: 'var(--accent-color)' }} />
+            Format JSON
           </button>
-
           <button
             type="button"
-            style={ribbonBtnStyle(false)}
-            onClick={onInsertTimestamp}
-            title="Insert Current Date & Time"
-          >
-            <ClockIcon style={{ width: 14, height: 14 }} />
-            Time/Date
-          </button>
-
-          <button
-            type="button"
-            style={ribbonBtnStyle(false)}
-            onClick={onPrint}
-            title="Print Document"
-          >
-            <PrinterIcon style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      </div>
-
-      {/* Row 2: Rich Text Formatting OR Code/JSON/Text Utilities */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          flexWrap: 'wrap',
-          paddingTop: '0.45rem',
-          borderTop: '1px solid var(--border-color)'
-        }}
-      >
-        {editorMode === 'rich' && (
-          <>
-            <select
-              className="input-field"
-              defaultValue="P"
-              onChange={(e) => onExecRichCommand('formatBlock', e.target.value)}
-              style={{ padding: '0.24rem 0.45rem', fontSize: '0.76rem', width: '115px' }}
-              title="Paragraph Style"
-            >
-              <option value="P">Normal Text</option>
-              <option value="H1">Heading 1</option>
-              <option value="H2">Heading 2</option>
-              <option value="H3">Heading 3</option>
-              <option value="BLOCKQUOTE">Quote Block</option>
-              <option value="PRE">Code Block</option>
-            </select>
-
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('bold')} title="Bold (Ctrl+B)">
-              <strong>B</strong>
-            </button>
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('italic')} title="Italic (Ctrl+I)">
-              <em>I</em>
-            </button>
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('underline')} title="Underline (Ctrl+U)">
-              <u>U</u>
-            </button>
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('strikeThrough')} title="Strikethrough">
-              <s>S</s>
-            </button>
-
-            <div style={{ width: '1px', height: '20px', background: 'var(--border-color)' }} />
-
-            <label
-              style={{ ...ribbonBtnStyle(), gap: '0.25rem', padding: '0.2rem 0.45rem' }}
-              title="Text Color"
-            >
-              <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>A</span>
-              <input
-                type="color"
-                defaultValue="#40e0d0"
-                onChange={(e) => onExecRichCommand('foreColor', e.target.value)}
-                style={{ width: 18, height: 18, border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
-              />
-            </label>
-
-            <label
-              style={{ ...ribbonBtnStyle(), gap: '0.25rem', padding: '0.2rem 0.45rem' }}
-              title="Highlight Color"
-            >
-              <span style={{ fontSize: '0.72rem' }}>🖍️</span>
-              <input
-                type="color"
-                defaultValue="#facc15"
-                onChange={(e) => onExecRichCommand('hiliteColor', e.target.value)}
-                style={{ width: 18, height: 18, border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
-              />
-            </label>
-
-            <div style={{ width: '1px', height: '20px', background: 'var(--border-color)' }} />
-
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('justifyLeft')} title="Align Left">
-              ⇤ Left
-            </button>
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('justifyCenter')} title="Align Center">
-              ⇔ Center
-            </button>
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('justifyRight')} title="Align Right">
-              ⇥ Right
-            </button>
-
-            <div style={{ width: '1px', height: '20px', background: 'var(--border-color)' }} />
-
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('insertUnorderedList')} title="Bullet List">
-              • List
-            </button>
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('insertOrderedList')} title="Numbered List">
-              1. List
-            </button>
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('insertHorizontalRule')} title="Insert Divider Line">
-              ― Rule
-            </button>
-            <button type="button" style={ribbonBtnStyle()} onClick={() => onExecRichCommand('removeFormat')} title="Clear Formatting">
-              Clear Format
-            </button>
-
-            <div style={{ width: '1px', height: '20px', background: 'var(--border-color)' }} />
-          </>
-        )}
-
-        {/* JSON & Code Formatting Buttons */}
-        <button
-          type="button"
-          style={ribbonBtnStyle(false)}
-          onClick={() => onFormatJson(2)}
-          title="Format / Prettify JSON (2-space indent)"
-        >
-          <SparklesIcon style={{ width: 14, height: 14, color: 'var(--accent-color)' }} />
-          Format JSON
-        </button>
-
-        <button
-          type="button"
-          style={ribbonBtnStyle(false)}
-          onClick={onMinifyJson}
-          title="Minify JSON to a single line"
-        >
-          Minify JSON
-        </button>
-
-        {/* Beautify Code Dropdown */}
-        <div style={{ position: 'relative' }}>
-          <button
-            type="button"
-            style={ribbonBtnStyle(openMenu === 'beautify')}
+            style={{
+              ...pillBtn(openMenu === 'beautify'),
+              padding: '0.28rem 0.35rem',
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0
+            }}
             onClick={() => toggleMenu('beautify')}
+            title="More Code Formatters (Minify JSON, HTML, CSS, JS)"
           >
-            Beautify Code
-            <ChevronDownIcon style={{ width: 12, height: 12 }} />
+            <ChevronDownIcon style={{ width: 11, height: 11 }} />
           </button>
           {openMenu === 'beautify' && (
             <div className="animate-menu-in" style={dropdownPanelStyle}>
               <button className="btn" style={dropdownItemStyle} onClick={() => { onFormatJson(2); setOpenMenu(null); }}>
-                JSON (2 spaces)
+                Format JSON (2 spaces)
               </button>
               <button className="btn" style={dropdownItemStyle} onClick={() => { onFormatJson(4); setOpenMenu(null); }}>
-                JSON (4 spaces)
+                Format JSON (4 spaces)
               </button>
+              <button className="btn" style={dropdownItemStyle} onClick={() => { onMinifyJson(); setOpenMenu(null); }}>
+                Minify JSON (Single line)
+              </button>
+              <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.2rem 0' }} />
               <button className="btn" style={dropdownItemStyle} onClick={() => { onBeautifyCode('html'); setOpenMenu(null); }}>
-                HTML / XML Beautify
+                Beautify HTML / XML
               </button>
               <button className="btn" style={dropdownItemStyle} onClick={() => { onBeautifyCode('css'); setOpenMenu(null); }}>
-                CSS Stylesheet Beautify
+                Beautify CSS
               </button>
               <button className="btn" style={dropdownItemStyle} onClick={() => { onBeautifyCode('js'); setOpenMenu(null); }}>
-                JavaScript / TypeScript Beautify
+                Beautify JavaScript / TS
               </button>
             </div>
           )}
         </div>
 
-        {/* Text Tools Dropdown */}
+        {/* Text & Line Tools Dropdown */}
         <div style={{ position: 'relative' }}>
           <button
             type="button"
-            style={ribbonBtnStyle(openMenu === 'transform')}
+            style={pillBtn(openMenu === 'transform')}
             onClick={() => toggleMenu('transform')}
           >
-            Text & Line Tools
-            <ChevronDownIcon style={{ width: 12, height: 12 }} />
+            Text Tools
+            <ChevronDownIcon style={{ width: 11, height: 11 }} />
           </button>
           {openMenu === 'transform' && (
-            <div className="animate-menu-in" style={{ ...dropdownPanelStyle, minWidth: '235px', maxHeight: '340px', overflowY: 'auto' }}>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', padding: '0.25rem 0.6rem', letterSpacing: '0.5px' }}>
+            <div className="animate-menu-in" style={{ ...dropdownPanelStyle, minWidth: '220px', maxHeight: '340px', overflowY: 'auto' }}>
+              <div style={{ fontSize: '0.66rem', color: 'var(--text-secondary)', textTransform: 'uppercase', padding: '0.2rem 0.6rem', letterSpacing: '0.5px' }}>
+                Quick Actions
+              </div>
+              <button className="btn" style={dropdownItemStyle} onClick={() => { onInsertTimestamp(); setOpenMenu(null); }}>
+                🕒 Insert Time & Date
+              </button>
+              <button className="btn" style={dropdownItemStyle} onClick={() => { onPrint(); setOpenMenu(null); }}>
+                🖨️ Print Document...
+              </button>
+
+              <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.2rem 0' }} />
+              <div style={{ fontSize: '0.66rem', color: 'var(--text-secondary)', textTransform: 'uppercase', padding: '0.2rem 0.6rem', letterSpacing: '0.5px' }}>
                 Case Conversion
               </div>
               <button className="btn" style={dropdownItemStyle} onClick={() => { onTransformText('uppercase'); setOpenMenu(null); }}>UPPERCASE</button>
@@ -437,7 +274,7 @@ export default function WordpadToolbar({
               <button className="btn" style={dropdownItemStyle} onClick={() => { onTransformText('sentencecase'); setOpenMenu(null); }}>Sentence case</button>
 
               <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.2rem 0' }} />
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', padding: '0.25rem 0.6rem', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: '0.66rem', color: 'var(--text-secondary)', textTransform: 'uppercase', padding: '0.2rem 0.6rem', letterSpacing: '0.5px' }}>
                 Line Operations
               </div>
               <button className="btn" style={dropdownItemStyle} onClick={() => { onTransformText('sort-asc'); setOpenMenu(null); }}>Sort Lines (A → Z)</button>
@@ -449,7 +286,7 @@ export default function WordpadToolbar({
               <button className="btn" style={dropdownItemStyle} onClick={() => { onTransformText('reverse-lines'); setOpenMenu(null); }}>Reverse Line Order</button>
 
               <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.2rem 0' }} />
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', padding: '0.25rem 0.6rem', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: '0.66rem', color: 'var(--text-secondary)', textTransform: 'uppercase', padding: '0.2rem 0.6rem', letterSpacing: '0.5px' }}>
                 Encoding & Escaping
               </div>
               <button className="btn" style={dropdownItemStyle} onClick={() => { onTransformText('base64-encode'); setOpenMenu(null); }}>Base64 Encode</button>
@@ -466,16 +303,16 @@ export default function WordpadToolbar({
         <div style={{ position: 'relative' }}>
           <button
             type="button"
-            style={ribbonBtnStyle(openMenu === 'templates')}
+            style={pillBtn(openMenu === 'templates')}
             onClick={() => toggleMenu('templates')}
           >
-            Insert Template
-            <ChevronDownIcon style={{ width: 12, height: 12 }} />
+            Templates
+            <ChevronDownIcon style={{ width: 11, height: 11 }} />
           </button>
           {openMenu === 'templates' && (
             <div className="animate-menu-in" style={dropdownPanelStyle}>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', padding: '0.25rem 0.6rem', letterSpacing: '0.5px' }}>
-                Starter Boilerplates
+              <div style={{ fontSize: '0.66rem', color: 'var(--text-secondary)', textTransform: 'uppercase', padding: '0.2rem 0.6rem', letterSpacing: '0.5px' }}>
+                Load Boilerplate
               </div>
               {STARTER_TEMPLATES.map(tpl => (
                 <button
@@ -493,7 +330,95 @@ export default function WordpadToolbar({
             </div>
           )}
         </div>
+
+        {/* Find & Replace Toggle pushed to right */}
+        <button
+          type="button"
+          style={{ ...pillBtn(showFindReplace), marginLeft: 'auto' }}
+          onClick={() => setShowFindReplace(!showFindReplace)}
+          title="Find & Replace (Ctrl+F)"
+        >
+          <MagnifyingGlassIcon style={{ width: 13, height: 13 }} />
+          Find
+        </button>
       </div>
+
+      {/* Conditional Row 2: Rich Text Formatting Bar (Only shown when in WordPad Rich Text mode) */}
+      {editorMode === 'rich' && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            flexWrap: 'wrap',
+            paddingTop: '0.4rem',
+            borderTop: '1px solid var(--border-color)'
+          }}
+        >
+          <select
+            className="input-field"
+            defaultValue="P"
+            onChange={(e) => onExecRichCommand('formatBlock', e.target.value)}
+            style={{ padding: '0.22rem 0.4rem', fontSize: '0.75rem', width: '110px' }}
+            title="Paragraph Style"
+          >
+            <option value="P">Normal Text</option>
+            <option value="H1">Heading 1</option>
+            <option value="H2">Heading 2</option>
+            <option value="H3">Heading 3</option>
+            <option value="BLOCKQUOTE">Quote Block</option>
+            <option value="PRE">Code Block</option>
+          </select>
+
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('bold')} title="Bold (Ctrl+B)">
+            <strong>B</strong>
+          </button>
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('italic')} title="Italic (Ctrl+I)">
+            <em>I</em>
+          </button>
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('underline')} title="Underline (Ctrl+U)">
+            <u>U</u>
+          </button>
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('strikeThrough')} title="Strikethrough">
+            <s>S</s>
+          </button>
+
+          {divider}
+
+          <label style={{ ...pillBtn(), gap: '0.2rem', padding: '0.18rem 0.4rem' }} title="Text Color">
+            <span style={{ fontSize: '0.74rem', fontWeight: 700 }}>A</span>
+            <input
+              type="color"
+              defaultValue="#40e0d0"
+              onChange={(e) => onExecRichCommand('foreColor', e.target.value)}
+              style={{ width: 16, height: 16, border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
+            />
+          </label>
+
+          <label style={{ ...pillBtn(), gap: '0.2rem', padding: '0.18rem 0.4rem' }} title="Highlight Color">
+            <span style={{ fontSize: '0.7rem' }}>🖍️</span>
+            <input
+              type="color"
+              defaultValue="#facc15"
+              onChange={(e) => onExecRichCommand('hiliteColor', e.target.value)}
+              style={{ width: 16, height: 16, border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
+            />
+          </label>
+
+          {divider}
+
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('justifyLeft')} title="Align Left">⇤</button>
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('justifyCenter')} title="Align Center">⇔</button>
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('justifyRight')} title="Align Right">⇥</button>
+
+          {divider}
+
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('insertUnorderedList')} title="Bullet List">• List</button>
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('insertOrderedList')} title="Numbered List">1. List</button>
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('insertHorizontalRule')} title="Insert Divider">―</button>
+          <button type="button" style={pillBtn()} onClick={() => onExecRichCommand('removeFormat')} title="Clear Formatting">Clear</button>
+        </div>
+      )}
     </div>
   );
 }
