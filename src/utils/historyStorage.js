@@ -80,8 +80,9 @@ export function inferCategoryLabel(filename = '', mimeType = '', options = {}) {
   if (hash.includes('/asset-extractor') || lowerName.startsWith('extracted_website_assets')) {
     return 'Extracted Website Asset';
   }
-  if (hash.includes('/json-saver')) {
-    return 'Saved JSON Document';
+  if (hash.includes('/json-saver') || hash.includes('/wordpad') || hash.includes('/text-studio')) {
+    const ext = lowerName.includes('.') ? lowerName.split('.').pop().toUpperCase() : 'TXT';
+    return `WordPad Export (.${ext})`;
   }
   if (hash.includes('/component-generator')) {
     return 'Exported UI Component';
@@ -94,6 +95,8 @@ export function inferCategoryLabel(filename = '', mimeType = '', options = {}) {
   if (mimeType.startsWith('image/')) return `Converted Image (${ext || 'IMG'})`;
   if (mimeType.startsWith('video/')) return `Processed Video (${ext || 'MP4'})`;
   if (mimeType === 'application/json' || ext === 'JSON') return 'Saved JSON File';
+  if (ext === 'BAT' || ext === 'CMD' || ext === 'PS1' || ext === 'SH') return `Saved Script (.${ext})`;
+  if (ext === 'TXT' || ext === 'MD' || ext === 'RTF' || ext === 'DOC') return `Saved Document (.${ext})`;
   if (mimeType === 'application/zip' || ext === 'ZIP') return 'Saved ZIP Archive';
 
   return 'Saved File';

@@ -317,10 +317,12 @@ export default function DragDropOverlay({ onDropImageToModal, onDirectDownload, 
         {dragType === 'svg' && (
           <DropZoneCard title="SVG Converter" subtitle="Scale vectors, recolor & export PNGs" icon={<CodeBracketIcon style={iconStyle} />} action="svg-convert" onDropAction={handleZoneDrop} />
         )}
-        {dragType === 'json' && (
+        {(dragType === 'json' || dragType === 'text') && (
           <>
-            <DropZoneCard title="Format & Save JSON" subtitle="Beautify & inspect JSON" icon={<CodeBracketIcon style={iconStyle} />} action="json-editor" onDropAction={handleZoneDrop} />
-            <DropZoneCard title="Convert Lottie to GIF" subtitle="Render Lottie JSON to GIF" icon={<GifIcon style={iconStyle} />} action="lottie-convert" onDropAction={handleZoneDrop} />
+            <DropZoneCard title="Open in WordPad & Text Studio" subtitle="Edit, format & export .txt, .json, .bat, etc." icon={<CodeBracketIcon style={iconStyle} />} action="json-editor" onDropAction={handleZoneDrop} />
+            {dragType === 'json' && (
+              <DropZoneCard title="Convert Lottie to GIF" subtitle="Render Lottie JSON to GIF" icon={<GifIcon style={iconStyle} />} action="lottie-convert" onDropAction={handleZoneDrop} />
+            )}
           </>
         )}
         {dragType === 'unknown' && (

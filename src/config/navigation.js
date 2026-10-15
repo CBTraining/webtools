@@ -11,6 +11,7 @@ import {
   GlobeAltIcon,
   QrCodeIcon,
   CodeBracketSquareIcon,
+  DocumentTextIcon,
   ClockIcon,
   WindowIcon,
   Square3Stack3DIcon
@@ -130,10 +131,10 @@ export const FEATURE_CATEGORIES = [
       },
       {
         to: '/json-saver',
-        icon: CodeBracketSquareIcon,
-        title: 'JSON Formatter & Saver',
-        desc: 'Format, validate, and inspect JSON documents with syntax highlighting.',
-        keywords: ['json', 'format', 'prettify', 'beautify', 'validate', 'syntax', 'lottie preview']
+        icon: DocumentTextIcon,
+        title: 'WordPad & Text Studio',
+        desc: 'All-in-one rich & plain text editor, JSON formatter, and script writer. Export to .txt, .json, .bat, .ps1, .md, .rtf, and more.',
+        keywords: ['wordpad', 'notepad', 'text', 'editor', 'json', 'bat', 'batch', 'txt', 'script', 'powershell', 'markdown', 'rtf', 'format', 'prettify', 'beautify', 'validate', 'lottie preview']
       },
       {
         to: '/timezone-converter',

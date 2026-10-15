@@ -35,10 +35,14 @@ export async function routeDroppedFiles(files, action, dragType, {
     return;
   }
 
-  if (dragType === 'json' || file.name.endsWith('.json')) {
+  if (
+    dragType === 'json' ||
+    dragType === 'text' ||
+    /\.(json|txt|bat|cmd|ps1|sh|md|rtf|csv|xml|yaml|yml|ini|reg|sql|log|js|ts|py|css|html)$/i.test(file.name)
+  ) {
     if (action === 'json-editor') {
       const text = await file.text();
-      navigate('/json-saver', { state: { jsonText: text } });
+      navigate('/json-saver', { state: { jsonText: text, fileName: file.name } });
       return;
     } else if (action === 'lottie-convert') {
       for (const f of files) {

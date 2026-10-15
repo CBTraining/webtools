@@ -25,6 +25,16 @@ export function detectDragType(dataTransfer) {
         return 'svg';
       } else if (type === 'application/json' || type === 'text/json') {
         return 'json';
+      } else if (
+        type.startsWith('text/') ||
+        type.includes('javascript') ||
+        type.includes('xml') ||
+        type.includes('rtf') ||
+        type.includes('csv') ||
+        type.includes('bat') ||
+        type.includes('sh')
+      ) {
+        return 'text';
       } else if (type === 'image/gif') {
         return 'gif';
       } else if (type.startsWith('video/') || type.includes('quicktime') || type.includes('avi') || type.includes('msvideo')) {

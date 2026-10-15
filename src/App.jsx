@@ -320,6 +320,8 @@ function App() {
                 <Route path="/lottie-to-gif" element={<LottieToGif />} />
                 <Route path="/svg-converter" element={<SvgConverter />} />
                 <Route path="/json-saver" element={<JsonSaver />} />
+                <Route path="/wordpad" element={<JsonSaver />} />
+                <Route path="/text-studio" element={<JsonSaver />} />
                 <Route path="/color-picker" element={<ColorPicker />} />
                 <Route path="/qr-generator" element={<QrGenerator />} />
                 <Route path="/image-upscaler" element={<ImageUpscaler />} />
