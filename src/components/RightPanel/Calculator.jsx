@@ -2,6 +2,34 @@ import { useState } from 'react';
 import { ClipboardIcon, CheckIcon } from '@heroicons/react/24/outline';
 import './Calculator.css';
 
+function evaluateArithmetic(expr) {
+  const tokens = expr.match(/(?:\d+\.?\d*|\.\d+|[+\-*/])/g);
+  if (!tokens || tokens.length === 0) return NaN;
+  const normalized = [];
+  for (let i = 0; i < tokens.length; i++) {
+    if ((tokens[i] === '-' || tokens[i] === '+') && (i === 0 || /[+\-*/]/.test(tokens[i - 1]))) {
+      normalized.push(parseFloat(tokens[i] + (tokens[++i] || '0')));
+    } else if (/[+\-*/]/.test(tokens[i])) {
+      normalized.push(tokens[i]);
+    } else {
+      normalized.push(parseFloat(tokens[i]));
+    }
+  }
+  const pass1 = [normalized[0]];
+  for (let i = 1; i < normalized.length; i += 2) {
+    const op = normalized[i];
+    const next = normalized[i + 1];
+    if (op === '*') pass1[pass1.length - 1] *= next;
+    else if (op === '/') pass1[pass1.length - 1] /= next;
+    else pass1.push(op, next);
+  }
+  let acc = pass1[0];
+  for (let i = 1; i < pass1.length; i += 2) {
+    acc = pass1[i] === '+' ? acc + pass1[i + 1] : acc - pass1[i + 1];
+  }
+  return acc;
+}
+
 export default function Calculator() {
   const [display, setDisplay] = useState('0');
   const [equation, setEquation] = useState('');
@@ -38,7 +66,13 @@ export default function Calculator() {
       }
 
       const sanitized = fullEquation.replace(/[^0-9+\-*/.]/g, '');
-      const result = new Function('return ' + sanitized)();
+      const result = evaluateArithmetic(sanitized);
+      if (!isFinite(result) || isNaN(result)) {
+        setDisplay('Error');
+        setEquation('');
+        setIsNewNumber(true);
+        return;
+      }
       const rounded = Math.round(result * 100000000) / 100000000;
       const strResult = String(rounded);
       setDisplay(strResult);

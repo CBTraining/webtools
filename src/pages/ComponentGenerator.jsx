@@ -17,6 +17,23 @@ import IconControls from './ComponentGenerator/controls/IconControls';
 import DimensionControls from './ComponentGenerator/controls/DimensionControls';
 import EffectsControls from './ComponentGenerator/controls/EffectsControls';
 
+const escapeHtml = (str) =>
+  String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const sanitizePreviewSvg = (svgStr) =>
+  String(svgStr || '')
+    .replace(/<(script|foreignObject|iframe|object|embed)[\s\S]*?<\/\1>/gi, '')
+    .replace(/<(script|foreignObject|iframe|object|embed)[^>]*\/?>/gi, '')
+    .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/\s(href|xlink:href)\s*=\s*(?:"\s*javascript:[^"]*"|'\s*javascript:[^']*')/gi, '');
+
+const sanitizeCssUrl = (url) => String(url || '').replace(/['"\\<>]/g, '');
+
 export default function ComponentGenerator() {
   const componentState = useComponentState();
   const {
@@ -93,7 +110,7 @@ export default function ComponentGenerator() {
     glowBlur,
     gradientString,
     hoverAnimations,
-    bgImageUrl,
+    bgImageUrl: sanitizeCssUrl(bgImageUrl),
     bgImagePosition,
     bgBrightness,
     bgContrast,
@@ -108,8 +125,8 @@ export default function ComponentGenerator() {
   });
 
   const iconContent = iconType === 'svg' 
-    ? iconSvg.trim().split('\n').join('\n    ')
-    : `<span class="material-symbols-rounded" style="font-size: ${iconSize}px; color: white; font-variation-settings: 'FILL' ${iconFill ? 1 : 0};">${iconName}</span>`;
+    ? sanitizePreviewSvg(iconSvg).trim().split('\n').join('\n    ')
+    : `<span class="material-symbols-rounded" style="font-size: ${iconSize}px; color: white; font-variation-settings: 'FILL' ${iconFill ? 1 : 0};">${escapeHtml(iconName)}</span>`;
 
   const materialLink = iconType === 'material' && showIcon
     ? `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0" />\n` 
@@ -119,8 +136,8 @@ export default function ComponentGenerator() {
   ${enableLuminance ? `<div class="luminance-overlay"></div>\n  ` : ''}${bgImageUrl ? `<div class="glow-card-bg"></div>\n  ` : ''}${showIcon ? `<div class="glow-card-icon">
     ${iconContent}
   </div>\n  ` : ''}${showText ? `<div class="glow-card-content">
-    <h3 class="glow-card-title">${cardTitle}</h3>
-    <p class="glow-card-subtitle">${cardSubtitle}</p>
+    <h3 class="glow-card-title">${escapeHtml(cardTitle)}</h3>
+    <p class="glow-card-subtitle">${escapeHtml(cardSubtitle)}</p>
   </div>` : ''}
 `.trim();
 
@@ -164,8 +181,11 @@ export default function ComponentGenerator() {
   const handleCopyCode = async () => {
     try {
       const jsSnippet = generateJsSnippet({ enableLuminance, hoverAnimations, animIntensity });
-      const htmlCode = iconLink.trim()
-        ? `${materialLink}<a href="${iconLink}" target="_blank" rel="noopener noreferrer" class="glow-card" style="text-decoration: none; color: inherit;">\n  ${innerHtml}\n</a>${jsSnippet}`.trim()
+      const safeLink = iconLink.trim() && /^(https?:\/\/|mailto:|\/|#)/i.test(iconLink.trim())
+        ? escapeHtml(iconLink.trim())
+        : '';
+      const htmlCode = safeLink
+        ? `${materialLink}<a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="glow-card" style="text-decoration: none; color: inherit;">\n  ${innerHtml}\n</a>${jsSnippet}`.trim()
         : `${materialLink}<div class="glow-card">\n  ${innerHtml}\n</div>${jsSnippet}`.trim();
       const fullCode = `<style>\n${cssCode}\n</style>\n\n${htmlCode}`;
       await navigator.clipboard.writeText(fullCode);

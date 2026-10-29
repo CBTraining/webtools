@@ -25,6 +25,10 @@ export default function ComponentPreview({
   copyImageSuccess,
   copySuccess
 }) {
+  const safeIconLink = iconLink?.trim() && /^(https?:\/\/|mailto:|\/|#)/i.test(iconLink.trim())
+    ? iconLink.trim()
+    : '';
+
   return (
     <div style={{ position: 'sticky', top: '1.5rem', zIndex: 10 }}>
       {/* Top action buttons */}
@@ -97,10 +101,10 @@ export default function ComponentPreview({
         <style>{cssCode}</style>
         <div dangerouslySetInnerHTML={{ __html: materialLink }} />
         <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-          {iconLink?.trim() ? (
+          {safeIconLink ? (
             <a 
               ref={previewRef} 
-              href={iconLink} 
+              href={safeIconLink} 
               target="_blank" 
               rel="noopener noreferrer" 
               className="glow-card" 

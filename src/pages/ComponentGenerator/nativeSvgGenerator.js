@@ -86,8 +86,9 @@ export async function generateNativeSvg({
   svgStr += `<rect x="0" y="0" width="${w}" height="${h}" rx="${r}" fill="${cardBaseFill}" />`;
   
   if (bgImageUrl) {
+    const safeBgUrl = String(bgImageUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     svgStr += `<g clip-path="url(#cardClip)">
-      <image href="${bgImageUrl}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" />
+      <image href="${safeBgUrl}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" />
       <rect x="0" y="0" width="${w}" height="${h}" fill="${bgTint}" />
     </g>`;
   }
@@ -117,7 +118,7 @@ export async function generateNativeSvg({
          let queryName = cleanName;
          if (!queryName.endsWith('-rounded')) queryName += suffix;
          
-         const res = await fetch(`https://api.iconify.design/material-symbols/${queryName}.svg`);
+         const res = await fetch(`https://api.iconify.design/material-symbols/${encodeURIComponent(queryName)}.svg`);
          if (res.ok) {
            const svgText = await res.text();
            const sizedSvg = svgText.replace(/width="[^"]*"/, `width="${iconSize}"`).replace(/height="[^"]*"/, `height="${iconSize}"`).replace('<svg ', '<svg color="white" ');

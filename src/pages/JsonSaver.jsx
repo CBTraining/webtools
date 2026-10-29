@@ -32,6 +32,26 @@ import {
 
 const STORAGE_KEY = 'webtools-wordpad-tabs-v1';
 
+function sanitizeRichHtml(dirtyHtml) {
+  if (!dirtyHtml) return '';
+  try {
+    const doc = new DOMParser().parseFromString(dirtyHtml, 'text/html');
+    doc.querySelectorAll('script, iframe, object, embed').forEach(el => el.remove());
+    doc.querySelectorAll('*').forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        const name = attr.name.toLowerCase();
+        const val = (attr.value || '').trim().toLowerCase();
+        if (name.startsWith('on') || ((name === 'href' || name === 'src' || name === 'xlink:href') && val.startsWith('javascript:'))) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+    return doc.body.innerHTML;
+  } catch {
+    return '';
+  }
+}
+
 function createNewDoc(index = 1, overrides = {}) {
   return {
     id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -165,7 +185,7 @@ export default function JsonSaver() {
   // Sync rich editor HTML when switching tabs or modes
   useEffect(() => {
     if (activeDoc.editorMode === 'rich' && richEditorRef.current) {
-      const targetHtml = activeDoc.richHtml || (activeDoc.text || '').replace(/\n/g, '<br/>');
+      const targetHtml = sanitizeRichHtml(activeDoc.richHtml || (activeDoc.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>'));
       if (richEditorRef.current.innerHTML !== targetHtml) {
         richEditorRef.current.innerHTML = targetHtml;
       }
@@ -369,13 +389,18 @@ export default function JsonSaver() {
   const handlePrint = () => {
     const printWin = window.open('', '_blank', 'width=800,height=600');
     if (!printWin) return;
+    const safeTitle = String(activeDoc.fileName || 'Document')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
     const content = activeDoc.editorMode === 'rich' && activeDoc.richHtml
-      ? activeDoc.richHtml
+      ? sanitizeRichHtml(activeDoc.richHtml)
       : `<pre style="font-family: ${fontFamily}; font-size: ${fontSize}px; white-space: pre-wrap;">${(activeDoc.text || '')
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')}</pre>`;
-    printWin.document.write(`<!DOCTYPE html><html><head><title>${activeDoc.fileName || 'Document'}</title></head><body style="font-family: sans-serif; padding: 2rem;">${content}</body></html>`);
+    printWin.document.write(`<!DOCTYPE html><html><head><title>${safeTitle}</title></head><body style="font-family: sans-serif; padding: 2rem;">${content}</body></html>`);
     printWin.document.close();
     printWin.focus();
     printWin.print();
