@@ -46,53 +46,80 @@ export default function SendToDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  const isGifFile = Boolean(
+    (file && (file.type === 'image/gif' || file.name?.toLowerCase().endsWith('.gif'))) ||
+    (videoFile && (videoFile.type === 'image/gif' || videoFile.name?.toLowerCase().endsWith('.gif'))) ||
+    (typeof imageUrl === 'string' && /\.gif($|\?)/i.test(imageUrl))
+  );
+
   const handleAction = async (target) => {
     setIsOpen(false);
     setIsClosing(false);
 
-    const resolvedImageUrl = typeof imageUrl === 'function' ? imageUrl() : imageUrl;
+    const isDynamicCanvasUrl = typeof imageUrl === 'function';
+    const resolvedImageUrl = isDynamicCanvasUrl ? imageUrl() : imageUrl;
 
-    // Resolve an image file if needed
-    let activeImageFile = file;
+    // Resolve an image file if needed (prefer dynamic canvas output over original unedited file)
+    let activeImageFile = isDynamicCanvasUrl ? null : file;
     if (mediaType !== 'video' && !activeImageFile && resolvedImageUrl) {
       try {
         const resp = await fetch(resolvedImageUrl);
         const blob = await resp.blob();
-        activeImageFile = new File([blob], `exported-image-${Date.now()}.png`, { type: 'image/png' });
+        const ext = blob.type === 'image/gif' ? 'gif' : 'png';
+        const baseName = file?.name ? file.name.replace(/\.[^/.]+$/, '') : `exported-image-${Date.now()}`;
+        activeImageFile = new File([blob], `${baseName}.${ext}`, { type: blob.type || 'image/png' });
       } catch (e) {
         console.error("Could not convert imageUrl to File:", e);
+        activeImageFile = file || null;
       }
     }
 
-    // Resolve a video file if needed
-    let activeVideo = videoFile || file;
-    if (mediaType === 'video' && !activeVideo && resolvedImageUrl) {
+    // Resolve a video/GIF file if needed
+    let activeVideo = videoFile || activeImageFile || file;
+    if ((mediaType === 'video' || target === 'video-to-gif') && !activeVideo && resolvedImageUrl) {
       try {
         const resp = await fetch(resolvedImageUrl);
         const blob = await resp.blob();
-        activeVideo = new File([blob], `exported-video-${Date.now()}.mp4`, {
-          type: blob.type && blob.type.startsWith('video/') ? blob.type : 'video/mp4'
+        const isGifBlob = blob.type === 'image/gif';
+        activeVideo = new File([blob], `exported-${Date.now()}.${isGifBlob ? 'gif' : 'mp4'}`, {
+          type: isGifBlob ? 'image/gif' : (blob.type && blob.type.startsWith('video/') ? blob.type : 'video/mp4')
         });
       } catch (e) {
-        console.error("Could not convert video URL to File:", e);
+        console.error("Could not convert media URL to File:", e);
       }
     }
     if (activeVideo && !(activeVideo instanceof File) && activeVideo instanceof Blob) {
-      activeVideo = new File([activeVideo], activeVideo.name || `video-${Date.now()}.mp4`, {
-        type: activeVideo.type || 'video/mp4'
+      const isGifBlob = activeVideo.type === 'image/gif';
+      activeVideo = new File([activeVideo], activeVideo.name || `media-${Date.now()}.${isGifBlob ? 'gif' : 'mp4'}`, {
+        type: activeVideo.type || (isGifBlob ? 'image/gif' : 'video/mp4')
       });
     }
 
     if (target === 'image-editor') {
-      navigate('/image-tools', { state: { imageFile: activeImageFile, imageUrl: resolvedImageUrl || (activeImageFile ? URL.createObjectURL(activeImageFile) : '') } });
+      navigate('/image-tools', {
+        state: {
+          imageFile: activeImageFile,
+          imageUrl: !activeImageFile ? (resolvedImageUrl || '') : ''
+        }
+      });
     } else if (target === 'bg-remover') {
       if (activeImageFile) {
-        addSlot('bg-remove', { id: crypto.randomUUID(), imageFile: activeImageFile, previewUrl: URL.createObjectURL(activeImageFile) });
+        addSlot('bg-remove', {
+          id: crypto.randomUUID(),
+          imageFile: activeImageFile,
+          previewUrl: URL.createObjectURL(activeImageFile)
+        });
       }
       navigate('/bg-remover');
     } else if (target === 'image-upscaler') {
       if (activeImageFile) {
-        addSlot('ai-upscaler', { id: crypto.randomUUID(), imageFile: activeImageFile, previewUrl: URL.createObjectURL(activeImageFile) });
+        addSlot('ai-upscaler', {
+          id: crypto.randomUUID(),
+          imageFile: activeImageFile,
+          previewUrl: URL.createObjectURL(activeImageFile),
+          modelKey: 'realworld',
+          targetScale: 2
+        });
       }
       navigate('/image-upscaler');
     } else if (target === 'collage-maker') {
@@ -106,8 +133,8 @@ export default function SendToDropdown({
         const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         navigate('/qr-generator', { state: { logoUrl: url, logoFileName: 'vector-logo.svg' } });
-      } else if (imageUrl || activeImageFile) {
-        const url = imageUrl || (activeImageFile ? URL.createObjectURL(activeImageFile) : '');
+      } else if (resolvedImageUrl || activeImageFile) {
+        const url = activeImageFile ? URL.createObjectURL(activeImageFile) : resolvedImageUrl;
         navigate('/qr-generator', { state: { logoUrl: url, logoFileName: activeImageFile?.name || 'logo.png' } });
       } else {
         navigate('/qr-generator');
@@ -244,6 +271,15 @@ export default function SendToDropdown({
                   >
                     <Square3Stack3DIcon style={{ width: 16, height: 16, color: 'var(--accent-color)' }} /> Photo Collage Maker
                   </button>
+                  {isGifFile && (
+                    <button 
+                      className="btn" 
+                      onClick={() => handleAction('video-to-gif')}
+                      style={{ justifyContent: 'flex-start', border: 'none', background: 'transparent', padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
+                    >
+                      <GifIcon style={{ width: 16, height: 16, color: 'var(--accent-color)' }} /> GIF Cropper & Compressor
+                    </button>
+                  )}
                 </>
               )}
 

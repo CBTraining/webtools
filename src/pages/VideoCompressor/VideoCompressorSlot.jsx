@@ -8,6 +8,7 @@ import { playDing } from '../../utils/audio';
 import { useProcessing } from '../../contexts/ProcessingContext';
 import { formatBytes } from '../../utils/formatters';
 import { probeVideoMetadata, isAviFile } from '../../utils/videoProbe';
+import SendToDropdown from '../../components/SendToDropdown';
 
 const TOOL_ID = 'video-compress';
 
@@ -88,7 +89,7 @@ export default function VideoCompressorSlot({ slot }) {
       localFfmpeg.on('log', logHandler);
       localFfmpeg.on('progress', progressHandler);
 
-      const ext = videoFile.name.split('.').pop() || 'mp4';
+      const ext = (videoFile.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
       const inputName = `input_${slot.id}.${ext}`;
       
       // Write file to memory
@@ -126,10 +127,15 @@ export default function VideoCompressorSlot({ slot }) {
       const data = await localFfmpeg.readFile(outputName);
       if (data.length === 0) throw new Error("Generated video is 0 bytes");
 
-      const blob = new Blob([data], { type: 'video/mp4' });
+      const blob = new Blob([new Uint8Array(data)], { type: 'video/mp4' });
       const rUrl = URL.createObjectURL(blob);
       const baseName = videoFile.name.replace(/\.[^.]+$/, '');
-      updateJob(myJobId, { status: 'success', resultUrl: rUrl, downloadName: `compressed_${baseName}.mp4` });
+      updateJob(myJobId, {
+        status: 'success',
+        resultUrl: rUrl,
+        resultBlob: blob,
+        downloadName: `compressed_${baseName}.mp4`
+      });
       playDing();
     } catch (err) {
       console.error(err);
@@ -268,10 +274,24 @@ export default function VideoCompressorSlot({ slot }) {
         <div className="result-container animate-fade-in" style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--border-radius-sm)' }}>
           <h3 style={{ marginTop: 0 }}>Compressed Video</h3>
           <video src={resultUrl} controls style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', borderRadius: 'var(--border-radius-sm)', background: '#000', marginBottom: '1rem' }} />
-          <div className="button-group" style={{ marginTop: '1rem' }}>
-            <a href={resultUrl} download={`compressed_${videoFile.name}`} className="btn btn-primary">
+          <div className="button-group" style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+            <a href={resultUrl} download={myJob?.downloadName || `compressed_${videoFile.name}`} className="btn btn-primary">
               <Download style={{ width: 20, height: 20 }} /> Download
             </a>
+            <SendToDropdown
+              file={
+                myJob?.resultBlob instanceof Blob
+                  ? new File([myJob.resultBlob], myJob.downloadName || `compressed_${videoFile.name}`, { type: 'video/mp4' })
+                  : undefined
+              }
+              videoFile={
+                myJob?.resultBlob instanceof Blob
+                  ? new File([myJob.resultBlob], myJob.downloadName || `compressed_${videoFile.name}`, { type: 'video/mp4' })
+                  : undefined
+              }
+              imageUrl={resultUrl}
+              mediaType="video"
+            />
             <button className="btn" onClick={() => removeJob(myJobId)}>
               Discard Result
             </button>

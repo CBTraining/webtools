@@ -244,6 +244,17 @@ export default function VideoFrameExtractor() {
     canvas.toBlob(callback, 'image/png');
   };
 
+  const captureFrameDataUrl = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || !video.videoWidth || !video.videoHeight) return undefined;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png');
+  };
+
   const handleDownload = () => {
     captureFrame((blob) => {
       if (!blob) return;
@@ -367,7 +378,7 @@ export default function VideoFrameExtractor() {
               onDownload={handleDownload}
               onCopy={handleCopy}
               copySuccess={copySuccess}
-              canvasRef={canvasRef}
+              onCaptureDataUrl={captureFrameDataUrl}
             />
             
             {/* Invisible Canvas for extraction */}

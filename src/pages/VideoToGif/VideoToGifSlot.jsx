@@ -222,6 +222,7 @@ export default function VideoToGifSlot({ slot }) {
       updateJob(myJobId, { 
         status: 'success', 
         resultUrl: rUrl, 
+        resultBlob: blob,
         isMp4: false, 
         resultBytes: bytes,
         downloadName: `animation-${Date.now()}.gif` 
@@ -261,6 +262,7 @@ export default function VideoToGifSlot({ slot }) {
       updateJob(myJobId, { 
         status: 'success', 
         resultUrl: rUrl, 
+        resultBlob: blob,
         isMp4: true, 
         resultBytes: bytes,
         downloadName: `trimmed-${Date.now()}.mp4` 
@@ -373,6 +375,7 @@ export default function VideoToGifSlot({ slot }) {
         {resultUrl && (
           <VideoSlotResult 
             resultUrl={resultUrl}
+            resultBlob={myJob?.resultBlob}
             downloadName={myJob?.downloadName}
             isResultMp4={isResultMp4}
             resultBytes={resultBytes}

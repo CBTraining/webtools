@@ -34,7 +34,8 @@ export async function executeGifConversion({
     localFfmpeg.on('log', logHandler);
     localFfmpeg.on('progress', progressHandler);
 
-    const inputName = `input_${slotId}_` + videoFile.name.replace(/\s+/g, '_');
+    const cleanExt = (videoFile.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+    const inputName = `input_${slotId}.${cleanExt}`;
     const outputName = `output_${slotId}.gif`;
 
     await localFfmpeg.writeFile(inputName, await fetchFile(videoFile));
@@ -92,9 +93,10 @@ export async function executeGifConversion({
       }
     }
 
+    const copiedData = new Uint8Array(data);
     return {
-      blob: new Blob([data], { type: 'image/gif' }),
-      bytes: data.length
+      blob: new Blob([copiedData], { type: 'image/gif' }),
+      bytes: copiedData.length
     };
   } finally {
     if (localFfmpeg) {
@@ -136,7 +138,8 @@ export async function executeMp4Trim({
     localFfmpeg.on('log', logHandler);
     localFfmpeg.on('progress', progressHandler);
 
-    const inputName = `input_${slotId}_` + videoFile.name.replace(/\s+/g, '_');
+    const cleanExt = (videoFile.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+    const inputName = `input_${slotId}.${cleanExt}`;
     const outputName = `trimmed_${slotId}.mp4`;
 
     await localFfmpeg.writeFile(inputName, await fetchFile(videoFile));
@@ -161,9 +164,10 @@ export async function executeMp4Trim({
     const data = await localFfmpeg.readFile(outputName);
     if (data.length === 0) throw new Error("Trimmed video is 0 bytes");
 
+    const copiedData = new Uint8Array(data);
     return {
-      blob: new Blob([data], { type: 'video/mp4' }),
-      bytes: data.length
+      blob: new Blob([copiedData], { type: 'video/mp4' }),
+      bytes: copiedData.length
     };
   } finally {
     if (localFfmpeg) {

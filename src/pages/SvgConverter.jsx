@@ -62,12 +62,6 @@ export default function SvgConverter() {
     }
   }, [location.state?.svgText]);
 
-  useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
-
   const handleConvert = useCallback(() => {
     rasterizeSvgToBlob({
       canvas: canvasRef.current,
@@ -290,7 +284,7 @@ export default function SvgConverter() {
                   {copySuccess ? <Check style={{ width: 18, height: 18, color: '#10b981' }} /> : <ClipboardDocumentIcon style={{ width: 18, height: 18 }} />}
                   {copySuccess ? 'Copied!' : 'Copy PNG'}
                 </button>
-                <SendToDropdown svgText={svgText} imageUrl={previewUrl} mediaType="svg" />
+                <SendToDropdown svgText={svgText} imageUrl={previewUrl} mediaType="image" />
               </div>
             </div>
           ) : (

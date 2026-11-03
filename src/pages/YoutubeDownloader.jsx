@@ -26,23 +26,39 @@ import {
   sanitizeFilename
 } from './YoutubeDownloader/youtubeService';
 
+// Persist active YouTube Downloader session across route changes (e.g., when using "Send To...")
+const persistedYtSession = {
+  urlInput: '',
+  videoInfo: null,
+  downloadMode: 'video',
+  selectedVideoId: 'video-1080p',
+  audioFormat: 'm4a',
+  enableTrim: false,
+  trimStart: '0:00',
+  trimEnd: '',
+  completedFile: null,
+  completedUrl: '',
+  completedFilename: '',
+  completedMediaType: 'video'
+};
+
 export default function YoutubeDownloader() {
   const { createFfmpegInstance, addJob, updateJob } = useProcessing();
 
-  const [urlInput, setUrlInput] = useState('');
+  const [urlInput, setUrlInput] = useState(() => persistedYtSession.urlInput);
   const [resolving, setResolving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [videoInfo, setVideoInfo] = useState(null);
+  const [videoInfo, setVideoInfo] = useState(() => persistedYtSession.videoInfo);
 
   // 'video' | 'audio'
-  const [downloadMode, setDownloadMode] = useState('video');
-  const [selectedVideoId, setSelectedVideoId] = useState('video-1080p');
-  const [audioFormat, setAudioFormat] = useState('m4a'); // 'm4a' | 'mp3'
+  const [downloadMode, setDownloadMode] = useState(() => persistedYtSession.downloadMode);
+  const [selectedVideoId, setSelectedVideoId] = useState(() => persistedYtSession.selectedVideoId);
+  const [audioFormat, setAudioFormat] = useState(() => persistedYtSession.audioFormat); // 'm4a' | 'mp3'
 
   // Optional clip trimming
-  const [enableTrim, setEnableTrim] = useState(false);
-  const [trimStart, setTrimStart] = useState('0:00');
-  const [trimEnd, setTrimEnd] = useState('');
+  const [enableTrim, setEnableTrim] = useState(() => persistedYtSession.enableTrim);
+  const [trimStart, setTrimStart] = useState(() => persistedYtSession.trimStart);
+  const [trimEnd, setTrimEnd] = useState(() => persistedYtSession.trimEnd);
 
   // Active download state
   const [downloading, setDownloading] = useState(false);
@@ -52,10 +68,40 @@ export default function YoutubeDownloader() {
   const abortControllerRef = useRef(null);
 
   // Completed output state for preview & SendToDropdown
-  const [completedFile, setCompletedFile] = useState(null);
-  const [completedUrl, setCompletedUrl] = useState('');
-  const [completedFilename, setCompletedFilename] = useState('');
-  const [completedMediaType, setCompletedMediaType] = useState('video');
+  const [completedFile, setCompletedFile] = useState(() => persistedYtSession.completedFile);
+  const [completedUrl, setCompletedUrl] = useState(() => persistedYtSession.completedUrl);
+  const [completedFilename, setCompletedFilename] = useState(() => persistedYtSession.completedFilename);
+  const [completedMediaType, setCompletedMediaType] = useState(() => persistedYtSession.completedMediaType);
+
+  useEffect(() => {
+    Object.assign(persistedYtSession, {
+      urlInput,
+      videoInfo,
+      downloadMode,
+      selectedVideoId,
+      audioFormat,
+      enableTrim,
+      trimStart,
+      trimEnd,
+      completedFile,
+      completedUrl,
+      completedFilename,
+      completedMediaType
+    });
+  }, [
+    urlInput,
+    videoInfo,
+    downloadMode,
+    selectedVideoId,
+    audioFormat,
+    enableTrim,
+    trimStart,
+    trimEnd,
+    completedFile,
+    completedUrl,
+    completedFilename,
+    completedMediaType
+  ]);
 
   useEffect(() => {
     return () => {

@@ -20,7 +20,7 @@ export default function VideoPlayerControls({
   onDownload,
   onCopy,
   copySuccess,
-  canvasRef
+  onCaptureDataUrl
 }) {
   return (
     <>
@@ -95,7 +95,7 @@ export default function VideoPlayerControls({
           {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
         </button>
         <SendToDropdown 
-          imageUrl={() => canvasRef.current ? canvasRef.current.toDataURL('image/png') : undefined}
+          imageUrl={onCaptureDataUrl}
           mediaType="image"
         />
       </div>

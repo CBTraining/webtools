@@ -53,12 +53,6 @@ export default function ImageTools() {
   const canvasRef = useRef(null);
   const loadedImgRef = useRef(null);
 
-  useEffect(() => {
-    return () => {
-      if (imageSrc && imageSrc.startsWith('blob:')) URL.revokeObjectURL(imageSrc);
-    };
-  }, [imageSrc]);
-
   // Load an image URL or File into memory and cache the image element
   const loadImageSource = useCallback((url, file = null) => {
     if (!url) return;
@@ -69,7 +63,12 @@ export default function ImageTools() {
       const nw = img.naturalWidth || img.width;
       const nh = img.naturalHeight || img.height;
       setImageFile(file);
-      setImageSrc(url);
+      setImageSrc(prev => {
+        if (prev && prev.startsWith('blob:') && prev !== url) {
+          URL.revokeObjectURL(prev);
+        }
+        return url;
+      });
       setNaturalWidth(nw);
       setNaturalHeight(nh);
       setWidth(nw);

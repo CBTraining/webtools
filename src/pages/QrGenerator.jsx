@@ -59,15 +59,6 @@ export default function QrGenerator() {
     }
   }, [location.state?.logoUrl]);
 
-  // Clean up object URLs on unmount
-  useEffect(() => {
-    return () => {
-      if (rawLogoUrl && rawLogoUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(rawLogoUrl);
-      }
-    };
-  }, [rawLogoUrl]);
-
   // Pre-process Logo to match QR Code Roundness & Shape
   useEffect(() => {
     let isCurrent = true;
