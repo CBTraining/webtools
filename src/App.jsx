@@ -49,12 +49,12 @@ function MainContentWrapper({ children }) {
       wrapperRef.current.scrollTo(0, 0);
     }
 
-    // Dynamic document title & recent tools tracking
+    // Recent tools tracking
+    document.title = 'WebTools';
     const tools = getAllTools();
     const matchedTool = tools.find(t => t.to === location.pathname);
 
     if (matchedTool) {
-      document.title = `${matchedTool.title} | WebTools`;
       try {
         const saved = JSON.parse(localStorage.getItem('webtools-recent') || '[]');
         const next = [matchedTool.to, ...saved.filter(p => p !== matchedTool.to)].slice(0, 5);
@@ -62,12 +62,6 @@ function MainContentWrapper({ children }) {
       } catch {
         // Ignore storage errors in private browsing
       }
-    } else if (location.pathname === '/history') {
-      document.title = 'History | WebTools';
-    } else if (location.pathname === '/') {
-      document.title = 'WebTools - Offline Client-Side Utilities';
-    } else {
-      document.title = 'WebTools';
     }
   }, [location.pathname]);
 
