@@ -80,7 +80,23 @@ export async function routeDroppedFiles(files, action, dragType, {
   if (dragType === 'video' || isVideoFile(file)) {
     if (action === 'convert-gif') {
       files.filter(f => isVideoFile(f) || f.name.endsWith('.gif')).forEach(f => {
-        addSlot('video-to-gif', { id: crypto.randomUUID(), videoFile: f, previewUrl: URL.createObjectURL(f), targetSizeLimit: '50' });
+        addSlot('video-to-gif', {
+          id: crypto.randomUUID(),
+          videoFile: f,
+          previewUrl: URL.createObjectURL(f),
+          originalFps: null,
+          isProbing: false,
+          quality: 100,
+          enableCrop: false,
+          startTime: 0,
+          endTime: 5,
+          fps: '15',
+          enableSpatialCrop: false,
+          cropRect: { x: 0, y: 0, width: 100, height: 100 },
+          cropAspectRatio: 'free',
+          targetSizeLimit: '50',
+          customTargetMb: 50
+        });
       });
       navigate('/video-to-gif');
     } else if (action === 'compress-video') {
@@ -98,7 +114,11 @@ export async function routeDroppedFiles(files, action, dragType, {
       });
       navigate('/video-compressor');
     } else if (action === 'extract-frame') {
-      navigate('/video-frame-extractor', { state: { videoFile: file } });
+      addSlot('video-frame-extractor', {
+        id: crypto.randomUUID(),
+        videoFile: file
+      });
+      navigate('/video-frame-extractor');
     }
     return;
   }
@@ -134,6 +154,10 @@ export async function routeDroppedFiles(files, action, dragType, {
     });
     navigate('/image-upscaler');
   } else if (action === 'extract-frame') {
-    navigate('/video-frame-extractor', { state: { videoFile: file } });
+    addSlot('video-frame-extractor', {
+      id: crypto.randomUUID(),
+      videoFile: file
+    });
+    navigate('/video-frame-extractor');
   }
 }

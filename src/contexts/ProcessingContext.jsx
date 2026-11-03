@@ -83,11 +83,19 @@ export function ProcessingProvider({ children }) {
   useEffect(() => {
     get('webtools-workspaces').then(restored => {
       if (restored) {
+        // Migrate any legacy 'video-compressor' workspace key to 'video-compress'
+        if (restored['video-compressor']) {
+          restored['video-compress'] = [
+            ...(restored['video-compress'] || []),
+            ...restored['video-compressor']
+          ];
+          delete restored['video-compressor'];
+        }
         // Regenerate Blob URLs for Files since they expire on page reload
         for (const toolId in restored) {
           restored[toolId] = restored[toolId].map(slot => {
             let file = slot.imageFile || slot.videoFile || slot.lottieFile || slot.file;
-            if (file && slot.previewUrl) {
+            if (file instanceof Blob) {
                slot.previewUrl = URL.createObjectURL(file);
             }
             // Reset any running jobs to error since background processes can't be restored
@@ -95,7 +103,16 @@ export function ProcessingProvider({ children }) {
             return slot;
           });
         }
-        setWorkspaces(restored);
+        setWorkspaces(prev => {
+          const merged = { ...restored };
+          for (const key in prev) {
+            if (prev[key]?.length) {
+              const existingIds = new Set((merged[key] || []).map(s => s.id));
+              merged[key] = [...(merged[key] || []), ...prev[key].filter(s => !existingIds.has(s.id))];
+            }
+          }
+          return merged;
+        });
       }
       setIsWorkspacesLoaded(true);
     }).catch(err => {

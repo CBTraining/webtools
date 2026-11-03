@@ -54,7 +54,7 @@ export default function SendToDropdown({
 
     // Resolve an image file if needed
     let activeImageFile = file;
-    if (!activeImageFile && resolvedImageUrl) {
+    if (mediaType !== 'video' && !activeImageFile && resolvedImageUrl) {
       try {
         const resp = await fetch(resolvedImageUrl);
         const blob = await resp.blob();
@@ -62,6 +62,25 @@ export default function SendToDropdown({
       } catch (e) {
         console.error("Could not convert imageUrl to File:", e);
       }
+    }
+
+    // Resolve a video file if needed
+    let activeVideo = videoFile || file;
+    if (mediaType === 'video' && !activeVideo && resolvedImageUrl) {
+      try {
+        const resp = await fetch(resolvedImageUrl);
+        const blob = await resp.blob();
+        activeVideo = new File([blob], `exported-video-${Date.now()}.mp4`, {
+          type: blob.type && blob.type.startsWith('video/') ? blob.type : 'video/mp4'
+        });
+      } catch (e) {
+        console.error("Could not convert video URL to File:", e);
+      }
+    }
+    if (activeVideo && !(activeVideo instanceof File) && activeVideo instanceof Blob) {
+      activeVideo = new File([activeVideo], activeVideo.name || `video-${Date.now()}.mp4`, {
+        type: activeVideo.type || 'video/mp4'
+      });
     }
 
     if (target === 'image-editor') {
@@ -96,20 +115,48 @@ export default function SendToDropdown({
     } else if (target === 'svg-converter') {
       navigate('/svg-converter', { state: { svgText: svgText || '' } });
     } else if (target === 'video-to-gif') {
-      const activeVideo = videoFile || file;
       if (activeVideo) {
-        addSlot('video-to-gif', { id: crypto.randomUUID(), videoFile: activeVideo, previewUrl: URL.createObjectURL(activeVideo) });
+        addSlot('video-to-gif', {
+          id: crypto.randomUUID(),
+          videoFile: activeVideo,
+          previewUrl: URL.createObjectURL(activeVideo),
+          originalFps: null,
+          isProbing: false,
+          quality: 100,
+          enableCrop: false,
+          startTime: 0,
+          endTime: 5,
+          fps: '15',
+          enableSpatialCrop: false,
+          cropRect: { x: 0, y: 0, width: 100, height: 100 },
+          cropAspectRatio: 'free',
+          targetSizeLimit: '50',
+          customTargetMb: 50
+        });
       }
       navigate('/video-to-gif');
     } else if (target === 'video-compressor') {
-      const activeVideo = videoFile || file;
       if (activeVideo) {
-        addSlot('video-compressor', { id: crypto.randomUUID(), videoFile: activeVideo, previewUrl: URL.createObjectURL(activeVideo) });
+        addSlot('video-compress', {
+          id: crypto.randomUUID(),
+          videoFile: activeVideo,
+          previewUrl: URL.createObjectURL(activeVideo),
+          originalFps: null,
+          isProbing: false,
+          quality: 50,
+          preset: 'fast',
+          fps: 'original'
+        });
       }
       navigate('/video-compressor');
     } else if (target === 'video-frame-extractor') {
-      const activeVideo = videoFile || file;
-      navigate('/video-frame-extractor', { state: { videoFile: activeVideo } });
+      if (activeVideo) {
+        addSlot('video-frame-extractor', {
+          id: crypto.randomUUID(),
+          videoFile: activeVideo
+        });
+      }
+      navigate('/video-frame-extractor');
     }
   };
 

@@ -9,7 +9,7 @@ import { extractYouTubeVideoId, fetchYouTubeVideoStream } from './VideoFrameExtr
 import VideoPlayerControls from './VideoFrameExtractor/VideoPlayerControls';
 
 export default function VideoFrameExtractor() {
-  const { createFfmpegInstance } = useProcessing();
+  const { createFfmpegInstance, workspaces, removeSlot } = useProcessing();
   const [videoFile, setVideoFile] = useState(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [externalUrl, setExternalUrl] = useState('');
@@ -24,7 +24,16 @@ export default function VideoFrameExtractor() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const location = useLocation();
-  const initFromState = useRef(false);
+  const processedSlotIdRef = useRef(null);
+
+  const updateVideoUrl = useCallback((nextUrl) => {
+    setVideoUrl((prev) => {
+      if (prev && !prev.startsWith('http') && prev !== nextUrl) {
+        URL.revokeObjectURL(prev);
+      }
+      return nextUrl;
+    });
+  }, []);
 
   const loadVideoFile = useCallback(async (file) => {
     if (!file || !isVideoFile(file)) return;
@@ -61,9 +70,9 @@ export default function VideoFrameExtractor() {
         if (res === 0) {
           setLoadingProgress(90);
           const data = await localFfmpeg.readFile(outputName);
-          const blob = new Blob([data], { type: 'video/mp4' });
+          const blob = new Blob([new Uint8Array(data)], { type: 'video/mp4' });
           const mp4Url = URL.createObjectURL(blob);
-          setVideoUrl(mp4Url);
+          updateVideoUrl(mp4Url);
         } else {
           throw new Error('Failed to transcode AVI video');
         }
@@ -80,32 +89,36 @@ export default function VideoFrameExtractor() {
         setYtLoadingText('');
       }
     } else {
-      setVideoUrl(URL.createObjectURL(file));
+      updateVideoUrl(URL.createObjectURL(file));
       setIsLoading(true);
       setLoadingProgress(0);
     }
-  }, [createFfmpegInstance]);
+  }, [createFfmpegInstance, updateVideoUrl]);
 
-  // Handle incoming file from drag-drop overlay
+  // Handle incoming file from SendToDropdown / DragDropOverlay workspace queue or router state
   useEffect(() => {
-    if (location.state?.videoFile && !initFromState.current) {
-      const file = location.state.videoFile;
-      initFromState.current = true;
-      loadVideoFile(file);
-      
-      // Clear state so it doesn't trigger again on refresh
-      window.history.replaceState({}, document.title);
+    const incomingSlots = workspaces['video-frame-extractor'] || [];
+    if (incomingSlots.length > 0) {
+      const latestSlot = incomingSlots[incomingSlots.length - 1];
+      const slotsToClear = [...incomingSlots];
+      queueMicrotask(() => {
+        if (latestSlot && latestSlot.videoFile && processedSlotIdRef.current !== latestSlot.id) {
+          processedSlotIdRef.current = latestSlot.id;
+          loadVideoFile(latestSlot.videoFile);
+        }
+        slotsToClear.forEach((s) => removeSlot('video-frame-extractor', s.id));
+      });
+      return;
     }
-  }, [location.state, loadVideoFile]);
 
-  // Clean up object URL when unmounting or changing file
-  useEffect(() => {
-    return () => {
-      if (videoUrl && !videoUrl.startsWith('http')) {
-        URL.revokeObjectURL(videoUrl);
-      }
-    };
-  }, [videoUrl]);
+    if (location.state?.videoFile) {
+      const file = location.state.videoFile;
+      window.history.replaceState({}, document.title);
+      queueMicrotask(() => {
+        loadVideoFile(file);
+      });
+    }
+  }, [workspaces, removeSlot, location.state, loadVideoFile]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -138,10 +151,7 @@ export default function VideoFrameExtractor() {
         const streamUrl = await fetchYouTubeVideoStream(url, ytVideoId);
         setYtLoadingText('Loading video stream...');
         setVideoFile({ name: `youtube_${ytVideoId}.mp4` });
-        if (videoUrl && !videoUrl.startsWith('http')) {
-          URL.revokeObjectURL(videoUrl);
-        }
-        setVideoUrl(streamUrl);
+        updateVideoUrl(streamUrl);
       } catch (err) {
         alert("YouTube Error: " + err.message);
         setIsLoading(false);
@@ -159,10 +169,7 @@ export default function VideoFrameExtractor() {
     }
 
     setVideoFile(null);
-    if (videoUrl && !videoUrl.startsWith('http')) {
-      URL.revokeObjectURL(videoUrl);
-    }
-    setVideoUrl(url);
+    updateVideoUrl(url);
     setIsLoading(true);
     setLoadingProgress(0);
   };
@@ -310,7 +317,7 @@ export default function VideoFrameExtractor() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' }}>
             <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={() => { setVideoUrl(''); setVideoFile(null); setExternalUrl(''); }} style={{ padding: '0.5rem 1rem' }}>
+              <button className="btn" onClick={() => { updateVideoUrl(''); setVideoFile(null); setExternalUrl(''); }} style={{ padding: '0.5rem 1rem' }}>
                 <XMark style={{ width: '16px', height: '16px' }} /> Clear Video
               </button>
             </div>

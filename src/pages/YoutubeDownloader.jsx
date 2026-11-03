@@ -59,21 +59,24 @@ export default function YoutubeDownloader() {
 
   useEffect(() => {
     return () => {
-      if (completedUrl) {
-        URL.revokeObjectURL(completedUrl);
-      }
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [completedUrl]);
+  }, []);
+
+  const updateCompletedUrl = (nextUrl) => {
+    setCompletedUrl((prev) => {
+      if (prev && prev !== nextUrl) {
+        URL.revokeObjectURL(prev);
+      }
+      return nextUrl;
+    });
+  };
 
   const clearCompletedResult = () => {
-    if (completedUrl) {
-      URL.revokeObjectURL(completedUrl);
-    }
+    updateCompletedUrl('');
     setCompletedFile(null);
-    setCompletedUrl('');
     setCompletedFilename('');
   };
 
@@ -271,7 +274,7 @@ export default function YoutubeDownloader() {
             throw new Error('FFmpeg audio conversion failed.');
           }
           const outData = await ffmpeg.readFile(outputFileName);
-          finalBlob = new Blob([outData], {
+          finalBlob = new Blob([new Uint8Array(outData)], {
             type: audioFormat === 'mp3' ? 'audio/mpeg' : 'audio/mp4'
           });
         }
@@ -281,7 +284,7 @@ export default function YoutubeDownloader() {
         const fileObj = new File([finalBlob], finalDownloadName, { type: finalBlob.type });
 
         setCompletedFile(fileObj);
-        setCompletedUrl(objUrl);
+        updateCompletedUrl(objUrl);
         setCompletedFilename(finalDownloadName);
         setCompletedMediaType('audio');
 
@@ -413,7 +416,7 @@ export default function YoutubeDownloader() {
       }
 
       const mimeType = finalOutputFormat === 'mp4' ? 'video/mp4' : 'video/webm';
-      const finalBlob = new Blob([muxedData], { type: mimeType });
+      const finalBlob = new Blob([new Uint8Array(muxedData)], { type: mimeType });
       const resLabel = selectedVideo?.qualityLabel || '1080p';
       const trimSuffix = enableTrim ? '_clip' : '';
       const finalDownloadName = `${safeTitle}_${resLabel}${trimSuffix}.${finalOutputFormat}`;
@@ -423,7 +426,7 @@ export default function YoutubeDownloader() {
 
       setProgressPercent(100);
       setCompletedFile(fileObj);
-      setCompletedUrl(objUrl);
+      updateCompletedUrl(objUrl);
       setCompletedFilename(finalDownloadName);
       setCompletedMediaType('video');
 
@@ -1090,7 +1093,7 @@ export default function YoutubeDownloader() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
               {completedMediaType === 'video' && (
-                <SendToDropdown videoFile={completedFile} mediaType="video" />
+                <SendToDropdown file={completedFile} videoFile={completedFile} mediaType="video" />
               )}
               <button
                 type="button"

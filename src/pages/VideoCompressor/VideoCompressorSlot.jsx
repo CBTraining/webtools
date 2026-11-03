@@ -19,7 +19,14 @@ export default function VideoCompressorSlot({ slot }) {
   const isProcessing = myJob?.status === 'running';
   const resultUrl = myJob?.resultUrl;
 
-  const { videoFile, previewUrl, originalFps, quality, preset, fps } = slot;
+  const {
+    videoFile,
+    previewUrl,
+    originalFps = null,
+    quality = 50,
+    preset = 'fast',
+    fps = 'original'
+  } = slot;
 
   // Estimation Logic
   const estimatedCrf = 38 - Math.round(((quality - 1) / 99) * 20);
@@ -29,7 +36,7 @@ export default function VideoCompressorSlot({ slot }) {
     ultrafast: 1.8, superfast: 1.4, veryfast: 1.2,
     faster: 1.1, fast: 1.0, medium: 0.9, slow: 0.7
   };
-  estimatedSizeFactor *= presetMultipliers[preset];
+  estimatedSizeFactor *= presetMultipliers[preset] || 1.0;
   
   if (fps !== 'original' && originalFps) {
     const targetFps = parseInt(fps);
