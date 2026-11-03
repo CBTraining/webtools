@@ -14,7 +14,8 @@ import {
   DocumentTextIcon,
   ClockIcon,
   WindowIcon,
-  Square3Stack3DIcon
+  Square3Stack3DIcon,
+  PlayCircleIcon
 } from '@heroicons/react/24/solid';
 
 export const FEATURE_CATEGORIES = [
@@ -82,6 +83,13 @@ export const FEATURE_CATEGORIES = [
   {
     title: 'Video & Animation',
     items: [
+      {
+        to: '/youtube-downloader',
+        icon: PlayCircleIcon,
+        title: 'YouTube 1080p Downloader',
+        desc: 'Download YouTube videos in full 1080p HD MP4 or extract audio tracks directly in your browser without ads.',
+        keywords: ['youtube', 'download', 'downloader', '1080p', 'mp4', 'video', 'mp3', 'm4a', 'audio', 'youtu.be', 'shorts', 'hd']
+      },
       {
         to: '/video-compressor',
         icon: FilmIcon,

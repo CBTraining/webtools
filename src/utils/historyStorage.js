@@ -71,6 +71,11 @@ export function inferCategoryLabel(filename = '', mimeType = '', options = {}) {
   if (hash.includes('/video-frame-extractor') || lowerName.includes('_frame_')) {
     return 'Extracted Video Frame';
   }
+  if (hash.includes('/youtube-downloader')) {
+    if (lowerName.endsWith('.mp3') || lowerName.endsWith('.m4a')) return 'YouTube Audio';
+    if (lowerName.endsWith('.jpg') || lowerName.endsWith('.png')) return 'YouTube Video Thumbnail';
+    return 'YouTube 1080p Video';
+  }
   if (hash.includes('/shape-generator') || lowerName.startsWith('generated-shape')) {
     return 'Generated Shape';
   }

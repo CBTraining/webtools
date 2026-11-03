@@ -37,6 +37,7 @@ const ComponentGenerator = lazy(() => import('./pages/ComponentGenerator'));
 const VideoFrameExtractor = lazy(() => import('./pages/VideoFrameExtractor'));
 const CollageMaker = lazy(() => import('./pages/CollageMaker'));
 const AssetExtractor = lazy(() => import('./pages/AssetExtractor'));
+const YoutubeDownloader = lazy(() => import('./pages/YoutubeDownloader'));
 const History = lazy(() => import('./pages/History'));
 
 function MainContentWrapper({ children }) {
@@ -334,6 +335,7 @@ function App() {
                 <Route path="/video-frame-extractor" element={<VideoFrameExtractor />} />
                 <Route path="/collage-maker" element={<CollageMaker />} />
                 <Route path="/asset-extractor" element={<AssetExtractor />} />
+                <Route path="/youtube-downloader" element={<YoutubeDownloader />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
