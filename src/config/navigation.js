@@ -86,7 +86,7 @@ export const FEATURE_CATEGORIES = [
       {
         to: '/youtube-downloader',
         icon: PlayCircleIcon,
-        title: 'YouTube 1080p Downloader',
+        title: 'YouTube Downloader',
         desc: 'Download YouTube videos in full 1080p HD MP4 or extract audio tracks directly in your browser without ads.',
         keywords: ['youtube', 'download', 'downloader', '1080p', 'mp4', 'video', 'mp3', 'm4a', 'audio', 'youtu.be', 'shorts', 'hd']
       },

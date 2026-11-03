@@ -492,7 +492,7 @@ export default function YoutubeDownloader() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <PlayCircleIcon style={{ width: 34, height: 34, color: 'var(--accent-color)' }} />
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.75rem' }}>YouTube 1080p Video Downloader</h1>
+            <h1 style={{ margin: 0, fontSize: '1.75rem' }}>YouTube Downloader</h1>
             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               Paste any YouTube link to download full 1080p HD MP4 videos or audio tracks safely in your browser — no popups, redirects, or re-encoding loss.
             </p>
