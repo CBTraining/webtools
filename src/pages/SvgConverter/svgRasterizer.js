@@ -1,3 +1,34 @@
+function sanitizeSvgForRaster(svgText) {
+  try {
+    const doc = new DOMParser().parseFromString(String(svgText || ''), 'image/svg+xml');
+    const svg = doc.querySelector('svg');
+    if (!svg || doc.querySelector('parsererror')) return '';
+    [svg, ...svg.querySelectorAll('*')].forEach((el) => {
+      const tag = (el.tagName || el.nodeName || '').toLowerCase();
+      if (['script', 'foreignobject', 'iframe', 'object', 'embed', 'applet', 'meta', 'link', 'base', 'form', 'set', 'animate', 'animatetransform', 'animatemotion'].includes(tag)) {
+        el.remove();
+        return;
+      }
+      if (!el.attributes) return;
+      Array.from(el.attributes).forEach((attr) => {
+        const name = attr.name.toLowerCase();
+        // eslint-disable-next-line no-control-regex
+        const val = (attr.value || '').replace(/[\x00-\x20]+/g, '').toLowerCase();
+        if (
+          name.startsWith('on') ||
+          ((name === 'href' || name === 'xlink:href' || name === 'src') &&
+            (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:')))
+        ) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+    return svg.outerHTML;
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Rasterizes an SVG string onto a canvas with contain-fit scaling and optional tint/gradient fills.
  *
@@ -18,24 +49,33 @@ export function rasterizeSvgToBlob({
   gradDirection
 }) {
   return new Promise((resolve) => {
-    if (!svgText.trim() || !canvas || !svgText.includes('<svg')) {
+    if (!svgText || !svgText.trim() || !canvas || !svgText.includes('<svg')) {
       resolve(null);
       return;
     }
 
-    const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+    const cleanSvg = sanitizeSvgForRaster(svgText);
+    if (!cleanSvg) {
+      resolve(null);
+      return;
+    }
+
+    const safeW = Math.max(1, Math.min(8192, Number(width) || 512));
+    const safeH = Math.max(1, Math.min(8192, Number(height) || 512));
+
+    const blob = new Blob([cleanSvg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     
     const img = new Image();
     img.onload = () => {
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = safeW;
+      canvas.height = safeH;
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, width, height);
+      ctx.clearRect(0, 0, safeW, safeH);
 
       // Calculate Contain-Fit Aspect Ratio so vector never stretches
-      const imgW = img.naturalWidth || img.width || width;
-      const imgH = img.naturalHeight || img.height || height;
+      const imgW = img.naturalWidth || img.width || safeW;
+      const imgH = img.naturalHeight || img.height || safeH;
       const imgAspect = imgW / imgH;
 
       let drawW = width;

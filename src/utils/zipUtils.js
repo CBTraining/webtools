@@ -1,6 +1,16 @@
 import JSZip from 'jszip';
 import { downloadBlob } from './downloadUtils';
 
+function sanitizeZipEntryPath(entryPath) {
+  return String(entryPath || '')
+    .replace(/\\/g, '/')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F]/g, '')
+    .split('/')
+    .filter((part) => part && part !== '.' && part !== '..')
+    .join('/');
+}
+
 /**
  * Packs a list of files or entries into a ZIP archive and triggers browser download.
  * @param {string} zipFilename - e.g. "my-archive.zip"
@@ -12,11 +22,15 @@ import { downloadBlob } from './downloadUtils';
 export async function createAndDownloadZip(zipFilename, files, folderName = '', onProgress = null, downloadOptions = {}) {
   if (!files || files.length === 0) return null;
   const zip = new JSZip();
-  const target = folderName ? zip.folder(folderName) : zip;
+  const safeFolder = sanitizeZipEntryPath(folderName);
+  const target = safeFolder ? zip.folder(safeFolder) : zip;
 
   for (const file of files) {
     if (file && file.name && file.data) {
-      target.file(file.name, file.data);
+      const safeFileName = sanitizeZipEntryPath(file.name);
+      if (safeFileName) {
+        target.file(safeFileName, file.data);
+      }
     }
   }
 
@@ -25,7 +39,9 @@ export async function createAndDownloadZip(zipFilename, files, folderName = '', 
     onProgress ? (meta) => onProgress(meta.percent) : undefined
   );
 
-  const safeZipName = zipFilename.endsWith('.zip') ? zipFilename : `${zipFilename}.zip`;
+  // eslint-disable-next-line no-control-regex
+  const cleanZipBase = String(zipFilename || 'archive.zip').replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
+  const safeZipName = cleanZipBase.endsWith('.zip') ? cleanZipBase : `${cleanZipBase}.zip`;
   downloadBlob(content, safeZipName, downloadOptions);
   return content;
 }

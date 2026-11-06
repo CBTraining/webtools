@@ -9,6 +9,39 @@ export function isValidLottie(data) {
   );
 }
 
+/**
+ * Sanitizes untrusted Lottie JSON data by stripping After Effects string expressions (`x` strings)
+ * that lottie-web evaluates as JavaScript (CVE-2021-29060), as well as unsafe asset URLs.
+ */
+export function sanitizeLottieData(data) {
+  if (!data || typeof data !== 'object') return data;
+  const cleanNode = (node) => {
+    if (Array.isArray(node)) {
+      return node.map(cleanNode);
+    }
+    if (!node || typeof node !== 'object') {
+      return node;
+    }
+    const copy = {};
+    for (const [key, val] of Object.entries(node)) {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+      // Strip executable string expressions on animated properties (tangent handles use array/object `x`)
+      if (key === 'x' && typeof val === 'string') continue;
+      if ((key === 'p' || key === 'u') && typeof val === 'string') {
+        // eslint-disable-next-line no-control-regex
+        const normalized = val.replace(/[\x00-\x20]+/g, '').toLowerCase();
+        if (normalized.startsWith('javascript:') || normalized.startsWith('vbscript:') || normalized.startsWith('data:text/html')) {
+          copy[key] = '';
+          continue;
+        }
+      }
+      copy[key] = cleanNode(val);
+    }
+    return copy;
+  };
+  return cleanNode(data);
+}
+
 // Download JSON helper
 import { downloadBlob } from './downloadUtils';
 

@@ -17,6 +17,13 @@ export function downloadBlob(blob, filename, options = {}) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function sanitizeDownloadFilename(filename) {
+  if (!filename || typeof filename !== 'string') return 'download';
+  // eslint-disable-next-line no-control-regex
+  const cleaned = filename.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').replace(/^\.+/, '').trim();
+  return cleaned.slice(0, 200) || 'download';
+}
+
 /**
  * Triggers a browser download for a given URL and filename, and saves to local history if not already saved.
  * @param {string} url 
@@ -24,10 +31,21 @@ export function downloadBlob(blob, filename, options = {}) {
  * @param {object} [options] - Optional metadata ({ categoryLabel, skipHistory, jobId })
  */
 export function downloadUrl(url, filename, options = {}) {
-  if (!url) return;
+  if (!url || typeof url !== 'string') return;
+  // eslint-disable-next-line no-control-regex
+  const normalizedUrl = url.replace(/[\x00-\x20]+/g, '').toLowerCase();
+  if (
+    normalizedUrl.startsWith('javascript:') ||
+    normalizedUrl.startsWith('vbscript:') ||
+    normalizedUrl.startsWith('data:text/html')
+  ) {
+    return;
+  }
+  const safeFilename = sanitizeDownloadFilename(filename);
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename || 'download';
+  a.download = safeFilename;
+  a.rel = 'noopener noreferrer';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -36,7 +54,7 @@ export function downloadUrl(url, filename, options = {}) {
     fetch(url)
       .then(res => res.blob())
       .then(blob => {
-        saveToHistory(blob, filename || 'download', options);
+        saveToHistory(blob, safeFilename, options);
       })
       .catch(() => {
         // Ignore fetch errors if blob URL was already revoked

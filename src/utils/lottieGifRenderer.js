@@ -1,5 +1,6 @@
 import lottie from 'lottie-web';
 import GIF from 'gif.js';
+import { sanitizeLottieData } from './lottieSamples';
 
 /**
  * Converts a parsed Lottie JSON animation into a high-quality GIF Blob.
@@ -22,11 +23,12 @@ export async function renderLottieToGif({
   onProgress
 }) {
   if (!lottieData) throw new Error("No Lottie animation data provided.");
+  const safeLottieData = sanitizeLottieData(lottieData);
 
-  const origW = lottieData.w || 300;
-  const origH = lottieData.h || 300;
-  const canvasW = Math.round(origW * scale);
-  const canvasH = Math.round(origH * scale);
+  const origW = Math.max(1, Math.min(4096, Number(safeLottieData.w) || 300));
+  const origH = Math.max(1, Math.min(4096, Number(safeLottieData.h) || 300));
+  const canvasW = Math.max(1, Math.min(4096, Math.round(origW * scale)));
+  const canvasH = Math.max(1, Math.min(4096, Math.round(origH * scale)));
 
   const tempContainer = document.createElement('div');
   tempContainer.style.width = `${canvasW}px`;
@@ -43,7 +45,7 @@ export async function renderLottieToGif({
       renderer: 'canvas',
       loop: false,
       autoplay: false,
-      animationData: lottieData,
+      animationData: safeLottieData,
     });
 
     await new Promise((resolve, reject) => {

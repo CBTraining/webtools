@@ -19,6 +19,47 @@ export const MIME_MAP = {
   ogg: 'audio/ogg'
 };
 
+function sanitizeExtractedSvgText(svgText) {
+  try {
+    const doc = new DOMParser().parseFromString(String(svgText || ''), 'image/svg+xml');
+    const svg = doc.querySelector('svg');
+    if (!svg || doc.querySelector('parsererror')) return '';
+    [svg, ...svg.querySelectorAll('*')].forEach((el) => {
+      const tag = (el.tagName || el.nodeName || '').toLowerCase();
+      if (['script', 'foreignobject', 'iframe', 'object', 'embed', 'applet', 'meta', 'link', 'base', 'form', 'set', 'animate', 'animatetransform', 'animatemotion'].includes(tag)) {
+        el.remove();
+        return;
+      }
+      if (!el.attributes) return;
+      Array.from(el.attributes).forEach((attr) => {
+        const name = attr.name.toLowerCase();
+        // eslint-disable-next-line no-control-regex
+        const val = (attr.value || '').replace(/[\x00-\x20]+/g, '').toLowerCase();
+        if (
+          name.startsWith('on') ||
+          ((name === 'href' || name === 'xlink:href' || name === 'src') &&
+            (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:')))
+        ) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+    return svg.outerHTML;
+  } catch {
+    return '';
+  }
+}
+
+function sanitizeZipPath(rawPath) {
+  return String(rawPath || '')
+    .replace(/\\/g, '/')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F]/g, '')
+    .split('/')
+    .filter((seg) => seg && seg !== '.' && seg !== '..')
+    .join('/');
+}
+
 /**
  * Extracts embedded media from PPTX / DOCX / XLSX / ZIP archives using JSZip.
  */
@@ -33,19 +74,29 @@ export async function extractZipArchive(file, { onProgress, onStatus }) {
   const total = entries.length;
 
   for (let i = 0; i < total; i++) {
-    const path = entries[i];
-    const entry = contents.files[path];
+    const rawPath = entries[i];
+    const safePath = sanitizeZipPath(rawPath);
+    if (!safePath) continue;
+    const entry = contents.files[rawPath];
     if (onProgress) onProgress(Math.round(((i + 1) / total) * 100));
 
-    const fileExt = path.split('.').pop().toLowerCase();
+    const fileExt = safePath.split('.').pop().toLowerCase();
     const isMedia = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'mp4', 'mov', 'webm', 'avi', 'mp3', 'wav', 'm4a', 'ogg', 'emf', 'wmf'].includes(fileExt);
 
     // Check if it's inside a media folder or has media extension
-    if (isMedia || path.includes('/media/') || path.includes('/embeddings/')) {
+    if (isMedia || safePath.includes('/media/') || safePath.includes('/embeddings/')) {
       try {
-        const blob = await entry.async('blob');
         const mime = MIME_MAP[fileExt] || (fileExt === 'emf' || fileExt === 'wmf' ? 'image/x-emf' : 'application/octet-stream');
-        const typedBlob = new Blob([blob], { type: mime });
+        let typedBlob;
+        if (fileExt === 'svg') {
+          const rawSvgText = await entry.async('string');
+          const cleanSvgText = sanitizeExtractedSvgText(rawSvgText);
+          if (!cleanSvgText) continue;
+          typedBlob = new Blob([cleanSvgText], { type: mime });
+        } else {
+          const blob = await entry.async('blob');
+          typedBlob = new Blob([blob], { type: mime });
+        }
         const url = URL.createObjectURL(typedBlob);
 
         let mediaCategory = 'other';
@@ -74,22 +125,23 @@ export async function extractZipArchive(file, { onProgress, onStatus }) {
           }
         }
 
-        const rawName = path.split('/').pop() || `media_${counter + 1}.${fileExt}`;
+        // eslint-disable-next-line no-control-regex
+        const rawName = (safePath.split('/').pop() || `media_${counter + 1}.${fileExt}`).replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
 
         extractedList.push({
           id: `item-${counter++}`,
           name: rawName,
-          path,
+          path: safePath,
           url,
           blob: typedBlob,
-          size: blob.size,
+          size: typedBlob.size,
           ext: fileExt,
           category: mediaCategory,
           width,
           height
         });
       } catch (e) {
-        console.warn("Could not parse zip entry:", path, e);
+        console.warn("Could not parse zip entry:", safePath, e);
       }
     }
   }

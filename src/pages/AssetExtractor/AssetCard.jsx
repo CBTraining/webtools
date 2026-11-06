@@ -5,6 +5,7 @@ import {
   CheckIcon 
 } from '@heroicons/react/24/solid';
 import SendToDropdown from '../../components/SendToDropdown';
+import { sanitizeSvgMarkup } from './webScraper';
 
 export default function AssetCard({
   asset,
@@ -54,7 +55,7 @@ export default function AssetCard({
         {asset.type === 'svg' ? (
           asset.rawSvg ? (
             <div 
-              dangerouslySetInnerHTML={{ __html: asset.rawSvg }} 
+              dangerouslySetInnerHTML={{ __html: sanitizeSvgMarkup(asset.rawSvg) }} 
               style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }} 
             />
           ) : (

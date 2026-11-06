@@ -5,6 +5,7 @@ import {
   CommandLineIcon, 
   ArrowDownTrayIcon as Download 
 } from '@heroicons/react/24/solid';
+import { sanitizeSvgMarkup } from './webScraper';
 
 export default function AssetPreviewModal({
   asset,
@@ -80,7 +81,7 @@ export default function AssetPreviewModal({
         }}>
           {asset.type === 'svg' ? (
             asset.rawSvg ? (
-              <div dangerouslySetInnerHTML={{ __html: asset.rawSvg }} style={{ width: '80%', height: '80%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }} />
+              <div dangerouslySetInnerHTML={{ __html: sanitizeSvgMarkup(asset.rawSvg) }} style={{ width: '80%', height: '80%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }} />
             ) : (
               <img src={asset.url} alt={asset.name} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
             )

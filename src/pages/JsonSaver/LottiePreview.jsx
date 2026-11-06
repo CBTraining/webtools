@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import lottie from 'lottie-web';
+import { sanitizeLottieData } from '../../utils/lottieSamples';
 
 export default function LottiePreview({ animationData, isPlaying, onTogglePlay }) {
   const containerRef = useRef(null);
@@ -13,7 +14,7 @@ export default function LottiePreview({ animationData, isPlaying, onTogglePlay }
         renderer: 'svg',
         loop: true,
         autoplay: false,
-        animationData: animationData,
+        animationData: sanitizeLottieData(animationData),
       });
     }
     return () => {

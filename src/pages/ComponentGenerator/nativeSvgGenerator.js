@@ -85,8 +85,8 @@ export async function generateNativeSvg({
   const cardBaseFill = (backgroundColor && backgroundColor !== 'transparent') ? backgroundColor : innerShadowColor;
   svgStr += `<rect x="0" y="0" width="${w}" height="${h}" rx="${r}" fill="${cardBaseFill}" />`;
   
-  if (bgImageUrl) {
-    const safeBgUrl = String(bgImageUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  if (bgImageUrl && /^(https?:\/\/|\/|data:image\/(png|jpe?g|gif|webp);base64,)/i.test(String(bgImageUrl).trim())) {
+    const safeBgUrl = String(bgImageUrl).trim().replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     svgStr += `<g clip-path="url(#cardClip)">
       <image href="${safeBgUrl}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" />
       <rect x="0" y="0" width="${w}" height="${h}" fill="${bgTint}" />
@@ -103,6 +103,38 @@ export async function generateNativeSvg({
   // Crisp 1px inner border
   svgStr += `<rect x="0.5" y="0.5" width="${w-1}" height="${h-1}" rx="${r}" fill="none" stroke="${innerShadowColor}" stroke-width="1.5" />`;
 
+  const sanitizeEmbeddedSvg = (rawSvg) => {
+    if (!rawSvg) return '';
+    try {
+      const doc = new DOMParser().parseFromString(String(rawSvg), 'image/svg+xml');
+      const svg = doc.querySelector('svg');
+      if (!svg || doc.querySelector('parsererror')) return '';
+      [svg, ...svg.querySelectorAll('*')].forEach((el) => {
+        const tag = (el.tagName || el.nodeName || '').toLowerCase();
+        if (['script', 'foreignobject', 'iframe', 'object', 'embed', 'set', 'animate', 'animatetransform', 'animatemotion'].includes(tag)) {
+          el.remove();
+          return;
+        }
+        if (!el.attributes) return;
+        Array.from(el.attributes).forEach((attr) => {
+          const name = attr.name.toLowerCase();
+          // eslint-disable-next-line no-control-regex
+          const val = (attr.value || '').replace(/[\x00-\x20]+/g, '').toLowerCase();
+          if (
+            name.startsWith('on') ||
+            ((name === 'href' || name === 'xlink:href' || name === 'src') &&
+              (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:')))
+          ) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      });
+      return svg.outerHTML;
+    } catch {
+      return '';
+    }
+  };
+
   // Elements
   const iconNode = targetEl.querySelector('.glow-card-icon');
   if (iconNode && showIcon) {
@@ -110,7 +142,7 @@ export async function generateNativeSvg({
     const dx = iRect.left - cardRect.left;
     const dy = iRect.top - cardRect.top;
     if (iconType === 'svg') {
-       svgStr += `<g transform="translate(${dx}, ${dy})">${iconSvg}</g>`;
+       svgStr += `<g transform="translate(${dx}, ${dy})">${sanitizeEmbeddedSvg(iconSvg)}</g>`;
     } else {
        try {
          const cleanName = iconName.toLowerCase().trim().replace(/_/g, '-');
@@ -118,10 +150,16 @@ export async function generateNativeSvg({
          let queryName = cleanName;
          if (!queryName.endsWith('-rounded')) queryName += suffix;
          
-         const res = await fetch(`https://api.iconify.design/material-symbols/${encodeURIComponent(queryName)}.svg`);
+         const res = await fetch(`https://api.iconify.design/material-symbols/${encodeURIComponent(queryName)}.svg`, {
+           credentials: 'omit',
+           referrerPolicy: 'no-referrer'
+         });
          if (res.ok) {
            const svgText = await res.text();
-           const sizedSvg = svgText.replace(/width="[^"]*"/, `width="${iconSize}"`).replace(/height="[^"]*"/, `height="${iconSize}"`).replace('<svg ', '<svg color="white" ');
+           const sizedSvg = sanitizeEmbeddedSvg(svgText)
+             .replace(/width="[^"]*"/, `width="${iconSize}"`)
+             .replace(/height="[^"]*"/, `height="${iconSize}"`)
+             .replace('<svg ', '<svg color="white" ');
            svgStr += `<g transform="translate(${dx}, ${dy})">${sizedSvg}</g>`;
          } else {
            throw new Error('Icon fetch failed');

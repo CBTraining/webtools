@@ -197,8 +197,34 @@ export function convertTextToRtf(text) {
  * Wraps rich HTML or plain text into a Word-compatible .doc HTML file.
  */
 export function convertToWordDocHtml(text, isRichHtml = false, htmlContent = '') {
-  const body = isRichHtml && htmlContent
-    ? htmlContent
+  let safeHtml = '';
+  if (isRichHtml && htmlContent) {
+    try {
+      const doc = new DOMParser().parseFromString(String(htmlContent), 'text/html');
+      doc.querySelectorAll('script, iframe, object, embed, applet, meta, link, base, form, style, svg, math').forEach(el => el.remove());
+      doc.querySelectorAll('*').forEach(el => {
+        Array.from(el.attributes).forEach(attr => {
+          const name = attr.name.toLowerCase();
+          // eslint-disable-next-line no-control-regex
+          const val = (attr.value || '').replace(/[\x00-\x20]+/g, '').toLowerCase();
+          if (
+            name.startsWith('on') ||
+            name === 'srcdoc' ||
+            ((name === 'href' || name === 'src' || name === 'xlink:href' || name === 'action' || name === 'formaction') &&
+              (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:')))
+          ) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      });
+      safeHtml = doc.body.innerHTML;
+    } catch {
+      safeHtml = '';
+    }
+  }
+
+  const body = isRichHtml && safeHtml
+    ? safeHtml
     : `<pre style="font-family: Calibri, sans-serif; font-size: 11pt; white-space: pre-wrap;">${(text || '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')

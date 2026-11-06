@@ -5,6 +5,7 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/solid';
 import lottie from 'lottie-web';
+import { sanitizeLottieData } from '../../utils/lottieSamples';
 
 /**
  * Interactive Lottie Player Component with Play/Pause, Scrubber, Speed & Background Controls.
@@ -44,7 +45,7 @@ export default function LottieInteractivePlayer({
         renderer: 'svg',
         loop: initialLoop,
         autoplay: initialAutoplay,
-        animationData: animationData,
+        animationData: sanitizeLottieData(animationData),
       });
 
       animRef.current = anim;

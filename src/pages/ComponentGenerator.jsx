@@ -25,14 +25,69 @@ const escapeHtml = (str) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-const sanitizePreviewSvg = (svgStr) =>
-  String(svgStr || '')
-    .replace(/<(script|foreignObject|iframe|object|embed)[\s\S]*?<\/\1>/gi, '')
-    .replace(/<(script|foreignObject|iframe|object|embed)[^>]*\/?>/gi, '')
-    .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/\s(href|xlink:href)\s*=\s*(?:"\s*javascript:[^"]*"|'\s*javascript:[^']*')/gi, '');
+const BLOCKED_SVG_TAGS = new Set([
+  'script',
+  'foreignobject',
+  'iframe',
+  'object',
+  'embed',
+  'applet',
+  'meta',
+  'link',
+  'base',
+  'form',
+  'set',
+  'animate',
+  'animatetransform',
+  'animatemotion'
+]);
 
-const sanitizeCssUrl = (url) => String(url || '').replace(/['"\\<>]/g, '');
+const sanitizePreviewSvg = (svgStr) => {
+  const raw = String(svgStr || '').trim();
+  if (!raw) return '';
+  try {
+    const doc = new DOMParser().parseFromString(raw, 'image/svg+xml');
+    const svg = doc.querySelector('svg');
+    if (!svg || doc.querySelector('parsererror')) return '';
+    [svg, ...svg.querySelectorAll('*')].forEach((el) => {
+      const tag = (el.tagName || el.nodeName || '').toLowerCase();
+      if (BLOCKED_SVG_TAGS.has(tag)) {
+        el.remove();
+        return;
+      }
+      if (!el.attributes) return;
+      Array.from(el.attributes).forEach((attr) => {
+        const name = attr.name.toLowerCase();
+        // eslint-disable-next-line no-control-regex
+        const val = (attr.value || '').replace(/[\x00-\x20]+/g, '').toLowerCase();
+        if (
+          name.startsWith('on') ||
+          ((name === 'href' || name === 'xlink:href' || name === 'src' || name === 'action' || name === 'formaction') &&
+            (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:'))) ||
+          (name === 'style' && /expression\s*\(|javascript\s*:|vbscript\s*:|-moz-binding/i.test(val))
+        ) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+    return svg.outerHTML;
+  } catch {
+    return '';
+  }
+};
+
+const sanitizeCssUrl = (url) => {
+  const trimmed = String(url || '').trim();
+  if (!trimmed) return '';
+  if (!/^(https?:\/\/|\/|data:image\/(png|jpe?g|gif|webp);base64,)/i.test(trimmed)) {
+    return '';
+  }
+  // eslint-disable-next-line no-control-regex
+  if (/[\s'"\\<>()\r\n;\x00-\x1F{}]/.test(trimmed)) {
+    return '';
+  }
+  return trimmed;
+};
 
 export default function ComponentGenerator() {
   const componentState = useComponentState();

@@ -47,7 +47,8 @@ export default function HtmlPreviewFrame({ previewHtml, refreshKey, device }) {
             backgroundColor: '#ffffff',
             colorScheme: 'light'
           }}
-          sandbox="allow-scripts allow-modals allow-same-origin"
+          sandbox="allow-scripts allow-modals"
+          referrerPolicy="no-referrer"
         />
       </div>
     </div>

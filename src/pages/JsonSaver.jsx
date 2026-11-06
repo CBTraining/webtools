@@ -35,13 +35,20 @@ const STORAGE_KEY = 'webtools-wordpad-tabs-v1';
 function sanitizeRichHtml(dirtyHtml) {
   if (!dirtyHtml) return '';
   try {
-    const doc = new DOMParser().parseFromString(dirtyHtml, 'text/html');
-    doc.querySelectorAll('script, iframe, object, embed').forEach(el => el.remove());
+    const doc = new DOMParser().parseFromString(String(dirtyHtml), 'text/html');
+    doc.querySelectorAll('script, iframe, object, embed, applet, meta, link, base, form, style, svg, math').forEach(el => el.remove());
     doc.querySelectorAll('*').forEach(el => {
       Array.from(el.attributes).forEach(attr => {
         const name = attr.name.toLowerCase();
-        const val = (attr.value || '').trim().toLowerCase();
-        if (name.startsWith('on') || ((name === 'href' || name === 'src' || name === 'xlink:href') && val.startsWith('javascript:'))) {
+        // eslint-disable-next-line no-control-regex
+        const val = (attr.value || '').replace(/[\x00-\x20]+/g, '').toLowerCase();
+        if (
+          name.startsWith('on') ||
+          name === 'srcdoc' ||
+          ((name === 'href' || name === 'src' || name === 'xlink:href' || name === 'action' || name === 'formaction') &&
+            (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:'))) ||
+          (name === 'style' && /expression\s*\(|javascript\s*:|vbscript\s*:|-moz-binding/i.test(val))
+        ) {
           el.removeAttribute(attr.name);
         }
       });
@@ -89,7 +96,10 @@ export default function JsonSaver() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map((d, idx) => ({
+            ...createNewDoc(idx + 1, d),
+            richHtml: d?.richHtml ? sanitizeRichHtml(d.richHtml) : ''
+          }));
         }
       }
     } catch {
@@ -389,18 +399,21 @@ export default function JsonSaver() {
   const handlePrint = () => {
     const printWin = window.open('', '_blank', 'width=800,height=600');
     if (!printWin) return;
+    printWin.opener = null;
     const safeTitle = String(activeDoc.fileName || 'Document')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+    const safeFont = String(fontFamily || 'sans-serif').replace(/["<>\\;]/g, '');
+    const safeFontSize = Math.max(8, Math.min(72, Number(fontSize) || 14));
     const content = activeDoc.editorMode === 'rich' && activeDoc.richHtml
       ? sanitizeRichHtml(activeDoc.richHtml)
-      : `<pre style="font-family: ${fontFamily}; font-size: ${fontSize}px; white-space: pre-wrap;">${(activeDoc.text || '')
+      : `<pre style="font-family: ${safeFont}; font-size: ${safeFontSize}px; white-space: pre-wrap;">${(activeDoc.text || '')
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')}</pre>`;
-    printWin.document.write(`<!DOCTYPE html><html><head><title>${safeTitle}</title></head><body style="font-family: sans-serif; padding: 2rem;">${content}</body></html>`);
+    printWin.document.write(`<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: https:;"><title>${safeTitle}</title></head><body style="font-family: sans-serif; padding: 2rem;">${content}</body></html>`);
     printWin.document.close();
     printWin.focus();
     printWin.print();
@@ -468,7 +481,7 @@ export default function JsonSaver() {
       outputString = convertTextToRtf(rawText);
       mimeType = 'application/rtf';
     } else if (targetExt === 'doc') {
-      outputString = convertToWordDocHtml(rawText, activeDoc.editorMode === 'rich', activeDoc.richHtml);
+      outputString = convertToWordDocHtml(rawText, activeDoc.editorMode === 'rich', sanitizeRichHtml(activeDoc.richHtml));
       mimeType = 'application/msword;charset=utf-8';
     } else {
       outputString = applyLineEndings(rawText, targetEol);

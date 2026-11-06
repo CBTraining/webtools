@@ -158,10 +158,19 @@ export function generateComponentCss(props = {}) {
     animationCss = ''
   } = props;
 
+  const trimmedBgUrl = String(bgImageUrl || '').trim();
+  const safeBgImageUrl =
+    /^(https?:\/\/|\/|data:image\/(png|jpe?g|gif|webp);base64,)/i.test(trimmedBgUrl) &&
+    // eslint-disable-next-line no-control-regex
+    !/[\s'"\\<>()\r\n;\x00-\x1F{}]/.test(trimmedBgUrl)
+      ? trimmedBgUrl
+      : '';
+  const safeFontFamily = String(fontFamily || 'system-ui, -apple-system, sans-serif').replace(/[<>\\{};]/g, '');
+
   return `
 .glow-card {
   width: 100%;
-  font-family: ${fontFamily};
+  font-family: ${safeFontFamily};
   max-width: ${maxWidth}${maxWidthUnit};
   min-height: ${minHeight}${minHeightUnit};
   background-color: ${backgroundColor};
@@ -215,11 +224,11 @@ ${showBottomGlow ? `
   transition: opacity 0.3s ease, filter 0.3s ease, height 0.3s ease, background-position 1.5s ease-out, background-size 1.5s ease-out;
 }
 ` : ''}
-${bgImageUrl ? `
+${safeBgImageUrl ? `
 .glow-card-bg {
   position: absolute;
   inset: 0;
-  background-image: url('${bgImageUrl}');
+  background-image: url('${safeBgImageUrl}');
   background-size: cover;
   background-position: ${bgImagePosition};
   filter: brightness(${bgBrightness}%) contrast(${bgContrast}%);

@@ -115,12 +115,39 @@ export default function QrGenerator() {
     if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const svgText = e.target.result;
-        const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        setRawLogoUrl(url);
-        setLogoFileName(file.name);
-        setErrorCorrection('H'); // Auto boost error correction to High (30%) for reliable scanning!
+        const svgText = String(e.target.result || '');
+        try {
+          const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+          const svg = doc.querySelector('svg');
+          if (!svg || doc.querySelector('parsererror')) return;
+          [svg, ...svg.querySelectorAll('*')].forEach((el) => {
+            const tag = (el.tagName || el.nodeName || '').toLowerCase();
+            if (['script', 'foreignobject', 'iframe', 'object', 'embed', 'set', 'animate', 'animatetransform', 'animatemotion'].includes(tag)) {
+              el.remove();
+              return;
+            }
+            if (!el.attributes) return;
+            Array.from(el.attributes).forEach((attr) => {
+              const name = attr.name.toLowerCase();
+              // eslint-disable-next-line no-control-regex
+              const val = (attr.value || '').replace(/[\x00-\x20]+/g, '').toLowerCase();
+              if (
+                name.startsWith('on') ||
+                ((name === 'href' || name === 'xlink:href' || name === 'src') &&
+                  (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:')))
+              ) {
+                el.removeAttribute(attr.name);
+              }
+            });
+          });
+          const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          setRawLogoUrl(url);
+          setLogoFileName(file.name);
+          setErrorCorrection('H'); // Auto boost error correction to High (30%) for reliable scanning!
+        } catch {
+          // ignore malformed SVG
+        }
       };
       reader.readAsText(file);
     } else {

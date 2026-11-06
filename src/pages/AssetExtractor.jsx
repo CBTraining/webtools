@@ -13,7 +13,9 @@ import { createAndDownloadZip } from '../utils/zipUtils';
 import { 
   SAMPLE_SITES, 
   fetchHtmlWithProxies, 
-  extractAssetsFromHtml 
+  extractAssetsFromHtml,
+  validateExternalUrl,
+  sanitizeSvgMarkup
 } from './AssetExtractor/webScraper';
 import AssetCard from './AssetExtractor/AssetCard';
 import AssetPreviewModal from './AssetExtractor/AssetPreviewModal';
@@ -50,7 +52,6 @@ export default function AssetExtractor() {
     if (!/^https?:\/\//i.test(formattedUrl)) {
       formattedUrl = 'https://' + formattedUrl;
     }
-    setTargetUrl(formattedUrl);
 
     // Revoke previous blob URLs before clearing list
     assets.forEach(asset => {
@@ -65,9 +66,11 @@ export default function AssetExtractor() {
     setAssets([]);
 
     try {
-      const htmlText = await fetchHtmlWithProxies(formattedUrl, setLoadingStatus);
+      const safeUrl = validateExternalUrl(formattedUrl);
+      setTargetUrl(safeUrl);
+      const htmlText = await fetchHtmlWithProxies(safeUrl, setLoadingStatus);
       setLoadingStatus('Working...');
-      const extractedList = extractAssetsFromHtml(htmlText, formattedUrl);
+      const extractedList = extractAssetsFromHtml(htmlText, safeUrl);
       setAssets(extractedList);
       playDing();
     } catch (err) {
@@ -94,15 +97,17 @@ export default function AssetExtractor() {
   const handleDownloadAsset = async (asset) => {
     try {
       if (asset.rawSvg) {
-        const blob = new Blob([asset.rawSvg], { type: 'image/svg+xml' });
+        const blob = new Blob([sanitizeSvgMarkup(asset.rawSvg)], { type: 'image/svg+xml' });
         downloadBlob(blob, asset.name);
         return;
       }
-      const response = await fetch(asset.url);
+      const response = await fetch(asset.url, { credentials: 'omit', referrerPolicy: 'no-referrer' });
       const blob = await response.blob();
       downloadBlob(blob, asset.name);
     } catch {
-      window.open(asset.url, '_blank');
+      if (asset.url && /^(https?:\/\/|blob:)/i.test(asset.url)) {
+        window.open(asset.url, '_blank', 'noopener,noreferrer');
+      }
     }
   };
 
@@ -110,14 +115,16 @@ export default function AssetExtractor() {
     let svgText = asset.rawSvg;
     if (!svgText) {
       try {
-        const res = await fetch(asset.url);
+        const res = await fetch(asset.url, { credentials: 'omit', referrerPolicy: 'no-referrer' });
         svgText = await res.text();
       } catch (e) {
         console.error("Failed fetching SVG for Converter tool:", e);
         return;
       }
     }
-    navigate('/svg-converter', { state: { svgText, fileName: asset.name } });
+    const cleanSvg = sanitizeSvgMarkup(svgText);
+    if (!cleanSvg) return;
+    navigate('/svg-converter', { state: { svgText: cleanSvg, fileName: asset.name } });
   };
 
   const downloadAllZip = async () => {
@@ -137,12 +144,13 @@ export default function AssetExtractor() {
         const asset = assets[i];
         try {
           const folder = folderMap[asset.type] || 'images';
+          const safeEntryName = String(asset.name || `asset_${i + 1}`).replace(/[\\/]+|\.\.+/g, '_');
           if (asset.rawSvg) {
-            zipEntries.push({ name: `${folder}/${asset.name}`, data: asset.rawSvg });
+            zipEntries.push({ name: `${folder}/${safeEntryName}`, data: sanitizeSvgMarkup(asset.rawSvg) });
           } else {
-            const res = await fetch(asset.url);
+            const res = await fetch(asset.url, { credentials: 'omit', referrerPolicy: 'no-referrer' });
             const blob = await res.blob();
-            zipEntries.push({ name: `${folder}/${asset.name}`, data: blob });
+            zipEntries.push({ name: `${folder}/${safeEntryName}`, data: blob });
           }
         } catch (e) {
           console.warn(`Could not add ${asset.name} to zip:`, e);
